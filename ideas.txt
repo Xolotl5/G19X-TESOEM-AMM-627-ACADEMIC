@@ -1,0 +1,46 @@
+====================================================================
+PROYECTO DE RESIDENCIAS PROFESIONALES
+====================================================================
+
+1. TÍTULO DEL PROYECTO
+Desarrollo de un Motor Inteligente de Detección de Fraude Financiero con Arquitectura Híbrida (Android, C, PHP, Oracle DB y Firebase)
+
+--------------------------------------------------------------------
+2. IDEA PRINCIPAL
+--------------------------------------------------------------------
+El proyecto consiste en el desarrollo de una plataforma integral de seguridad financiera capaz de analizar transacciones en tiempo real provenientes de sistemas ERP, banca electrónica y pasarelas de pago.
+
+El núcleo del sistema combina tres pilares principales:
+- Analítica de Alta Velocidad: Un motor escrito en C que procesa variables transaccionales (montos, frecuencia, localización, patrón de conducta) usando un modelo de scoring/reglas avanzadas para clasificar el nivel de riesgo en microsegundos.
+- Orquestación y Persistencia Empresarial: Una API REST en PHP que recibe las operaciones, interactúa con el motor en C y las persiste en Oracle DB bajo estándares de auditoría bancaria.
+- Monitoreo Móvil en Tiempo Real: Un ecosistema en Android Studio sincronizado mediante Firebase Cloud Messaging que notifica instantáneamente al personal de seguridad o usuarios ante cualquier anomalía, permitiendo el bloqueo preventivo inmediato.
+
+--------------------------------------------------------------------
+3. STACK TECNOLÓGICO Y ROLES
+--------------------------------------------------------------------
+- Motor de Análisis (IA / ML): C (Procesamiento de ultra baja latencia y evaluación de score de riesgo)
+- Backend / API REST: PHP 8+ (Recepción de JSONs, orquestación de servicios e invocación del ejecutable C)
+- Base de Datos Empresarial: Oracle Database (Almacenamiento transaccional ACID, tablas de auditoría y registros)
+- Cliente Móvil: Android Studio / Java (App nativa para alertas tempranas, gestión de notificaciones y bloqueos)
+- Mensajería en Tiempo Real: Firebase FCM / Realtime Database (Canal de transmisión inmediata servidor-móvil)
+- Dashboard Administrativo: HTML5 / CSS / JavaScript (Panel web de monitoreo y gráficos de desempeño)
+- Entornos de Desarrollo: VSCode y Android Studio
+- Automatización: PowerShell (.ps1) para scripts de compilación, pruebas y despliegue
+- Control y Metodología: Git y Scrum
+
+--------------------------------------------------------------------
+4. DELIMITACIÓN TÉCNICA DEL SISTEMA
+--------------------------------------------------------------------
+- Ingesta: Entrada de transacciones mediante peticiones HTTP/JSON desde sistemas ERP y banca.
+- Evaluación: Cálculo de score de riesgo (0.0 a 1.0) mediante el motor en C considerando:
+  * Desviación de monto respecto al historial.
+  * Frecuencia de transacciones por hora.
+  * Cambios de ubicación o IPs inusuales.
+- Clasificación de Riesgo:
+  * Bajo (< 0.4): Transacción Aprobada.
+  * Medio (0.4 - 0.7): Transacción bajo Revisión / Alerta Preventiva.
+  * Alto (> 0.7): Bloqueo Inmediato y Emisión de Alerta de Fraude.
+- Notificación: Envío push a la App Android vía Firebase en caso de riesgo medio/alto.
+- Auditoría: Registro completo de cada evaluación y decisión en Oracle DB.
+
+====================================================================
