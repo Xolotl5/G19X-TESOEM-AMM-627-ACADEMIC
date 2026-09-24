@@ -8,14 +8,14 @@
 | **Título del proyecto** | Desarrollo de un Motor Inteligente de Detección de Fraude Financiero con Arquitectura Híbrida (Android, C, PHP, Oracle DB y Firebase) |
 | **Tipo de proyecto** | Residencias Profesionales — Ingeniería en Sistemas Computacionales |
 | **Documentos base** | `MVP_MIDFF.md` v1.0 (alcance del MVP) y `PRD_MIDFF.md` v1.0 |
-| **Versión de la bitácora** | 1.0 |
+| **Versión de la bitácora** | 1.2 |
 | **Fecha de apertura** | 23/09/2026 |
-| **Última actualización** | 23/09/2026 |
+| **Última actualización** | 24/09/2026 |
 | **Metodología** | Scrum — 4 sprints de 2 semanas (8 semanas) |
 | **Control de versiones** | Git (rama principal `master`) |
 | **Stack** | C · PHP 8+ · Oracle Database XE · Android (Java) · Firebase FCM · PowerShell |
 | **Responsable** | Residente del proyecto |
-| **Estado** | Sprint 1 — motor C, modelo de datos y build automatizado entregados (BIT-002) |
+| **Estado** | Sprint 2 — API REST PHP 8 integrada con el motor C y Oracle XE; smoke test en verde (BIT-003) |
 
 ---
 
@@ -410,10 +410,10 @@ El MVP se considera **terminado** cuando se cumple el 100 % de estos puntos
 | Métrica | Objetivo del MVP | Cómo se mide | Estado |
 |---|---|---|---|
 | Latencia de evaluación del motor C | Orden de microsegundos | Benchmark en las pruebas unitarias del motor. | Pendiente (Sprint 1) |
-| Latencia extremo a extremo (API) | ≤ 1 s | Logs/timestamps de la API en el smoke test. | Pendiente (Sprint 2) |
+| Latencia extremo a extremo (API) | ≤ 1 s | Logs/timestamps de la API en el smoke test. | Cumplido (BIT-003): 308.2 ms de promedio por transacción (924.7 ms las 3 pruebas). |
 | Entrega de push (riesgo ≥ 0.4) | < 2 s | Timestamp de envío FCM vs. recepción en la app. | Pendiente (Sprint 3) |
-| Cobertura de auditoría | 100 % de evaluaciones registradas | Consulta de control: evaluaciones vs. registros de auditoría. | Pendiente (Sprint 2) |
-| Casos de prueba por banda de riesgo | 100 % correctos | Suite de casos bajo/medio/alto en `smoke-test.ps1`. | Pendiente (Sprint 2–4) |
+| Cobertura de auditoría | 100 % de evaluaciones registradas | Consulta de control: evaluaciones vs. registros de auditoría. | Cumplido (BIT-003): 0 evaluaciones sin registro tras el smoke test. |
+| Casos de prueba por banda de riesgo | 100 % correctos | Suite de casos bajo/medio/alto en `smoke-test.ps1`. | Cumplido (BIT-003): 3/3 bandas correctas; la suite se amplía en Sprint 4. |
 | Bloqueos preventivos trazables | 100 % con usuario y timestamp | Consulta a `ALERTA` + `AUDITORIA`. | Pendiente (Sprint 4) |
 
 > Las columnas **Estado** y **Evidencia** se actualizan al cierre de cada sprint con la salida
@@ -423,8 +423,8 @@ El MVP se considera **terminado** cuando se cumple el 100 % de estos puntos
 
 | # | Riesgo | Sprint de impacto | Mitigación | Estado |
 |---|---|---|---|---|
-| R-01 | Latencia de crear un proceso C por cada transacción. | Sprint 2 | Medir en el smoke test desde el primer día; si supera el objetivo, aplicar el plan B documentado (proceso persistente/pipes) como primer ítem post-MVP. | Abierto |
-| R-02 | Instalación y conexión de Oracle XE en el entorno de residencia. | Sprint 1–2 | Instalar Oracle XE en el Sprint 1 con DDL mínimo; mantener scripts re-ejecutables. | En observación |
+| R-01 | Latencia de crear un proceso C por cada transacción. | Sprint 2 | Medir en el smoke test desde el primer día; si supera el objetivo, aplicar el plan B documentado (proceso persistente/pipes) como primer ítem post-MVP. | Medido (BIT-003): el objetivo ≤ 1 s se cumple con holgura; el plan B queda en el backlog post-MVP. |
+| R-02 | Instalación y conexión de Oracle XE en el entorno de residencia. | Sprint 1–2 | Instalar Oracle XE en el Sprint 1 con DDL mínimo; mantener scripts re-ejecutables. | Cerrado (BIT-003): XE 21c en servicio, esquema instalado y conexión verificada desde PHP. |
 | R-03 | Recepción de push en emulador Android (FCM requiere Google Play services). | Sprint 3 | Contar con al menos un dispositivo físico de prueba desde el Sprint 3. | Abierto |
 | R-04 | Datos de prueba poco representativos (falsos resultados del scoring). | Sprint 1 | Dataset sintético con casos por banda (bajo, medio, alto), revisado por el asesor. | En observación |
 | R-05 | El bloqueo desde la app requiere autenticación mínima no definida. | Sprint 4 | Definir en el Sprint 3 un identificador de oficial + API Key para la acción de bloqueo. | Abierto |
@@ -439,6 +439,7 @@ El MVP se considera **terminado** cuando se cumple el 100 % de estos puntos
 |---|---|---|---|---|---|
 | **BIT-001** | 23/09/2026 | Sprint 1 | Apertura de proyecto | Apertura de la bitácora: objetivo general, alcance, estructura y plan de 4 sprints | Cerrada |
 | **BIT-002** | 23/09/2026 | Sprint 1 | Sesión de trabajo | Motor de scoring en C con pruebas unitarias y de latencia, esquema Oracle XE y `build.ps1` | Cerrada |
+| **BIT-003** | 24/09/2026 | Sprint 2 | Sesión de trabajo | API REST PHP 8 integrada con el motor C y Oracle XE: endpoint, persistencia atómica y `smoke-test.ps1` | Cerrada |
 
 ---
 
@@ -680,6 +681,114 @@ benchmark de latencia), DDL de Oracle XE y `build.ps1`.
    (HU-MVP-01, HU-MVP-04).
 
 
+### 9.4 BIT-003 — 24/09/2026 — Sprint 2: API REST PHP integrada con el motor C y Oracle XE
+
+| Campo | Valor |
+|---|---|
+| **ID** | BIT-003 |
+| **Fecha** | 24/09/2026 |
+| **Sprint** | Sprint 2 (semanas 3–4 del plan; iniciado de forma anticipada) |
+| **Tipo** | Sesión de trabajo (integración backend) |
+| **Responsable** | Residente del proyecto |
+| **Estado** | Cerrada |
+| **Documentos de referencia** | `MVP_MIDFF.md` §4.1, §5.4, §7 y Anexo A · `PRD_MIDFF.md` RF-01/02/03/06/07/08 · `docs/contratos/contrato_scoring.md` v1.0 |
+
+#### Contexto
+
+El Sprint 1 dejó el motor C compilado y probado, el DDL re-ejecutable y `build.ps1`, con un
+pendiente explícito: ejecutar `database/schema.sql` sobre un Oracle XE real (criterio de
+aceptación parcial y riesgo R-02). El entorno local dispone de Oracle Database XE 21c
+(servicio `XEPDB1`, listener activo) y de PHP 8.1.10 (Laragon) **sin** las extensiones de
+Oracle habilitadas y **sin** usuario de aplicación. El Sprint 2 (HU-MVP-01, HU-MVP-03,
+HU-MVP-04) exige exponer `POST /api/v1/transacciones` con `X-API-Key`, invocar al
+ejecutable C y persistir el ciclo completo de forma atómica.
+
+#### Actividades realizadas
+
+1. **Preparación del entorno Oracle** → RF-07 (cierra el pendiente del Sprint 1):
+   habilitadas `pdo_oci` y `oci8_19` en `php.ini`; creado el usuario `MIDFFuser` en `XEPDB1`
+   (grants mínimos: sesión, tablas, secuencias, triggers, procedimientos) y ejecutado
+   `database/schema.sql` bajo ese usuario: verificación del propio script **4/4 tablas,
+   4/4 secuencias, 5/5 triggers, SP creado — "esquema listo para el Sprint 2"**.
+2. **`config/db.php`** (252 líneas) → RF-07, RNF-03, RNF-05: placeholders de usuario,
+   contraseña, host, puerto y SID sobreescribibles por variables de entorno
+   (`MIDFF_DB_*`); `midff_db_conectar()` vía **PDO_OCI** con respaldo **OCI8**; y
+   `midff_db_registrar_transaccion()` que invoca `SP_REGISTRAR_TRANSACCION` con los 19
+   parámetros de entrada (fecha con `TO_TIMESTAMP_TZ` y `variables_usadas` como CLOB) +
+   3 `OUT`, confirmando con `COMMIT` o revirtiendo con `ROLLBACK` (D-13).
+3. **`api/v1/transacciones.php`** (356 líneas) → RF-01, RF-02, RF-03, RF-06, HU-MVP-01:
+   validación de método (405), `X-API-Key` con comparación en tiempo constante (401),
+   cuerpo JSON y campos obligatorios/tipos/longitudes según las columnas de `TRANSACCION`
+   (400), generación de `id_transaccion`, invocación de `midff-scoring.exe` por
+   `proc_open` (stdin→stdout, `bypass_shell`), traducción de códigos de salida del
+   contrato (0→200, 2→400, 3→500), persistencia atómica y respuesta sincrónica del
+   Anexo A (`id_transaccion`, `score`, `clasificacion`, `decision`, `fecha_evaluacion`,
+   `alerta_id`).
+4. **`router.php`** (50 líneas): router mínimo del servidor embebido (`php -S`) para
+   exponer la ruta oficial `/api/v1/transacciones` sin extensión durante el MVP.
+5. **`smoke-test.ps1`** (406 líneas) → RF-15, criterio §9.8: detecta `php.exe`/`sqlplus`
+   y las DLLs del cliente Oracle, levanta el servidor embebido, ejecuta las 3 pruebas por
+   banda con el dataset congelado, mide latencias en ms, agrega pruebas negativas
+   (401/400) y verifica en Oracle la cobertura de auditoría.
+6. **Ejecución del smoke test** con resultado **OK / código de salida 0** (evidencia abajo):
+   las 3 bandas resueltas con el `score_esperado` exacto, las negativas 401/400 en verde
+   y cobertura de auditoría del 100 % en Oracle.
+
+#### Decisiones tomadas
+
+| # | Decisión | Justificación |
+|---|---|---|
+| D-16 | El acceso a Oracle se centraliza en `config/db.php` con **PDO_OCI como driver principal y OCI8 de respaldo**, y una única función `midff_db_registrar_transaccion()` encapsula el SP. | El prompt del Sprint 2 exige soportar `pdo_oci`/`oci8`; encapsular el driver deja el endpoint agnóstico y auditable en un solo lugar (RF-07, RNF-05). |
+| D-17 | La API **asigna** `id_transaccion` con formato `TRX-<año>-<8 hex>` (aleatorio criptográfico) e ignora el que pudiera enviar el cliente. | El contrato del motor define el campo como "identificador asignado por la API"; el formato cabe en `VARCHAR2(40)` y evita colisiones sin consultar secuencias antes de evaluar (RF-02). |
+| D-18 | El objeto `contexto` se acepta **opcionalmente en el cuerpo** y se reenvía al motor tal cual; si no llega, el motor aplica su fail-safe (0.5 / EN_REVISION). | `contrato_scoring.md` §2.1 prevé que el contexto lo aporte la API desde Oracle, pero el esquema del MVP aún no tiene tabla de historial; el passthrough permite probar las bandas del dataset hoy y construir el historial real en sprints posteriores (D-09). |
+| D-19 | `alerta_id` de la respuesta se formatea `ALR-<año>-<id de SEQ_ALERTA>` a partir del parámetro `OUT` del SP; es `null` en banda baja. | Respeta el Anexo A del MVP (alerta solo con `score ≥ 0.4`) y usa el identificador real persistido, garantizando trazabilidad alerta↔Oracle (RF-09 base, HU-MVP-03). |
+| D-20 | El servidor del MVP es el **embebido de PHP (`php -S` + `router.php`)**; no se instala Apache/Nginx. | El MVP valida el flujo, no la infraestructura de producción; `router.php` permite usar la ruta oficial `/api/v1/transacciones` sin extensión (§7.2 del MVP, alcance mínimo viable). |
+| D-21 | La latencia del smoke test se mide **externa y total** (Stopwatch alrededor del POST HTTP), no solo la del motor. | Es la métrica del MVP §10 ("extremo a extremo ≤ 1 s") y cuantifica el riesgo R-01 tal como lo pide su mitigación. |
+| D-22 | API Key y credenciales Oracle viven como **placeholders con override por variables de entorno** (`MIDFF_API_KEY`, `MIDFF_DB_*`). | Convención de secretos de la bitácora §4.2: nada real versionado; en el entorno de residencia se inyectan sin editar código (RNF-03). |
+
+#### Evidencia
+
+- **Archivos creados (Sprint 2):**
+  - `C:\todoMIDFF\config\db.php` (252 líneas) — conexión y persistencia atómica (RF-07, RNF-05).
+  - `C:\todoMIDFF\api\v1\transacciones.php` (356 líneas) — endpoint `POST /api/v1/transacciones` (RF-01/02/03/06).
+  - `C:\todoMIDFF\router.php` (50 líneas) — ruta del contrato para `php -S`.
+  - `C:\todoMIDFF\smoke-test.ps1` (406 líneas) — smoke test del flujo (RF-15).
+- `php -l` sin errores en los tres archivos PHP.
+- **Salida de `smoke-test.ps1` (24/09/2026, exit 0):**
+  - BAJO: `CLI-001` score 0.0000 → `APROBADA`, sin alerta — 509.0 ms.
+  - MEDIO: `CLI-002` score 0.5000 → `EN_REVISION`, alerta `ALR-2026-000002` — 223.6 ms.
+  - ALTO: `CLI-003` score 0.9500 → `BLOQUEADA`, alerta `ALR-2026-000003` — 192.1 ms.
+  - Negativas: sin `X-API-Key` → HTTP 401; JSON mal formado → HTTP 400 con error descriptivo.
+  - Oracle: 4 evaluaciones registradas, **0 sin auditoría** (cobertura 100 %); alertas
+    PREVENTIVA/FRAUDE = 1/2 (la primera FRAUDE provino de la prueba manual previa).
+  - Latencia total de las 3 pruebas: **924.7 ms** (promedio **308.2 ms**, objetivo ≤ 1 s).
+
+#### Bloqueos y riesgos
+
+- **R-01 (invocación de proceso C por transacción):** medido — el objetivo ≤ 1 s se cumple
+  con holgura (~0.2–0.5 s por request incluidas red, PHP, proceso C y Oracle); el plan B
+  (proceso persistente/pipes) permanece como primer ítem del backlog post-MVP.
+- **R-02 (instalación/conexión de Oracle XE): cerrado** — XE 21c operativo, esquema
+  instalado y conexión verificada desde PHP con ambos drivers disponibles.
+- Sin bloqueos abiertos para el Sprint 3.
+
+#### Métricas del sprint
+
+| Métrica | Objetivo | Resultado medido | Cumple |
+|---|---|---|---|
+| Latencia extremo a extremo (API) | ≤ 1 s | 924.7 ms las 3 pruebas; 308.2 ms promedio (`smoke-test.ps1`) | Sí |
+| Cobertura de auditoría | 100 % de evaluaciones registradas | 0 evaluaciones sin registro en `AUDITORIA` (consulta de control del Anexo B) | Sí |
+| Casos por banda de riesgo | 100 % correctos | 3/3 (BAJO 0.0000 / MEDIO 0.5000 / ALTO 0.9500 con decisión esperada) | Sí |
+| API Key / JSON inválido | 401 / 400 respectivamente | Verificado en el smoke test | Sí |
+
+#### Siguiente paso
+
+1. Iniciar el Sprint 3: proyecto Firebase (FCM), `FcmService` en la API para push con
+   `score ≥ 0.4` y app Android básica (registro de token y bandeja de alertas).
+2. Congelar el contrato de la API en `docs/contratos/api-transacciones-v1.md` (pendiente
+   arrastrado de BIT-002, ahora con la implementación real como referencia).
+3. Ampliar el dataset sintético con casos adicionales validados por el asesor (riesgo R-04).
+
 ## 10. Plantilla para nuevas entradas
 
 Copiar la siguiente estructura al final de la sección 9, incrementar el ID (`BIT-00N`), agregar la
@@ -733,6 +842,7 @@ fila correspondiente en el índice 9.1 y actualizar la tabla de metadatos de la 
 |---|---|---|---|
 | 1.0 | 23/09/2026 | Residente del proyecto | Apertura de la bitácora: objetivo general, alcance del MVP, estructura del proyecto derivada de `MVP_MIDFF.md`, plan de 4 sprints, Definition of Done, métricas, riesgos y entrada inicial BIT-001. |
 | 1.1 | 23/09/2026 | Residente del proyecto | Se agrega la entrada **BIT-002** (Sprint 1): motor de scoring en C (`src/motor/`) con 18 casos de prueba unitaria y benchmark de latencia en microsegundos, modelo de datos Oracle XE (`database/schema.sql`) con el procedimiento atómico `SP_REGISTRAR_TRANSACCION`, script `build.ps1` y decisiones D-07 a D-15. |
+| 1.2 | 24/09/2026 | Residente del proyecto | Se agrega la entrada **BIT-003** (Sprint 2): endpoint `POST /api/v1/transacciones` (API Key, validaciones, invocación del motor C y contrato de respuesta), conexión y persistencia atómica en Oracle XE desde `config/db.php`, `router.php` para el servidor embebido de PHP y `smoke-test.ps1` (3 bandas de riesgo, pruebas negativas 401/400, latencia y cobertura de auditoría). Métricas §7 y riesgos R-01/R-02 actualizados; decisiones D-16 a D-22. |
 
 ---
 
