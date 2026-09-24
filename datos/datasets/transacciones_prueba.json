@@ -1,0 +1,59 @@
+[
+  {
+    "id_transaccion": "TRX-2026-000101",
+    "id_cliente": "CLI-001",
+    "monto": 850.00,
+    "moneda": "MXN",
+    "origen": "ERP",
+    "ubicacion": "CDMX",
+    "ip_origen": "189.203.4.7",
+    "canal": "WEB",
+    "timestamp": "2026-09-23T09:05:00-06:00",
+    "fecha_hora": "2026-09-23T09:05:00-06:00",
+    "contexto": {
+      "monto_promedio_historial": 1200.00,
+      "transacciones_ultima_hora": 1,
+      "ubicacion_habitual": "CDMX",
+      "ip_habitual": "189.203.4.7"
+    },
+    "score_esperado": 0.0000
+  },
+  {
+    "id_transaccion": "TRX-2026-000102",
+    "id_cliente": "CLI-002",
+    "monto": 3600.00,
+    "moneda": "MXN",
+    "origen": "BANCA",
+    "ubicacion": "GDL",
+    "ip_origen": "189.203.4.7",
+    "canal": "MOVIL",
+    "timestamp": "2026-09-23T14:40:00-06:00",
+    "fecha_hora": "2026-09-23T14:40:00-06:00",
+    "contexto": {
+      "monto_promedio_historial": 1200.00,
+      "transacciones_ultima_hora": 5,
+      "ubicacion_habitual": "CDMX",
+      "ip_habitual": "189.203.4.7"
+    },
+    "score_esperado": 0.5000
+  },
+  {
+    "id_transaccion": "TRX-2026-000103",
+    "id_cliente": "CLI-003",
+    "monto": 15499.00,
+    "moneda": "MXN",
+    "origen": "PASARELA",
+    "ubicacion": "CDMX",
+    "ip_origen": "203.0.113.45",
+    "canal": "POS",
+    "timestamp": "2026-09-23T23:55:00-06:00",
+    "fecha_hora": "2026-09-23T23:55:00-06:00",
+    "contexto": {
+      "monto_promedio_historial": 1200.00,
+      "transacciones_ultima_hora": 7,
+      "ubicacion_habitual": "GDL",
+      "ip_habitual": "189.203.4.7"
+    },
+    "score_esperado": 0.9500
+  }
+]

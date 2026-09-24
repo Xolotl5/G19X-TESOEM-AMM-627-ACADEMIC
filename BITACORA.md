@@ -15,7 +15,7 @@
 | **Control de versiones** | Git (rama principal `master`) |
 | **Stack** | C · PHP 8+ · Oracle Database XE · Android (Java) · Firebase FCM · PowerShell |
 | **Responsable** | Residente del proyecto |
-| **Estado** | Sprint 1 — en progreso |
+| **Estado** | Sprint 1 — motor C, modelo de datos y build automatizado entregados (BIT-002) |
 
 ---
 
@@ -438,6 +438,7 @@ El MVP se considera **terminado** cuando se cumple el 100 % de estos puntos
 | ID | Fecha | Sprint | Tipo | Título | Estado |
 |---|---|---|---|---|---|
 | **BIT-001** | 23/09/2026 | Sprint 1 | Apertura de proyecto | Apertura de la bitácora: objetivo general, alcance, estructura y plan de 4 sprints | Cerrada |
+| **BIT-002** | 23/09/2026 | Sprint 1 | Sesión de trabajo | Motor de scoring en C con pruebas unitarias y de latencia, esquema Oracle XE y `build.ps1` | Cerrada |
 
 ---
 
@@ -516,6 +517,169 @@ stack híbrido y el documento de seguimiento del proyecto.
 
 ---
 
+### 9.3 BIT-002 — 23/09/2026 — Sprint 1: motor de scoring en C, modelo de datos Oracle XE y `build.ps1`
+
+| Campo | Valor |
+|---|---|
+| **ID** | BIT-002 |
+| **Fecha** | 23/09/2026 |
+| **Sprint** | Sprint 1 (semana 1 de 8) |
+| **Tipo** | Sesión de trabajo (implementación) |
+| **Responsable** | Residente del proyecto |
+| **Estado** | Cerrada |
+| **Documentos de referencia** | `MVP_MIDFF.md` §4.1, §5, §7, §9, §10, §11 y Anexo A · `PRD_MIDFF.md` RF-03, RF-04, RF-05, RF-07, RF-08, RF-15 y RNF-01, RNF-04, RNF-05 |
+
+#### Contexto
+
+Arranque de la implementación del Sprint 1 con el contrato de alcance ya definido en `MVP_MIDFF.md`
+y la estructura objetivo registrada en BIT-001. El entorno de trabajo (Windows) cuenta con
+**MinGW GCC 6.3.0** y PowerShell 5.1, pero **todavía no tiene Oracle XE instalado** (riesgo R-02),
+por lo que el DDL del sprint se entrega y valida por revisión estructural, quedando pendiente su
+ejecución en el motor de base de datos.
+
+Los entregables comprometidos en la §5.3 de esta bitácora para el Sprint 1 son: contrato JSON,
+motor C con las 3 variables y umbrales, pruebas unitarias (una por variable + fronteras +
+benchmark de latencia), DDL de Oracle XE y `build.ps1`.
+
+#### Actividades realizadas
+
+1. **Motor de scoring en C (RF-03, RF-04, RF-05, RNF-01):** se implementó `src/motor/scoring.c`
+   como ejecutable de línea de comandos que lee un objeto JSON por `stdin` y devuelve por `stdout`
+   el `score` (0.0 – 1.0), la `clasificacion`, la `decision`, el detalle de las **3 variables** y la
+   latencia medida en microsegundos. El cálculo es un modelo de reglas ponderado sobre las
+   variables del PRD: desviación del monto vs. el historial del cliente (RF-04a), frecuencia de
+   transacciones por hora (RF-04b) y ubicación/IP inusual (RF-04c).
+2. **Capa de soporte del motor:** `src/motor/scoring.h` (contrato del cálculo, umbrales y pesos),
+   `src/motor/json_io.c|h` (lectura/escritura JSON mínima, sin dependencias externas, para no
+   afectar la latencia) y `src/motor/cronometro.c|h` (reloj de alta resolución con `<time.h>` y
+   `QueryPerformanceCounter`, resolución 0.100 µs).
+3. **Suite de pruebas unitarias (HU-MVP-02, HU-MVP-03):** `src/motor/pruebas/test_scoring.c` con
+   18 casos y 167 verificaciones: normalización por rampa, acotado y redondeo, un caso por
+   variable, umbrales y sus fronteras (0.3999 / 0.4000 / 0.5500 / 0.7000 / 0.7001), integración de
+   las tres bandas de riesgo, aislamiento de cada variable, fail-safe con datos ausentes, parseo y
+   validación del contrato JSON, serialización de salida y una malla de 480 combinaciones que
+   verifica que el score siempre quede en [0,1] y coincida con la decisión por umbral.
+4. **Suite de medición de latencia (RNF-01):** `src/motor/pruebas/test_latencia.c`, con tres
+   escenarios medidos uno a uno con `<time.h>` (costo del cronómetro, evaluación pura del motor y
+   ruta completa parseo + evaluación), estadísticas de mínimo/media/mediana/p95/p99/máximo,
+   operaciones por segundo y tiempo de CPU (`clock()`); devuelve error si no se cumplen los
+   objetivos de latencia.
+5. **Modelo de datos Oracle XE (RF-07, RF-08, RNF-04, RNF-05):** `database/schema.sql` crea las
+   tablas `TRANSACCION`, `EVALUACION`, `ALERTA` y `AUDITORIA` con restricciones de coherencia
+   (score ↔ clasificación ↔ decisión según los umbrales 0.40 / 0.70, tipos y estados válidos,
+   trazabilidad del bloqueo), 4 secuencias, 5 triggers (asignación de identificadores e
+   inmutabilidad de `AUDITORIA`) y el procedimiento almacenado **`SP_REGISTRAR_TRANSACCION`**, que
+   inserta de forma **atómica** transacción + evaluación + alerta (si el score ≥ 0.4) + auditoría,
+   validando la coherencia del score antes de escribir y revirtiendo todo ante cualquier error.
+   El script es **re-ejecutable** (elimina y recrea los objetos) y termina verificando que los 13
+   objetos quedaron creados.
+6. **Automatización del build (RF-15, RNF-09):** `build.ps1` localiza `gcc`, compila el motor y las
+   dos suites de prueba, ejecuta las pruebas unitarias, corre el benchmark de latencia, valida el
+   contrato JSON por `stdin`/`stdout` con las tres bandas de riesgo y los errores de entrada, y
+   termina con un resumen y código de salida 0/1 (apto para usarse en el Sprint 2 y 4 sin pasos
+   manuales).
+7. **Registro y verificación:** se documentó el layout entregado, las decisiones de diseño y los
+   resultados medidos en esta entrada, y se excluyeron los artefactos generados con las reglas ya
+   existentes de `.gitignore` (`bin/`, `*.exe`, `*.o`).
+
+#### Decisiones tomadas
+
+| # | Decisión | Justificación |
+|---|---|---|
+| D-07 | El layout entregado en el Sprint 1 es `src/motor/` (motor y pruebas), `database/schema.sql` y `build.ps1` en la raíz, **en lugar** del árbol `motor-c/`, `db/ddl/` y `scripts/` de la sección 4. | Indicación expresa del residente/asesor para esta entrega. La sección 4 se conserva como estructura objetivo del MVP y su contenido sigue siendo obligatorio: `src/motor/` cubre el componente 1, `database/` el componente 2 y `build.ps1` el entregable de RF-15. Mapeo: `motor-c/src/*.c` → `src/motor/*.c`; `motor-c/include/*.h` → `src/motor/*.h`; `motor-c/pruebas/*.c` → `src/motor/pruebas/*.c`; `db/ddl/*.sql` → `database/schema.sql`; `scripts/build.ps1` → `build.ps1`. |
+| D-08 | Modelo de reglas **ponderado** sobre rampas lineales: `score = 0.45·p_monto + 0.30·p_frecuencia + 0.25·p_ubicacion_ip`, cada `p_i` normalizado en [0,1]. | RF-04 exige las 3 variables pero no define pesos; ponderar por impacto (el monto desviado es la señal más fuerte de fraude) mantiene el modelo explicable y auditable, y permite verificar cada variable con pruebas unitarias (HU-MVP-02). |
+| D-09 | El historial del cliente viaja en el propio JSON de entrada, dentro del objeto `contexto` (`monto_promedio_historial`, `transacciones_ultima_hora`, `ubicacion_habitual`, `ip_habitual`). | El motor es un **proceso sin estado** invocado por línea de comandos (RF-03); la API obtendrá estos datos de Oracle DB en el Sprint 2. Así el motor no requiere conexión a la base y mantiene su latencia en microsegundos. |
+| D-10 | **Fail-safe:** si una variable no puede calcularse (sin `contexto`, sin monto promedio, sin frecuencia o sin ubicación/IP comparables) se usa un puntaje neutro `0.50`, el caso cae en banda `MEDIO / EN_REVISION` y el motivo se registra en `datos_faltantes`. | Cumple HU-MVP-04 y RNF-04: una transacción sin historial **nunca se aprueba a ciegas** y queda auditado el motivo. Se documenta como comportamiento obligatorio del motor. |
+| D-11 | El motor devuelve, además del score, la **clasificación y la decisión** por umbral. | HU-MVP-02.4 y el criterio §9.7 del MVP piden verificar los umbrales en las pruebas del motor; la API (Sprint 2) conserva la autoridad final de decisión del paso 5 del flujo. |
+| D-12 | Los identificadores de Oracle se generan con **secuencias + triggers** `BEFORE INSERT`, en lugar de columnas `IDENTITY`. | Compatibilidad con Oracle XE 11.2, 18c y 21c sin cambios en el script (riesgo R-02), y permite inserts manuales en SQL*Plus durante las pruebas. |
+| D-13 | `SP_REGISTRAR_TRANSACCION` **no ejecuta `COMMIT`** y ante cualquier error hace `ROLLBACK` total y relanza el error. | RNF-05: la persistencia de transacción, evaluación, alerta y auditoría es una sola unidad atómica; el llamador (API PHP del Sprint 2) confirma. Evita dejar una evaluación sin registro de auditoría. |
+| D-14 | `main()` del motor se excluye con la bandera de compilación `-DMIDFF_SIN_MAIN` para enlazar el dominio dentro de las suites de prueba. | Permite probar unitariamente las funciones reales del motor (sin duplicar código ni ejecutar procesos), que es lo que exige HU-MVP-02.4. La bandera la aplica `build.ps1`. |
+| D-15 | El parser del motor tolera un **BOM UTF-8** al inicio de la entrada. | Se detectó al integrar `build.ps1` con `System.Diagnostics.Process` (.NET escribe el BOM en la tubería); evita rechazar entradas válidas cuando el cliente sea PHP, PowerShell u otro. |
+| D-16 | Las suites de `src/motor/pruebas/` se compilan como ejecutables independientes que devuelven código de salida 0/1 y un resumen con casos, verificaciones y fallos. | RNF-09 y criterio §9.8: `build.ps1` automatiza la verificación sin intervención manual ni herramientas externas. |
+
+
+
+#### Evidencia
+
+- **Archivos creados (Sprint 1)**
+  - `C:\todoMIDFF\src\motor\scoring.h` (198 líneas) — contrato del cálculo, umbrales, pesos y banderas de datos faltantes.
+  - `C:\todoMIDFF\src\motor\scoring.c` (630 líneas) — motor: 3 variables, score ponderado, clasificación, contrato JSON y `main` (RF-03, RF-04, RF-05, RF-08).
+  - `C:\todoMIDFF\src\motor\json_io.h` (67 líneas) y `json_io.c` (408 líneas) — parser y escritor JSON mínimo por `stdin`/`stdout`, sin dependencias externas.
+  - `C:\todoMIDFF\src\motor\cronometro.h` (51 líneas) y `cronometro.c` (126 líneas) — reloj de microsegundos con `<time.h>` (RNF-01).
+  - `C:\todoMIDFF\src\motor\pruebas\marco_pruebas.h` (83 líneas) — marco de aserciones sin dependencias.
+  - `C:\todoMIDFF\src\motor\pruebas\test_scoring.c` (798 líneas) — 18 casos / 167 verificaciones (HU-MVP-02, HU-MVP-03).
+  - `C:\todoMIDFF\src\motor\pruebas\test_latencia.c` (299 líneas) — benchmark en microsegundos (RNF-01).
+  - `C:\todoMIDFF\database\schema.sql` (544 líneas) — DDL + procedimiento PL/SQL de Oracle XE (RF-07, RF-08, RNF-04, RNF-05).
+  - `C:\todoMIDFF\build.ps1` (450 líneas) — compilación y pruebas automatizadas (RF-15, RNF-09).
+- **Resultado de las pruebas unitarias del motor** (`src\motor\bin\midff-test-scoring.exe`):
+  `Casos: 18 | Verificaciones: 167 | Fallos: 0` → `RESULTADO: OK - todas las verificaciones pasaron`.
+- **Benchmark de latencia** (`src\motor\bin\midff-test-latencia.exe 200000`, gcc `-O2`, `QueryPerformanceCounter`, resolución 0.100 µs):
+
+| Escenario | Mínimo | Mediana | p95 | p99 | Máximo | Rendimiento |
+|---|---|---|---|---|---|---|
+| 0. Costo del cronómetro (línea base) | 0.000 µs | 0.100 µs | 0.100 µs | 0.200 µs | 18.200 µs | 12.3 M ops/s |
+| 1. Evaluación pura del motor (3 variables + umbrales) | 0.500 µs | **0.600 µs** | **0.800 µs** | 1.200 µs | 109.100 µs | 1 575 407 ops/s |
+| 2. Ruta de la API (parseo JSON + evaluación) | 6.600 µs | 7.000 µs | 10.800 µs | 14.000 µs | 6 737.400 µs | 125 200 ops/s |
+
+  Tiempo de CPU del escenario 1: **0.760 µs por iteración** (`clock()` de `<time.h>`). Objetivos del RNF-01 (mediana ≤ 100 µs y p95 ≤ 1 000 µs): **CUMPLE** en ambos escenarios.
+- **Pruebas del contrato JSON por línea de comandos** (ejecutadas por `build.ps1` con `System.Diagnostics.Process` y tuberías reales):
+
+| Caso | Código de salida | Resultado |
+|---|---|---|
+| Banda ALTA (Anexo A: monto 15 499.00 vs. promedio 1 200.00, 7 operaciones/hora, ubicación e IP distintas) | 0 | `score 0.9500` → `ALTO / BLOQUEADA` |
+| Banda MEDIA (monto 3 600.00, 6 operaciones/hora, IP distinta) | 0 | `score 0.5500` → `MEDIO / EN_REVISION` |
+| Banda BAJA (cliente con comportamiento habitual) | 0 | `score 0.0000` → `BAJO / APROBADA` |
+| Sin `contexto` histórico (fail-safe D-10) | 0 | `score 0.5000` → `MEDIO / EN_REVISION`, `datos_faltantes:["contexto"]` |
+| JSON mal formado (`{`) | 2 | diagnóstico JSON por `stderr` (la API responderá HTTP 400, RF-02) |
+| Sin campo obligatorio `monto` | 2 | diagnóstico JSON por `stderr` |
+
+- **Resultado del build automatizado:** `build.ps1` → `Compilaciones correctas: 3 de 3`, pruebas unitarias y benchmark OK, 6 casos de contrato OK, `RESULTADO: BUILD CORRECTO`, código de salida **0**.
+- **Verificación estructural del DDL** (Oracle XE aún no instalado, riesgo R-02): 4 tablas, 4 secuencias, 5 triggers, 1 procedimiento, 8 bloques PL/SQL terminados correctamente y paréntesis balanceados (129 de 129).
+
+
+#### Bloqueos y riesgos
+
+- **R-02 (Oracle XE en el entorno de residencia) — EN OBSERVACIÓN:** el motor de base de datos aún
+  no está instalado, por lo que `database/schema.sql` no se ha podido ejecutar. Se mitigó entregando
+  el script **re-ejecutable** (se puede correr dos veces seguidas), **portable** entre XE 11.2/18c/21c
+  (secuencias + triggers) y **autoverificable** (bloque final que reporta 13 de 13 objetos creados).
+  Pendiente: ejecutarlo en XE y registrar la salida en la siguiente entrada.
+- **R-01 (latencia de crear un proceso C por transacción) — CON DATO CUANTITATIVO:** la invocación
+  completa del ejecutable medida desde `build.ps1` está entre **38 y 44 ms** por transacción (más
+  133 ms el primer arranque en frío), muy por encima de la latencia interna del motor (0.600 µs).
+  Confirma el riesgo de la §12 del MVP: el presupuesto de ≤ 1 s extremo a extremo sigue siendo
+  holgado, pero la optimización (proceso persistente/pipes) queda como primer ítem del post-MVP v1.2
+  si el smoke test del Sprint 2 lo exige.
+- **R-04 (datos de prueba poco representativos):** el dataset sintético de `datos/datasets/` aún no
+  se ha creado; por ahora los casos por banda viven en la suite de pruebas y en `build.ps1`.
+- **Dependencia de entorno:** el compilador es MinGW.org GCC 6.3.0 (no MinGW-w64) y no expone
+  `clock_gettime(CLOCK_MONOTONIC)`; el cronómetro resuelve esto usando `QueryPerformanceCounter` con
+  respaldo POSIX documentado, sin afectar el requisito de medición con `<time.h>`.
+
+#### Métricas del sprint (MVP_MIDFF.md §10)
+
+| Métrica | Objetivo | Resultado medido | Cumple |
+|---|---|---|---|
+| Latencia de evaluación del motor C | Orden de microsegundos | Mediana **0.600 µs**, p95 **0.800 µs**, p99 1.200 µs (200 000 iteraciones) | Sí |
+| Latencia de la ruta completa (parseo + evaluación) | Mantenerse en el orden de microsegundos | Mediana **7.000 µs**, p95 10.800 µs | Sí |
+| Casos de prueba por banda de riesgo | 100 % con la decisión esperada | 3 de 3 bandas correctas (unitarias + CLI) y 480 combinaciones consistentes | Sí |
+| Cobertura de auditoría | 100 % de evaluaciones registradas | Diseñada en `SP_REGISTRAR_TRANSACCION` (transacción + evaluación + alerta + auditoría en una sola unidad atómica) | Por comprobar en Oracle XE |
+| Automatización mínima | Compilación y pruebas sin pasos manuales | `build.ps1` compila, prueba y valida el contrato JSON; código de salida 0 | Sí |
+| Criterio de aceptación del Sprint 1 (§5.3) | `build.ps1` sin errores, pruebas en verde y DDL ejecutable dos veces | `build.ps1` OK y 167 verificaciones sin fallos; DDL pendiente de ejecución real en XE | Parcial |
+
+#### Siguiente paso
+
+1. Instalar Oracle XE, ejecutar `database/schema.sql` **dos veces seguidas** y registrar la salida
+   (criterio de aceptación del Sprint 1 y cierre del riesgo R-02).
+2. Generar el dataset sintético del Sprint 1 (`datos/datasets/transacciones_bajo|medio|alto.json`)
+   con casos revisados por el asesor para cerrar R-04.
+3. Documentar el contrato JSON congelado (Anexo A + objeto `contexto` de la decisión D-09) en
+   `docs/contratos/api-transacciones-v1.md`.
+4. Iniciar el Sprint 2 (semana 3): endpoint `POST /api/v1/transacciones` con API Key, invocación del
+   ejecutable `src\motor\bin\midff-scoring.exe` y persistencia mediante `SP_REGISTRAR_TRANSACCION`
+   (HU-MVP-01, HU-MVP-04).
+
+
 ## 10. Plantilla para nuevas entradas
 
 Copiar la siguiente estructura al final de la sección 9, incrementar el ID (`BIT-00N`), agregar la
@@ -568,6 +732,7 @@ fila correspondiente en el índice 9.1 y actualizar la tabla de metadatos de la 
 | Versión | Fecha | Autor | Descripción del cambio |
 |---|---|---|---|
 | 1.0 | 23/09/2026 | Residente del proyecto | Apertura de la bitácora: objetivo general, alcance del MVP, estructura del proyecto derivada de `MVP_MIDFF.md`, plan de 4 sprints, Definition of Done, métricas, riesgos y entrada inicial BIT-001. |
+| 1.1 | 23/09/2026 | Residente del proyecto | Se agrega la entrada **BIT-002** (Sprint 1): motor de scoring en C (`src/motor/`) con 18 casos de prueba unitaria y benchmark de latencia en microsegundos, modelo de datos Oracle XE (`database/schema.sql`) con el procedimiento atómico `SP_REGISTRAR_TRANSACCION`, script `build.ps1` y decisiones D-07 a D-15. |
 
 ---
 
