@@ -18,6 +18,9 @@ declare(strict_types=1);
  --   4. midff_db_registrar_transaccion() -> invoca SP_REGISTRAR_TRANSACCION
  --      (database/schema.sql) y confirma la transaccion (COMMIT). Ante cualquier
  --      error hace ROLLBACK y devuelve el mensaje ORA-xxxxx al llamador.
+ --   5. midff_db_bloquear_alerta()       -> invoca SP_BLOQUEAR_ALERTA (Sprint 4,
+ --      database/sp_bloquear_alerta.sql): bloqueo preventivo de la alerta + registro
+ --      BLOQUEO en AUDITORIA en una sola unidad atomica (HU-MVP-06 / RF-08).
  --
  -- VARIABLES DE ENTORNO RECONOCIDAS (produccion; jamas versionar credenciales):
  --   MIDFF_DB_USUARIO   (default: MIDFFuser)
@@ -248,5 +251,107 @@ function midff_db_registrar_transaccion(array $datos): array
             'id_alerta'      => $idAlerta > 0 ? (int) $idAlerta : null];
 }
 
-/* Fin del archivo config/db.php - MIDFF Sprint 2 (24/09/2026) */
+/* -----------------------------------------------------------------------------
+ * 4. BLOQUEO PREVENTIVO DE UNA ALERTA (HU-MVP-06 / RF-08 / Sprint 4)
+ *
+ *    Invoca al procedimiento SP_BLOQUEAR_ALERTA (database/sp_bloquear_alerta.sql,
+ *    decision D-35): pasa ALERTA a estado BLOQUEADA con el responsable y su
+ *    timestamp, inserta el registro BLOQUEO en AUDITORIA y devuelve los valores
+ *    trazables. Como en D-13, el SP no confirma: esta funcion hace COMMIT de
+ *    la unidad atomica o ROLLBACK ante cualquier error ORA-xxxxx.
+ *
+ * @return array{ok: bool, mensaje: string, estado: string,
+ *               fecha_atencion: string, id_auditoria: int|null}
+ * -------------------------------------------------------------------------- */
+function midff_db_bloquear_alerta(int $idAlerta, string $usuario, string $respuesta): array
+{
+    $vacio = ['ok' => false, 'mensaje' => '', 'estado' => '',
+              'fecha_atencion' => '', 'id_auditoria' => null];
+
+    $sql = 'BEGIN SP_BLOQUEAR_ALERTA(:id_alerta, :usuario, :respuesta, '
+         . ':estado, :fecha_atencion, :id_auditoria); END;';
+
+    $driver = midff_db_driver_disponible();
+    if ($driver === '') {
+        return ['ok' => false, 'mensaje' => 'sin driver Oracle (pdo_oci/oci8): revise php.ini'] + $vacio;
+    }
+
+    $estado        = '';
+    $fechaAtencion = '';
+    $idAuditoria   = 0;
+
+    if ($driver === 'pdo_oci') {
+        // ------------------------- Ruta PDO_OCI (preferida) -----------------
+        $cnx = null;
+        try {
+            $cnx  = midff_db_conectar();
+            $sent = $cnx->prepare($sql);
+
+            $sent->bindValue(':id_alerta', $idAlerta, PDO::PARAM_INT);
+            $sent->bindValue(':usuario',   $usuario,   PDO::PARAM_STR);
+            $sent->bindValue(':respuesta', $respuesta === '' ? null : $respuesta, PDO::PARAM_STR);
+            // Parametros de salida (estado, fecha ISO y id del registro de auditoria).
+            $sent->bindParam(':estado',         $estado,        PDO::PARAM_STR | PDO::PARAM_INPUT_OUTPUT, 12);
+            $sent->bindParam(':fecha_atencion', $fechaAtencion, PDO::PARAM_STR | PDO::PARAM_INPUT_OUTPUT, 40);
+            $sent->bindParam(':id_auditoria',   $idAuditoria,   PDO::PARAM_INT | PDO::PARAM_INPUT_OUTPUT, 38);
+
+            $cnx->beginTransaction();
+            $sent->execute();
+            $cnx->commit();   // D-13/D-35: la API cierra bloqueo + auditoria.
+        } catch (PDOException $e) {
+            if ($cnx !== null && $cnx->inTransaction()) {
+                $cnx->rollBack();
+            }
+            return ['ok' => false, 'mensaje' => trim($e->getMessage())] + $vacio;
+        }
+
+        return ['ok' => true, 'mensaje' => '', 'estado' => $estado,
+                'fecha_atencion' => $fechaAtencion,
+                'id_auditoria'   => $idAuditoria > 0 ? (int) $idAuditoria : null];
+    }
+
+    // --------------------------- Ruta OCI8 (respaldo) -----------------------
+    $cnx = oci_connect(MIDFF_DB_USUARIO, MIDFF_DB_CLAVE,
+                       midff_db_cadena_conexion(), MIDFF_DB_CHARSET);
+    if ($cnx === false) {
+        $e = oci_error();
+        return ['ok' => false, 'mensaje' => $e['message'] ?? 'oci_connect fallo'] + $vacio;
+    }
+
+    $sent = oci_parse($cnx, $sql);
+    if ($sent === false) {
+        $e   = oci_error($cnx);
+        $msj = trim($e['message'] ?? 'oci_parse fallo');
+        oci_close($cnx);
+        return ['ok' => false, 'mensaje' => $msj] + $vacio;
+    }
+
+    $idNumero  = $idAlerta;
+    $respuestaBind = $respuesta === '' ? '' : $respuesta;
+    oci_bind_by_name($sent, ':id_alerta',      $idNumero,       38,  SQLT_INT);
+    oci_bind_by_name($sent, ':usuario',        $usuario,        60,  SQLT_CHR);
+    oci_bind_by_name($sent, ':respuesta',      $respuestaBind,  200, SQLT_CHR);
+    oci_bind_by_name($sent, ':estado',         $estado,         12,  SQLT_CHR);
+    oci_bind_by_name($sent, ':fecha_atencion', $fechaAtencion,  40,  SQLT_CHR);
+    oci_bind_by_name($sent, ':id_auditoria',   $idAuditoria,    38,  SQLT_INT);
+
+    if (!oci_execute($sent, OCI_NO_AUTO_COMMIT)) {
+        $e   = oci_error($sent);
+        $msj = trim($e['message'] ?? 'oci_execute fallo');
+        oci_rollback($cnx);   // RNF-05: ni el bloqueo ni la auditoria quedan a medias.
+        oci_free_statement($sent);
+        oci_close($cnx);
+        return ['ok' => false, 'mensaje' => $msj] + $vacio;
+    }
+
+    oci_commit($cnx);         // D-13/D-35: confirma bloqueo + auditoria.
+    oci_free_statement($sent);
+    oci_close($cnx);
+
+    return ['ok' => true, 'mensaje' => '', 'estado' => $estado,
+            'fecha_atencion' => $fechaAtencion,
+            'id_auditoria'   => $idAuditoria > 0 ? (int) $idAuditoria : null];
+}
+
+/* Fin del archivo config/db.php - MIDFF Sprint 2 + Sprint 4 (28/09/2026) */
 

@@ -33,13 +33,41 @@ if ($ruta === '/api/v1/transacciones.php') {
     return true;
 }
 
+if ($ruta === '/api/v1/dispositivos') {
+    require __DIR__ . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'v1'
+          . DIRECTORY_SEPARATOR . 'dispositivos.php';
+    return true;
+}
+
+if ($ruta === '/api/v1/dispositivos.php') {
+    require __DIR__ . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'v1'
+          . DIRECTORY_SEPARATOR . 'dispositivos.php';
+    return true;
+}
+
+if ($ruta === '/api/v1/bloquear') {
+    require __DIR__ . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'v1'
+          . DIRECTORY_SEPARATOR . 'bloquear.php';
+    return true;
+}
+
+if ($ruta === '/api/v1/bloquear.php') {
+    require __DIR__ . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'v1'
+          . DIRECTORY_SEPARATOR . 'bloquear.php';
+    return true;
+}
+
 if ($ruta === '/' || $ruta === '/api/v1') {
     header('Content-Type: application/json; charset=utf-8');
     http_response_code(200);
     echo json_encode([
         'servicio' => 'MIDFF API',
-        'version'  => '1.0',
-        'endpoint' => 'POST /api/v1/transacciones',
+        'version'  => '1.2',
+        'endpoints' => [
+            'POST /api/v1/transacciones' => 'evalua una transaccion (score, clasificacion, decision, alerta y push FCM si score >= 0.4)',
+            'POST /api/v1/dispositivos'  => 'registra/actualiza el token FCM de la app Android (Sprint 3)',
+            'POST /api/v1/bloquear'      => 'bloqueo preventivo de una alerta: ALERTA.estado = BLOQUEADA + registro en AUDITORIA (Sprint 4, HU-MVP-06)',
+        ],
         'documentacion' => 'docs/contratos/contrato_scoring.md',
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
     return true;
@@ -47,4 +75,4 @@ if ($ruta === '/' || $ruta === '/api/v1') {
 
 return false;
 
-/* Fin del archivo router.php - MIDFF Sprint 2 (24/09/2026) */
+/* Fin del archivo router.php - MIDFF Sprint 2 + Sprint 3 + Sprint 4 (28/09/2026) */

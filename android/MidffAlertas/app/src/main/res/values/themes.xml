@@ -1,0 +1,25 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- MIDFF (Sprint 3): tema base + estilos del detalle de alerta -->
+<resources>
+
+    <style name="Theme.MidffAlertas" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
+        <item name="colorPrimary">@color/midff_primario</item>
+        <item name="colorPrimaryVariant">@color/midff_primario_oscuro</item>
+        <item name="colorOnPrimary">@color/blanco</item>
+        <item name="colorSecondary">@color/midff_acento</item>
+        <item name="colorSecondaryVariant">@color/midff_acento</item>
+        <item name="colorOnSecondary">@color/blanco</item>
+        <item name="android:statusBarColor">@color/midff_primario_oscuro</item>
+    </style>
+
+    <!-- Etiqueta pequena del detalle de alerta -->
+    <style name="EtiquetaDetalle">
+        <item name="android:textAppearance">?attr/textAppearanceCaption</item>
+        <item name="android:textColor">@color/texto_fecha</item>
+    </style>
+
+    <!-- Valor grande del detalle de alerta -->
+    <style name="ValorDetalle">
+        <item name="android:textAppearance">?attr/textAppearanceHeadline6</item>
+    </style>
+</resources>

@@ -1,0 +1,50 @@
+// -----------------------------------------------------------------------------
+// MIDFF - Motor Inteligente de Deteccion de Fraude Financiero
+// App Android de alertas (Sprint 3) - modulo :app
+//
+// RF-09: recepcion del push FCM (NotificacionFcmService).
+// RF-10: bandeja de alertas (MainActivity) y detalle (DetalleAlertaActivity).
+// -----------------------------------------------------------------------------
+plugins {
+    id 'com.android.application'
+    id 'com.google.gms.google-services'   // procesa app/google-services.json
+}
+
+android {
+    // D-30 (BITACORA BIT-006): applicationId/namespace definitivos en
+    // "Midff.PluriOne1" (el guion "-" del nombre deseado no es un caracter
+    // valido para un paquete Java, por lo que se elimino de comun acuerdo).
+    // Las clases Java viven en src/main/java/Midff/PluriOne1/ (mismo paquete)
+    // y el paquete tiene 2 segmentos, valido tambien para Google Play.
+    namespace 'Midff.PluriOne1'
+    compileSdk 34
+
+    defaultConfig {
+        applicationId "Midff.PluriOne1"
+        minSdk 24          // Android 7.0: nivel minimo acordado para la demo
+        targetSdk 34
+        versionCode 1
+        versionName "1.0"
+    }
+
+    buildTypes {
+        release {
+            minifyEnabled false
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+        }
+    }
+
+    compileOptions {
+        sourceCompatibility JavaVersion.VERSION_1_8
+        targetCompatibility JavaVersion.VERSION_1_8
+    }
+}
+
+dependencies {
+    implementation 'androidx.appcompat:appcompat:1.6.1'
+    implementation 'com.google.android.material:material:1.11.0'
+    implementation 'androidx.constraintlayout:constraintlayout:2.1.4'
+
+    // Sprint 3: Firebase Cloud Messaging (RF-09 / RF-10 / HU-MVP-05)
+    implementation 'com.google.firebase:firebase-messaging:23.4.1'
+}

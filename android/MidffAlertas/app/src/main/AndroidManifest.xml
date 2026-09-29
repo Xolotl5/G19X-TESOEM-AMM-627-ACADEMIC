@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  ===========================================================================
+  MIDFF - Motor Inteligente de Deteccion de Fraude Financiero
+  App Android de alertas (Sprint 3) - manifiesto
+  (nota: los comentarios XML no pueden contener la secuencia de dos guiones,
+   por eso la decoracion usa signos "="; decision D-32 de BITACORA.md)
+
+  * MainActivity           : bandeja de alertas + registro del token FCM
+  * DetalleAlertaActivity  : detalle con monto, score y clasificacion (RF-10)
+  * NotificacionFcmService : recepcion del push FCM (RF-09 / HU-MVP-05)
+  ===========================================================================
+-->
+<manifest xmlns:android="http://schemas.android.com/apk/res/android">
+
+    <!-- La API del MVP corre en HTTP local (10.0.2.2 desde el emulador);
+         usesCleartextTraffic es SOLO para desarrollo: produccion exige HTTPS. -->
+    <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+
+    <application
+        android:allowBackup="true"
+        android:icon="@drawable/ic_midff"
+        android:label="@string/app_name"
+        android:theme="@style/Theme.MidffAlertas"
+        android:usesCleartextTraffic="true">
+
+        <activity
+            android:name=".MainActivity"
+            android:exported="true">
+            <intent-filter>
+                <action android:name="android.intent.action.MAIN" />
+                <category android:name="android.intent.category.LAUNCHER" />
+            </intent-filter>
+        </activity>
+
+        <activity
+            android:name=".DetalleAlertaActivity"
+            android:exported="false"
+            android:parentActivityName=".MainActivity" />
+
+        <!-- Servicio de FCM: captura el token (onNewToken) y procesa las
+             alertas (onMessageReceived) mostrando la notificacion local. -->
+        <service
+            android:name=".NotificacionFcmService"
+            android:exported="false">
+            <intent-filter>
+                <action android:name="com.google.firebase.MESSAGING_EVENT" />
+            </intent-filter>
+        </service>
+
+        <meta-data
+            android:name="com.google.firebase.messaging.default_notification_channel_id"
+            android:value="midff_alertas" />
+    </application>
+</manifest>

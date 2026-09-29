@@ -4,13 +4,15 @@ declare(strict_types=1);
 /*
  --------------------------------------------------------------------------------
  -- MIDFF - Motor Inteligente de Deteccion de Fraude Financiero
- -- Componente: API REST (Sprint 2)
+ -- Componente: API REST (Sprint 2; push FCM agregado en el Sprint 3)
  -- Endpoint : POST /api/v1/transacciones   (header obligatorio: X-API-Key)
  -- Archivo  : api/v1/transacciones.php
  --
  -- Requisitos: RF-01 (ingesta HTTP/JSON), RF-02 (validacion de entrada y API
  --             Key), RF-03 (invocacion del motor C por stdin/stdout), RF-06
- --             (respuesta sincrona), RF-07 (persistencia ACID), RF-08 (auditoria).
+ --             (respuesta sincrona), RF-07 (persistencia ACID), RF-08
+ --             (auditoria), RF-09 (notificacion push FCM con score >= 0.4,
+ --             Sprint 3: config/firebase.php).
  -- Historias: HU-MVP-01 (ingesta y respuesta <= 1 s), HU-MVP-03 (decision por
  --             umbral), HU-MVP-04 (registro completo y atomico).
  --
@@ -21,7 +23,10 @@ declare(strict_types=1);
  --   4. Invoca src/motor/bin/midff-scoring.exe por stdin/stdout (RF-03)
  --   5. Traduce codigos de salida del motor: 0 -> 200, 2 -> 400, 3 -> 500
  --   6. Persiste con SP_REGISTRAR_TRANSACCION (config/db.php) y hace COMMIT
- --   7. Responde el contrato JSON del MVP (Anexo A):
+ --   7. Si el score >= 0.4 (alerta creada): envia el push FCM a los
+ --      dispositivos activos de DISPOSITIVO_MOVIL via config/firebase.php
+ --      (Sprint 3; best-effort: nunca altera la respuesta del contrato)
+ --   8. Responde el contrato JSON del MVP (Anexo A):
  --        { id_transaccion, score, clasificacion, decision,
  --          fecha_evaluacion, alerta_id }
  --
@@ -39,6 +44,7 @@ declare(strict_types=1);
  */
 
 require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'db.php';
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'firebase.php';
 
 date_default_timezone_set('America/Mexico_City');
 
@@ -330,6 +336,61 @@ $alertaId = $persistencia['id_alerta'] !== null
     ? sprintf('ALR-%s-%06d', date('Y'), (int) $persistencia['id_alerta'])
     : null;
 
+/* -----------------------------------------------------------------------------
+ * 7b. NOTIFICACION PUSH FCM (RF-09 / HU-MVP-05, Sprint 3):
+ *     - score >= 0.4 (alerta creada) -> push de alerta (PREVENTIVA/FRAUDE)
+ *     - score <  0.4 (BAJO/APROBADA) -> push de transaccion sana
+ *     El envio es BEST-EFFORT: cualquier fallo queda en el log del servidor y
+ *     NO altera la respuesta sincrona del contrato (Anexo A) ni la transaccion
+ *     ya confirmada en Oracle.
+ * --------------------------------------------------------------------------
+ */
+$instanteFcm = hrtime(true);
+if ($alertaId !== null) {
+    $resumenFcm = midff_fcm_notificar_alerta([
+        'id_alerta'        => $alertaId,
+        'id_transaccion'   => $idTransaccion,
+        'id_cliente'       => $idCliente,
+        'monto'            => $monto,
+        'moneda'           => $moneda,
+        'score'            => $score,
+        'clasificacion'    => $clasificacion,
+        'decision'         => $decision,
+        'fecha_evaluacion' => $fechaHoraIso,
+    ]);
+    error_log(sprintf(
+        '[MIDFF-FCM] %s alerta=%s dispositivos=%d exitosos=%d fallidos=%d envio_ms=%.1f :: %s',
+        $idTransaccion,
+        $alertaId,
+        (int) $resumenFcm['dispositivos'],
+        (int) $resumenFcm['exitosos'],
+        (int) $resumenFcm['fallidos'],
+        (hrtime(true) - $instanteFcm) / 1e6,
+        $resumenFcm['mensaje']
+    ));
+} else {
+    $resumenFcm = midff_fcm_notificar_sana([
+        'id_transaccion'   => $idTransaccion,
+        'id_cliente'       => $idCliente,
+        'monto'            => $monto,
+        'moneda'           => $moneda,
+        'score'            => $score,
+        'clasificacion'    => $clasificacion,
+        'decision'         => $decision,
+        'fecha_evaluacion' => $fechaHoraIso,
+    ]);
+    error_log(sprintf(
+        '[MIDFF-FCM] %s transaccion_sana=%s dispositivos=%d exitosos=%d fallidos=%d envio_ms=%.1f :: %s',
+        $idTransaccion,
+        $clasificacion,
+        (int) $resumenFcm['dispositivos'],
+        (int) $resumenFcm['exitosos'],
+        (int) $resumenFcm['fallidos'],
+        (hrtime(true) - $instanteFcm) / 1e6,
+        $resumenFcm['mensaje']
+    ));
+}
+
 error_log(sprintf(
     '[MIDFF] %s cliente=%s score=%.4f %s/%s motor_us=%.3f invocacion_ms=%.3f ids=%d/%d alerta=%s',
     $idTransaccion,
@@ -353,4 +414,4 @@ responder(200, [
     'alerta_id'        => $alertaId,
 ]);
 
-/* Fin del archivo api/v1/transacciones.php - MIDFF Sprint 2 (24/09/2026) */
+/* Fin del archivo api/v1/transacciones.php - MIDFF Sprint 2 + push FCM Sprint 3 (24/09/2026) */

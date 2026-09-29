@@ -1,0 +1,32 @@
+{
+  "_comentario": "MIDFF Sprint 3 - plantilla de referencia del push para banda ALTO (> 0.7): alerta FRAUDE / BLOQUEADA. La construye midff_fcm_payload_alerta() (config/firebase.php, protocolo HTTP v1). Sustituir <token_fcm> por el de un dispositivo activo en DISPOSITIVO_MOVIL.",
+  "message": {
+    "token": "<token_fcm>",
+    "notification": {
+      "title": "MIDFF: alerta de FRAUDE (riesgo ALTO)",
+      "body": "Monto 15499.00 MXN | Score 0.9500 | Cliente CLI-003"
+    },
+    "android": {
+      "priority": "high",
+      "collapse_key": "midff_alerta",
+      "notification": {
+        "channel_id": "midff_alertas",
+        "sound": "default",
+        "tag": "midff_alerta"
+      }
+    },
+    "data": {
+      "id_alerta": "ALR-2026-000002",
+      "id_transaccion": "TRX-2026-E5F6A7B8",
+      "id_cliente": "CLI-003",
+      "monto": "15499.00",
+      "moneda": "MXN",
+      "score": "0.9500",
+      "clasificacion": "ALTO",
+      "decision": "BLOQUEADA",
+      "tipo_alerta": "FRAUDE",
+      "fecha_evaluacion": "2026-09-24T12:05:00-06:00",
+      "origen": "MIDFF-API"
+    }
+  }
+}

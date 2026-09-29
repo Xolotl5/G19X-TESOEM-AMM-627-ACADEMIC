@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- MIDFF (Sprint 3): textos de la app de alertas -->
+<resources>
+    <string name="app_name">MIDFF Alertas</string>
+    <string name="titulo_app">MIDFF - Bandeja de alertas</string>
+
+    <!-- Token FCM y registro del dispositivo -->
+    <string name="token_pendiente">Obteniendo token FCM…</string>
+    <string name="token_no_disponible">Token FCM no disponible (revise Google Play services)</string>
+    <string name="token_actual">Token FCM: %1$s</string>
+    <string name="hint_usuario">Usuario del oficial (p. ej. OFICIAL-01)</string>
+    <string name="btn_registrar">Registrar token</string>
+    <string name="btn_actualizar">Actualizar</string>
+    <string name="btn_limpiar">Limpiar</string>
+    <string name="registrando">Registrando dispositivo en la API…</string>
+    <string name="registro_ok">Dispositivo registrado en la API (DISPOSITIVO_MOVIL)</string>
+    <string name="registro_fallo">No fue posible registrar el dispositivo (revise URL/API)</string>
+    <string name="usuario_vacio">Escriba el usuario del oficial</string>
+    <string name="token_ausente">El token FCM aun no esta disponible</string>
+
+    <!-- Bandeja de alertas -->
+    <string name="titulo_bandeja">Alertas recibidas</string>
+    <string name="bandeja_vacia">Sin alertas por ahora.\nUna transacción con score mayor o igual a 0.4 aparecerá aquí.</string>
+
+    <!-- Canal de notificaciones -->
+    <string name="canal_alertas_nombre">Alertas de fraude MIDFF</string>
+    <string name="canal_alertas_descripcion">Notificaciones push de transacciones con riesgo medio o alto</string>
+
+    <!-- Detalle de la alerta -->
+    <string name="etiqueta_monto">Monto</string>
+    <string name="etiqueta_score">Score</string>
+    <string name="etiqueta_clasificacion">Clasificación</string>
+    <string name="etiqueta_decision">Decisión</string>
+    <string name="etiqueta_cliente">Cliente</string>
+    <string name="etiqueta_transaccion">Transacción</string>
+    <string name="etiqueta_alerta">Alerta</string>
+    <string name="etiqueta_fecha">Fecha de evaluación</string>
+    <string name="etiqueta_recibida">Recibida en el dispositivo</string>
+    <string name="etiqueta_estado">Estado</string>
+    <string name="formato_monto">%1$s %2$s</string>
+
+    <!-- Bloqueo preventivo (HU-MVP-06, Sprint 4) -->
+    <string name="btn_bloquear">Bloquear (preventivo)</string>
+    <string name="bloqueando">Bloqueando…</string>
+    <string name="bloqueo_ok">Alerta bloqueada y registrada en auditoría</string>
+    <string name="bloqueo_fallo">No fue posible bloquear (revise URL/API)</string>
+    <string name="bloqueo_ya">Alerta ya bloqueada</string>
+</resources>

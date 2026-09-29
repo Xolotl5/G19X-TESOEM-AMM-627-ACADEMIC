@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- MIDFF (Sprint 3): paleta y colores por banda de riesgo -->
+<resources>
+    <color name="midff_primario">#0D3B66</color>
+    <color name="midff_primario_oscuro">#062A4A</color>
+    <color name="midff_acento">#FA8231</color>
+    <color name="blanco">#FFFFFF</color>
+
+    <!-- Bandas de riesgo (contrato: BAJO < 0.4 | MEDIO 0.4-0.7 | ALTO > 0.7) -->
+    <color name="clasificacion_bajo">#2E7D32</color>
+    <color name="clasificacion_medio">#9A6A00</color>
+    <color name="clasificacion_alto">#C62828</color>
+
+    <color name="texto_fecha">#757575</color>
+</resources>

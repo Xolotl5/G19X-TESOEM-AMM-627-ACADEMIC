@@ -1,0 +1,16 @@
+// -----------------------------------------------------------------------------
+// MIDFF - Motor Inteligente de Deteccion de Fraude Financiero
+// App Android de alertas (Sprint 3) - build raiz
+//
+// El plugin com.google.gms.google-services procesa app/google-services.json
+// (proyecto Firebase) y genera los recursos de FCM que usa
+// NotificacionFcmService (RF-09 / RF-10).
+//
+// D-31 (BITACORA BIT-007): AGP 8.5.2 + Gradle 8.9 porque Android Studio trae
+// JBR 21 y Gradle 8.0 no soporta Java 21 (requiere Gradle >= 8.5; el AGP 8.5
+// pide Gradle >= 8.7). No usar el "9.0-milestone" que sugiere el IDE.
+// -----------------------------------------------------------------------------
+plugins {
+    id 'com.android.application' version '8.5.2' apply false
+    id 'com.google.gms.google-services' version '4.4.2' apply false
+}
