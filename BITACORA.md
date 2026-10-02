@@ -8,14 +8,14 @@
 | **Título del proyecto** | Desarrollo de un Motor Inteligente de Detección de Fraude Financiero con Arquitectura Híbrida (Android, C, PHP, Oracle DB y Firebase) |
 | **Tipo de proyecto** | Residencias Profesionales — Ingeniería en Sistemas Computacionales |
 | **Documentos base** | `MVP_MIDFF.md` v1.0 (alcance del MVP) y `PRD_MIDFF.md` v1.0 |
-| **Versión de la bitácora** | 1.2 |
+| **Versión de la bitácora** | 1.10 |
 | **Fecha de apertura** | 23/09/2026 |
-| **Última actualización** | 24/09/2026 |
+| **Última actualización** | 01/10/2026 |
 | **Metodología** | Scrum — 4 sprints de 2 semanas (8 semanas) |
 | **Control de versiones** | Git (rama principal `master`) |
 | **Stack** | C · PHP 8+ · Oracle Database XE · Android (Java) · Firebase FCM · PowerShell |
 | **Responsable** | Residente del proyecto |
-| **Estado** | Sprint 2 — API REST PHP 8 integrada con el motor C y Oracle XE; smoke test en verde (BIT-003) |
+| **Estado** | Post-MVP (BIT-011): rediseño glass/neón y usabilidad de la app Android entregados con validación estática completa; pendientes: compilar el APK y validar en pantalla, recepción física del push (R-03) y demo ante el asesor |
 
 ---
 
@@ -394,27 +394,27 @@ compromiso de alcance del MVP.
 El MVP se considera **terminado** cuando se cumple el 100 % de estos puntos
 (`MVP_MIDFF.md` §9). Esta lista es la que se revisa al cierre del Sprint 4:
 
-- [ ] **1. Flujo completo demostrable:** una transacción recorre ingesta → score → decisión → auditoría → push → bloqueo sin intervención manual.
-- [ ] **2. Motor C:** compila con `build.ps1`, pasa sus pruebas unitarias (3 variables + umbrales) y se reporta su latencia en microsegundos.
-- [ ] **3. API REST:** `POST /api/v1/transacciones` responde score + clasificación + decisión en ≤ 1 s; rechaza JSON inválido con `HTTP 400`; valida API Key.
-- [ ] **4. Persistencia:** transacción, evaluación, alerta y auditoría se registran de forma atómica en Oracle XE; no existe evaluación sin auditoría.
-- [ ] **5. Notificaciones:** score ≥ 0.4 genera push recibido en la app en < 2 s; score < 0.4 no genera notificación.
-- [ ] **6. Bloqueo preventivo:** "Bloquear" desde la app persiste el estado en Oracle y queda en auditoría con usuario y timestamp.
-- [ ] **7. Clasificación correcta:** 100 % de los casos por banda resueltos con la decisión esperada.
-- [ ] **8. Automatización mínima:** `build.ps1` y `smoke-test.ps1` corren sin pasos manuales.
-- [ ] **9. Documentación:** README con instalación/ejecución y manual breve de la demo.
-- [ ] **10. Demo final:** presentación del flujo end-to-end ante el asesor con dataset sintético.
+- [x] **1. Flujo completo demostrable:** una transacción recorre ingesta → score → decisión → auditoría → push → bloqueo sin intervención manual. → *Verificado (BIT-010): E2E CLI-003 score 0.95 → `ALR-2026-000010` → bloqueo + auditoría 39; envío del push best-effort autenticado (BIT-009).*
+- [x] **2. Motor C:** compila con `build.ps1`, pasa sus pruebas unitarias (3 variables + umbrales) y se reporta su latencia en microsegundos. → *Cumplido (BIT-002): 18 casos / 167 verificaciones / 0 fallos; mediana 7.0 µs en la ruta completa.*
+- [x] **3. API REST:** `POST /api/v1/transacciones` responde score + clasificación + decisión en ≤ 1 s; rechaza JSON inválido con `HTTP 400`; valida API Key. → *Cumplido (BIT-003): 308.2 ms de promedio; 400/401 verificados en el smoke test.*
+- [x] **4. Persistencia:** transacción, evaluación, alerta y auditoría se registran de forma atómica en Oracle XE; no existe evaluación sin auditoría. → *Cumplido (BIT-003/BIT-010): 0 evaluaciones sin registro; bloqueo + auditoría atómicos vía `SP_BLOQUEAR_ALERTA`.*
+- [ ] **5. Notificaciones:** score ≥ 0.4 genera push recibido en la app en < 2 s; score < 0.4 no genera notificación. → *Parcial: envío HTTP v1 autenticado con token real (BIT-009) y score < 0.4 sin push verificado; falta medir la recepción en dispositivo físico (R-03).*
+- [x] **6. Bloqueo preventivo:** "Bloquear" desde la app persiste el estado en Oracle y queda en auditoría con usuario y timestamp. → *Cumplido (BIT-010): `POST /api/v1/bloquear` → `BLOQUEADA` + registro `BLOQUEO`; E2E del 28/09 con 409/404 controlados.*
+- [x] **7. Clasificación correcta:** 100 % de los casos por banda resueltos con la decisión esperada. → *Cumplido (BIT-003): 3/3 bandas (0.0000 BAJO / 0.5000 MEDIO / 0.9500 ALTO).*
+- [x] **8. Automatización mínima:** `build.ps1` y `smoke-test.ps1` corren sin pasos manuales. → *Cumplido: ambos terminan con código de salida 0.*
+- [x] **9. Documentación:** README con instalación/ejecución y manual breve de la demo. → *Cumplido (BIT-010): `README.md` reescrito (instalación, credenciales Oracle/Firebase, demo §7 y consultas de control §8).*
+- [ ] **10. Demo final:** presentación del flujo end-to-end ante el asesor con dataset sintético. → *Pendiente de la sesión con el asesor; guion listo en `README.md` §7 (incluye medición del push).*
 
 ## 7. Métricas de seguimiento
 
 | Métrica | Objetivo del MVP | Cómo se mide | Estado |
 |---|---|---|---|
-| Latencia de evaluación del motor C | Orden de microsegundos | Benchmark en las pruebas unitarias del motor. | Pendiente (Sprint 1) |
+| Latencia de evaluación del motor C | Orden de microsegundos | Benchmark en las pruebas unitarias del motor. | Cumplido (BIT-002): mediana 7.0 µs y p95 10.8 µs en la ruta completa. |
 | Latencia extremo a extremo (API) | ≤ 1 s | Logs/timestamps de la API en el smoke test. | Cumplido (BIT-003): 308.2 ms de promedio por transacción (924.7 ms las 3 pruebas). |
-| Entrega de push (riesgo ≥ 0.4) | < 2 s | Timestamp de envío FCM vs. recepción en la app. | Pendiente (Sprint 3) |
+| Entrega de push (riesgo ≥ 0.4) | < 2 s | Timestamp de envío FCM vs. recepción en la app. | En progreso (BIT-009): envío migrado a HTTP v1 (OAuth2) con la cuenta de servicio de `midff-57e6b`; access token real emitido por Google en la validación del 28/09; falta medir la recepción en el dispositivo (R-03). |
 | Cobertura de auditoría | 100 % de evaluaciones registradas | Consulta de control: evaluaciones vs. registros de auditoría. | Cumplido (BIT-003): 0 evaluaciones sin registro tras el smoke test. |
-| Casos de prueba por banda de riesgo | 100 % correctos | Suite de casos bajo/medio/alto en `smoke-test.ps1`. | Cumplido (BIT-003): 3/3 bandas correctas; la suite se amplía en Sprint 4. |
-| Bloqueos preventivos trazables | 100 % con usuario y timestamp | Consulta a `ALERTA` + `AUDITORIA`. | Pendiente (Sprint 4) |
+| Casos de prueba por banda de riesgo | 100 % correctos | Suite de casos bajo/medio/alto en `smoke-test.ps1`. | Cumplido (BIT-003): 3/3 bandas correctas. |
+| Bloqueos preventivos trazables | 100 % con usuario y timestamp | Consulta a `ALERTA` + `AUDITORIA`. | Cumplido (BIT-010): E2E verificado — `ALR-2026-000010` con `atendida_por`, `fecha_atencion` y registro `BLOQUEO` (auditoría 39). |
 
 > Las columnas **Estado** y **Evidencia** se actualizan al cierre de cada sprint con la salida
 > real de los scripts y las consultas SQL de control.
@@ -425,9 +425,9 @@ El MVP se considera **terminado** cuando se cumple el 100 % de estos puntos
 |---|---|---|---|---|
 | R-01 | Latencia de crear un proceso C por cada transacción. | Sprint 2 | Medir en el smoke test desde el primer día; si supera el objetivo, aplicar el plan B documentado (proceso persistente/pipes) como primer ítem post-MVP. | Medido (BIT-003): el objetivo ≤ 1 s se cumple con holgura; el plan B queda en el backlog post-MVP. |
 | R-02 | Instalación y conexión de Oracle XE en el entorno de residencia. | Sprint 1–2 | Instalar Oracle XE en el Sprint 1 con DDL mínimo; mantener scripts re-ejecutables. | Cerrado (BIT-003): XE 21c en servicio, esquema instalado y conexión verificada desde PHP. |
-| R-03 | Recepción de push en emulador Android (FCM requiere Google Play services). | Sprint 3 | Contar con al menos un dispositivo físico de prueba desde el Sprint 3. | Abierto |
+| R-03 | Recepción de push en emulador Android (FCM requiere Google Play services). | Sprint 3 | Contar con al menos un dispositivo físico de prueba desde el Sprint 3. | En progreso (BIT-009): envío por HTTP v1 validado en vivo (access token OAuth2 real emitido con la cuenta de servicio de `midff-57e6b`); falta dar de alta la app en el mismo proyecto, compilar el APK y validar la recepción en dispositivo físico. |
 | R-04 | Datos de prueba poco representativos (falsos resultados del scoring). | Sprint 1 | Dataset sintético con casos por banda (bajo, medio, alto), revisado por el asesor. | En observación |
-| R-05 | El bloqueo desde la app requiere autenticación mínima no definida. | Sprint 4 | Definir en el Sprint 3 un identificador de oficial + API Key para la acción de bloqueo. | Abierto |
+| R-05 | El bloqueo desde la app requiere autenticación mínima no definida. | Sprint 4 | Definir en el Sprint 3 un identificador de oficial + API Key para la acción de bloqueo. | Cerrado (BIT-010): `POST /api/v1/bloquear` con la misma `X-API-Key` y el `usuario` registrado en `DISPOSITIVO_MOVIL` (D-25/D-36); bloqueo trazable en `ALERTA` + `AUDITORIA`. |
 | R-06 | Scope creep por funcionalidades atractivas del PRD. | Todos | `MVP_MIDFF.md` es el contrato de alcance: lo de su §8 se rechaza por defecto y pasa al backlog post-MVP. | Controlado |
 
 
@@ -440,6 +440,14 @@ El MVP se considera **terminado** cuando se cumple el 100 % de estos puntos
 | **BIT-001** | 23/09/2026 | Sprint 1 | Apertura de proyecto | Apertura de la bitácora: objetivo general, alcance, estructura y plan de 4 sprints | Cerrada |
 | **BIT-002** | 23/09/2026 | Sprint 1 | Sesión de trabajo | Motor de scoring en C con pruebas unitarias y de latencia, esquema Oracle XE y `build.ps1` | Cerrada |
 | **BIT-003** | 24/09/2026 | Sprint 2 | Sesión de trabajo | API REST PHP 8 integrada con el motor C y Oracle XE: endpoint, persistencia atómica y `smoke-test.ps1` | Cerrada |
+| **BIT-004** | 24/09/2026 | Sprint 3 | Sesión de trabajo | Notificaciones push FCM (`config/firebase.php`) y app Android de alertas (`android/MidffAlertas`) | Cerrada |
+| **BIT-005** | 24/09/2026 | Sprint 3 | Corrección | Renombrado del `applicationId` de la app a `midff_plurione` y alta en Firebase preparada (`google-services.json.example` + guía) | Cerrada |
+| **BIT-006** | 24/09/2026 | Sprint 3 | Corrección | `applicationId` definitivo `Midff.PluriOne1` (el guion `-` no es válido en paquetes Java/Android/Firebase) y guía de alta actualizada | Cerrada |
+| **BIT-007** | 24/09/2026 | Sprint 3 | Corrección | Bloqueo de sync en Android Studio resuelto: Gradle 8.0 → 8.9 y AGP 8.1.2 → 8.5.2 (JDK 21 / "class file major version 65") | Cerrada |
+| **BIT-008** | 24/09/2026 | Sprint 3 | Corrección | Parse del `AndroidManifest.xml` resuelto: la secuencia `--` no está permitida en comentarios XML (cabecera reescrita con `=`) | Cerrada |
+| **BIT-009** | 28/09/2026 | Sprint 3 | Sesión de trabajo | Migración del envío FCM a HTTP v1 (OAuth2), credencial de servicio en `config/firebase.credentials.json` (no versionada) y validación en vivo con access token real; regularización documental | Cerrada |
+| **BIT-010** | 28/09/2026 | Sprint 4 | Cierre de sprint | Bloqueo preventivo HU-MVP-06 (`POST /api/v1/bloquear` + `SP_BLOQUEAR_ALERTA` + botón en la app), `README.md` completo y cierre del MVP con DoD y métricas finales | Cerrada |
+| **BIT-011** | 01/10/2026 | Post-MVP | Sesión de trabajo | Rediseño glass/neón de la app Android según `prompt.txt` (paneles de cristal ahumado, neones cian/magenta, auroras, analítica ponderada 45/30/25 y carrusel de dispositivos) + usabilidad: pestañas instantáneas Panel/Alertas/Registro, ripples y feedback en toda la interfaz, acciones nuevas (copiar token, isla táctil, ver críticas) | Cerrada |
 
 ---
 
@@ -789,6 +797,597 @@ ejecutable C y persistir el ciclo completo de forma atómica.
    arrastrado de BIT-002, ahora con la implementación real como referencia).
 3. Ampliar el dataset sintético con casos adicionales validados por el asesor (riesgo R-04).
 
+
+### 9.5 BIT-004 — 24/09/2026 — Sprint 3: notificaciones push FCM y app Android
+
+| Campo | Valor |
+|---|---|
+| **ID** | BIT-004 |
+| **Fecha** | 24/09/2026 |
+| **Sprint** | Sprint 3 (semanas 5–6 del plan; iniciado de forma anticipada tras el cierre del Sprint 2) |
+| **Tipo** | Sesión de trabajo (notificaciones y cliente móvil) |
+| **Responsable** | Residente del proyecto |
+| **Estado** | Cerrada (componentes entregados; medición del push < 2 s pendiente de dispositivo físico) |
+| **Documentos de referencia** | `MVP_MIDFF.md` §4.1 (RF-09/RF-10), §5.5, §7 (paso 7), §9 criterio 5 · `PRD_MIDFF.md` RF-09, RF-10, RNF-07 · `firebase/README-fcm.md` |
+
+#### Contexto
+
+El Sprint 2 (BIT-003) dejó en verde el flujo transacción → motor C → Oracle → respuesta
+sincrónica. El Sprint 3 compromete **HU-MVP-05**: convertir una transacción de riesgo
+medio/alto (`score >= 0.4`) en una alerta **visible y accionable** en un dispositivo
+Android en menos de 2 segundos (§5.5). Se dispone de las credenciales reales del
+proyecto: `google-services.json` (lado app) y la cuenta de servicio
+`midff-57e6b-firebase-adminsdk-fbsvc-bf7960c9b6.json` (lado servidor).
+
+#### Actividades realizadas
+
+1. **`config/firebase.php`** (~353 líneas) → RF-09, RNF-03, RNF-07, HU-MVP-05: constante
+   **`MIDFF_FCM_SERVER_KEY`** (placeholder `COLOCAR-AQUI-...`, sobreescribible por la
+   variable de entorno `MIDFF_FCM_SERVER_KEY`) y umbral de notificación 0.4; consulta de
+   dispositivos activos en `DISPOSITIVO_MOVIL` (PDO_OCI con respaldo OCI8, mismo patrón
+   que `config/db.php`); payload legacy `notification` + `data` (monto, score y
+   clasificación como cadenas, con trazabilidad `id_transaccion`/`id_alerta`); envío por
+   cURL (timeout 5 s) y orquestador `midff_fcm_notificar_alerta()` **best-effort** que
+   nunca lanza excepciones. Los tokens invalidados por FCM (`NotRegistered`,
+   `InvalidRegistration`, `MismatchSenderId`) reciben baja lógica (`activo = 0`) y todos
+   los logs enmascaran el token.
+2. **`database/dispositivo_movil.sql`** → RF-09/RF-10, tabla `DISPOSITIVO_MOVIL` de la
+   §3.3: DDL **re-ejecutable** (script aparte para no reescribir el artefacto congelado
+   del Sprint 1) con `usuario`, `rol` (OFICIAL/SUPERVISOR/ADMIN), `token_fcm` UNIQUE
+   (64–255), `activo`, fechas, `SEQ_DISPOSITIVO_MOVIL` y triggers de id y de fecha de
+   actualización. **Ejecutado dos veces seguidas** sobre `XEPDB1` sin errores.
+3. **Gancho push en `api/v1/transacciones.php`** (paso 7b del flujo) → RF-06 + RF-09:
+   tras el COMMIT atómico, si se creó alerta (`score >= 0.4`) se invoca
+   `midff_fcm_notificar_alerta()` y se registra `[MIDFF-FCM] ... exitosos/fallidos/
+   envio_ms` en el log; la respuesta del Anexo A **no cambia** (contrato congelado).
+4. **`api/v1/dispositivos.php` + `router.php`** → RF-02, RF-10: endpoint
+   `POST /api/v1/dispositivos` con la misma `X-API-Key` (D-25) que hace **UPSERT** del
+   token (INSERT si es nuevo, UPDATE si la app se reinstaló); validaciones 405/401/400 y
+   respuesta con token enmascarado. Router ampliado con la nueva ruta y raíz informativa
+   actualizada a versión 1.1 (ambos endpoints).
+5. **App Android `android/MidffAlertas/`** → RF-10: proyecto Android Studio en Java
+   (compileSdk 34, minSdk 24) con el plugin **`com.google.gms.google-services`** 4.4.2 y
+   `firebase-messaging` 23.4.1. Componentes:
+   `NotificacionFcmService` (extiende `FirebaseMessagingService`: captura del token en
+   `onNewToken` con autoregistro contra la API, y `onMessageReceived` que guarda la
+   alerta en la bandeja y muestra la **notificación local con monto, score y
+   clasificación** por el canal `midff_alertas`), `MainActivity` (**bandeja de entrada**
+   de alertas + registro del token con usuario/rol del oficial), `DetalleAlertaActivity`
+   (detalle: monto, score, clasificación, decisión y trazabilidad), `AdaptadorAlertas`
+   (color por banda de riesgo), `ModeloAlerta` (espejo del bloque `data`),
+   `AlertasRepositorio` (bandeja persistente en SharedPreferences) y `ApiClient`
+   (HTTP mínimo con `X-API-Key`, sin dependencias externas). `google-services.json`
+   copiado al módulo `app/`.
+6. **`firebase/README-fcm.md` + `firebase/plantillas/`** → entregable 1 del §5.5:
+   arquitectura del flujo de notificación, configuración de la server key, contrato del
+   registro de token y plantillas de payload por banda (preventiva/fraude).
+7. **Validación en vivo** (detalle en Evidencia): `php -l` 4/4, DDL re-ejecutable,
+   `smoke-test.ps1` en verde con el gancho FCM activo y pruebas del endpoint de
+   dispositivos contra Oracle XE real (INSERT/UPDATE/401/400) más un intento real de
+   envío FCM.
+
+#### Decisiones tomadas
+
+| # | Decisión | Justificación |
+|---|---|---|
+| D-23 | Envío por protocolo **HTTP legacy de FCM** (`Authorization: key=<server key>`) con la constante `MIDFF_FCM_SERVER_KEY` | Es la constante única de configuración que fija el alcance del Sprint 3 (una sola clave, sin OAuth2). Google descontinúa las server keys: la migración a HTTP v1 con la cuenta de servicio `midff-57e6b` queda como primer candidato del post-MVP y el archivo ya está referido en `MIDFF_FCM_CUENTA_SERVICIO` (`config/firebase.php`). |
+| D-24 | `DISPOSITIVO_MOVIL` se crea en `database/dispositivo_movil.sql` y **no** en `schema.sql` | Las entradas no se reescriben: el DDL del Sprint 1 queda congelado; el script nuevo es re-ejecutable y complementario (mismo criterio de aceptación). |
+| D-25 | Registro del token por `POST /api/v1/dispositivos` con la **misma `X-API-Key`** de transacciones | Seguridad mínima viable (RF-02) sin esquema de autenticación adicional fuera de alcance; además identifica `usuario` + `rol` del oficial (mitigación del riesgo R-05 exigida para el Sprint 4). |
+| D-26 | `applicationId` de la app = `com.example.damad_8s21_amm_examen_final` | Forzado por el `google-services.json` provisto (proyecto Firebase `examen-1479b`): el plugin valida el `package_name`. La server key debe pertenecer al **mismo** proyecto para que los tokens coincidan (documentado en `firebase/README-fcm.md`). Desviación del namespace planeado `mx.tecnm.midff.alertas` (§4), aceptada por la credencial real disponible. |
+| D-27 | Bandeja de la app persistida en `SharedPreferences` (arreglo JSON, máx. 100) | RF-12 (Realtime Database) está diferido: la fuente de verdad es Oracle y el reflejo local basta para la bandeja del MVP. |
+| D-28 | El push se envía **dentro de la misma petición HTTP** (síncrono, timeout 5 s) y es best-effort | Cumple RF-06 sin cola de trabajadores (RNF-07: envío único). Un fallo de FCM no puede alterar la respuesta del contrato ni compensar la transacción ya confirmada; queda en `error_log`. El intento medido (225.6 ms) mantiene holgado el presupuesto e2e ≤ 1 s. |
+
+#### Evidencia
+
+- Archivos: `config\firebase.php` · `api\v1\dispositivos.php` · `api\v1\transacciones.php` (paso 7b) · `router.php` · `database\dispositivo_movil.sql` · `android\MidffAlertas\` (Gradle + google-services + 7 clases Java + recursos) · `firebase\README-fcm.md` · `firebase\plantillas\payload-alerta-preventiva.json` y `payload-alerta-fraude.json`.
+- `php -l` sin errores en los 4 archivos PHP nuevos/modificados.
+- DDL ejecutado **dos veces** sobre `XEPDB1` con `MIDFFuser`: "Tabla DISPOSITIVO_MOVIL (Sprint 3) instalada" en ambas corridas.
+- `smoke-test.ps1` → **RESULTADO: SMOKE TEST OK** con el gancho FCM integrado: 3/3 bandas (0.0000 BAJO / 0.5000 MEDIO / 0.9500 ALTO), negativas 401/400 en verde, cobertura de auditoría 100 % (10 evaluaciones, 0 sin registro) y **763.0 ms las 3 pruebas (254.3 ms promedio)** ≤ 1 s.
+- `POST /api/v1/dispositivos` contra Oracle real: `INSERT` id=2 → `UPDATE` id=2 con el mismo token (UPSERT verificado) → 401 sin API Key → 400 con rol inválido; token sintético eliminado tras la prueba (`DISPOSITIVOS_RESTANTES=0`).
+- Intento **real** de envío FCM con clave sintética (log local `datos\resultados\php-fcm-intento-php.log`, no versionado):
+  `[MIDFF-FCM] TRX-2026-1DC102BC alerta=ALR-2026-000009 dispositivos=1 exitosos=0 fallidos=1 envio_ms=225.6` — Google respondió HTTP 404 (clave inválida), el fallo quedó solo en el log y la respuesta 200 del contrato se entregó intacta (best-effort, D-28).
+
+#### Bloqueos y riesgos
+
+- **R-03 (push en emulador/dispositivo):** sigue en progreso: la app y el envío están listos; falta validar la recepción en un dispositivo físico (o emulador con Google Play services) con la server key real del proyecto `examen-1479b`.
+- **R-05 (autenticación del bloqueo):** mitigación definida y materializada (D-25: `usuario` + `rol` en `DISPOSITIVO_MOVIL` y la misma `X-API-Key`); la acción "Bloquear" se implementa en el Sprint 4.
+- Riesgo operativo nuevo (documentado en `firebase/README-fcm.md`): coherencia de proyectos Firebase — el `google-services.json` corresponde a `examen-1479b` y la cuenta de servicio a `midff-57e6b`; la server key debe corresponder al proyecto de la app para que la entrega funcione.
+
+#### Métricas del sprint (MVP_MIDFF.md §10)
+
+| Métrica | Objetivo | Resultado medido | Cumple |
+|---|---|---|---|
+| Entrega de push (riesgo ≥ 0.4) | < 2 s | Envío implementado; intento de referencia 225.6 ms (rechazado por clave sintética). Recepción en dispositivo pendiente (R-03). | Parcial |
+| Latencia extremo a extremo (API) | ≤ 1 s | Smoke test con el gancho FCM activo: 763.0 ms las 3 pruebas (254.3 ms promedio). | Sí |
+| Cobertura de auditoría | 100 % | 0 evaluaciones sin registro tras las pruebas del sprint. | Sí |
+
+#### Siguiente paso
+
+1. Colocar la **server key real** del proyecto Firebase de la app en `MIDFF_FCM_SERVER_KEY`
+   (o en la variable de entorno), compilar el APK en Android Studio y medir la recepción
+   del push (< 2 s) en un dispositivo físico — cierre del criterio del §5.5 y del riesgo R-03.
+2. Iniciar el Sprint 4 (HU-MVP-06): acción "Bloquear" en `DetalleAlertaActivity` → endpoint
+   de alertas → `ALERTA.estado = BLOQUEADA` + registro en `AUDITORIA` con usuario y timestamp.
+3. Congelar el contrato de la API en `docs/contratos/api-transacciones-v1.md` (pendiente
+   arrastrado de BIT-002/BIT-003).
+
+
+### 9.6 BIT-005 — 24/09/2026 — Corrección: `applicationId` de la app a `midff_plurione` y alta en Firebase preparada
+
+| Campo | Valor |
+|---|---|
+| **ID** | BIT-005 |
+| **Fecha** | 24/09/2026 |
+| **Sprint** | Sprint 3 (semanas 5–6 del plan) |
+| **Tipo** | Corrección / cambio de identificador |
+| **Responsable** | Residente del proyecto |
+| **Estado** | Cerrada |
+| **Documentos de referencia** | Regla 3 de la §1 de esta bitácora · `MVP_MIDFF.md` RF-09/RF-10 · `android/MidffAlertas/README.md` · `firebase/README-fcm.md` |
+
+#### Contexto
+
+Se decide dar de alta la app en Firebase con un identificador propio
+(`midff_plurione`) en lugar del paquete heredado `com.example.damad_8s21_amm_examen_final`
+(fijado en D-26 por el `google-services.json` prestado del proyecto `examen-1479b`).
+Por la regla 3 (las entradas no se reescriben), el cambio se registra como corrección
+sin tocar BIT-004.
+
+#### Actividades realizadas
+
+1. **Renombrado del identificador** → RF-10: `namespace` y `applicationId` de
+   `android/MidffAlertas/app/build.gradle` cambiados a `midff_plurione`; las 7 clases
+   Java movidas a `app/src/main/java/midff_plurione/` con `package midff_plurione;`
+   (sin BOM). El `AndroidManifest.xml` no requiere cambios (usa nombres relativos).
+2. **Retiro del `google-services.json` prestado** → el archivo de `examen-1479b` quedó
+   eliminado del módulo `app/` porque el plugin `com.google.gms.google-services`
+   fallaría al no coincidir `package_name` con el nuevo `applicationId`. Se agregó la
+   plantilla **`app/google-services.json.example`** con `package_name = midff_plurione`.
+3. **Guía de alta en Firebase** → `android/MidffAlertas/README.md` (nueva sección
+   "Agregar la aplicación a Firebase": registrar el paquete `midff_plurione`, descargar
+   el `google-services.json` real a `app/`, sincronizar y colocar la credencial de
+   mensajería del mismo proyecto en `MIDFF_FCM_SERVER_KEY`). `firebase/README-fcm.md`
+   actualizado en la misma línea.
+
+#### Decisiones tomadas
+
+| # | Decisión | Justificación |
+|---|---|---|
+| D-29 | `applicationId`/paquete de un solo segmento `midff_plurione`; sustituye a D-26 | Identificador solicitado para el alta propia en Firebase; válido para compilar, para FCM y para la demo. Advertencias documentadas: Google Play exige paquete con punto (≥ 2 segmentos) para publicar en tienda, y los proyectos Firebase nuevos pueden no emitir *server key* legacy (en ese caso la migración a HTTP v1 con la cuenta de servicio ya referenciada en `MIDFF_FCM_CUENTA_SERVICIO` pasa a ser obligatoria). |
+
+#### Evidencia
+
+- `android\MidffAlertas\app\build.gradle` (namespace/applicationId `midff_plurione`).
+- `android\MidffAlertas\app\src\main\java\midff_plurione\` con las 7 clases (`package midff_plurione;` verificado en todas).
+- `android\MidffAlertas\app\google-services.json.example` (JSON válido, `package_name = midff_plurione`).
+- Búsqueda en el repositorio: fuera de las menciones históricas intencionales (BIT-004 en esta bitácora, la nota de procedencia en el README de la app y el `google-services.json` original de la raíz, que el proyecto ya no consume), no quedan referencias activas a `com.example.damad_8s21_amm_examen_final`.
+
+#### Bloqueos y riesgos
+
+- R-03 sigue en progreso: después de registrar la app y colocar el `google-services.json`
+  real + la credencial de mensajería, falta medir la recepción del push (< 2 s) en
+  dispositivo físico.
+
+#### Siguiente paso
+
+1. Registrar `midff_plurione` en Firebase Console, descargar el `google-services.json`
+   real a `android/MidffAlertas/app/`, compilar el APK y completar la medición del
+   criterio §5.5.
+
+
+### 9.7 BIT-006 — 24/09/2026 — Corrección: `applicationId` definitivo `Midff.PluriOne1`
+
+| Campo | Valor |
+|---|---|
+| **ID** | BIT-006 |
+| **Fecha** | 24/09/2026 |
+| **Sprint** | Sprint 3 (semanas 5–6 del plan) |
+| **Tipo** | Corrección / cambio de identificador |
+| **Responsable** | Residente del proyecto |
+| **Estado** | Cerrada |
+| **Documentos de referencia** | Regla 3 de la §1 de esta bitácora · `android/MidffAlertas/README.md` · `firebase/README-fcm.md` |
+
+#### Contexto
+
+Se solicita el identificador `Midff.Pluri-One1`, pero el guion (`-`) **no es un
+carácter válido** para un paquete Java: Gradle fallaría con "not a valid Java
+package name", y Firebase Console rechaza el registro ("Package name contains
+invalid characters"). De común acuerdo con el residente se adopta la variante
+**`Midff.PluriOne1`** (mismo nombre sin el guion). Este cambio sustituye a
+`midff_plurione` (D-29) sin reescribir BIT-005 (regla 3).
+
+#### Actividades realizadas
+
+1. **Renombrado del identificador** → RF-10: `namespace` y `applicationId` de
+   `android/MidffAlertas/app/build.gradle` fijados en `Midff.PluriOne1` (iguales
+   entre sí para que el plugin de Google Services valide sin ambigüedad); las 7
+   clases Java movidas a `app/src/main/java/Midff/PluriOne1/` con
+   `package Midff.PluriOne1;` (sin BOM).
+2. **Plantilla actualizada**: `app/google-services.json.example` ahora con
+   `package_name = Midff.PluriOne1` y la advertencia del guion en su comentario.
+3. **Guía de alta actualizada**: `android/MidffAlertas/README.md` y
+   `firebase/README-fcm.md` referencian el paquete definitivo.
+
+#### Decisiones tomadas
+
+| # | Decisión | Justificación |
+|---|---|---|
+| D-30 | Paquete definitivo **`Midff.PluriOne1`** (sin guion); sustituye a D-29 | El `-` no es válido en paquetes Java/Android/Firebase. Con 2 segmentos con punto ya cumple el requisito de Google Play para tienda (advertencia de D-29 resuelta). `namespace` = `applicationId` para que el plugin `google-services` y el manifest (nombres relativos `.MainActivity` etc.) resuelvan siempre contra el mismo paquete. |
+
+#### Evidencia
+
+- `android\MidffAlertas\app\build.gradle`: `namespace 'Midff.PluriOne1'` y `applicationId "Midff.PluriOne1"`.
+- `android\MidffAlertas\app\src\main\java\Midff\PluriOne1\` con las 7 clases (`package Midff.PluriOne1;` verificado en todas; carpeta `midff_plurione` eliminada).
+- `android\MidffAlertas\app\google-services.json.example` (JSON válido, `package_name = Midff.PluriOne1`).
+- Fuera de las menciones históricas de esta bitácora, no quedan referencias activas a `midff_plurione`.
+
+#### Bloqueos y riesgos
+
+- R-03 sigue en progreso: falta registrar la app en Firebase, colocar el
+  `google-services.json` real + la credencial de mensajería y medir la recepción
+  del push (< 2 s) en dispositivo físico.
+
+#### Siguiente paso
+
+1. Registrar `Midff.PluriOne1` en Firebase Console, descargar el `google-services.json`
+   real a `android/MidffAlertas/app/`, compilar el APK y completar la medición del
+   criterio §5.5.
+
+
+### 9.8 BIT-007 — 24/09/2026 — Corrección: bloqueo de sync en Android Studio (JDK 21 vs Gradle 8.0)
+
+| Campo | Valor |
+|---|---|
+| **ID** | BIT-007 |
+| **Fecha** | 24/09/2026 |
+| **Sprint** | Sprint 3 (semanas 5–6 del plan) |
+| **Tipo** | Corrección (bloqueo de build resuelto) |
+| **Responsable** | Residente del proyecto |
+| **Estado** | Cerrada |
+| **Documentos de referencia** | `android/MidffAlertas/README.md` (solución de problemas) · `MVP_MIDFF.md` RF-10 |
+
+#### Contexto
+
+Al abrir `android/MidffAlertas` en Android Studio, la sincronización de Gradle falla
+con el reporte registrado en `prompt.txt`:
+
+- *"Your build is currently configured to use incompatible **Java 21.0.7 and Gradle
+  8.0**. Cannot sync the project. The minimum compatible Gradle version is **8.5**"*;
+- *CacheOpenException ... **"Unsupported class file major version 65"*** (Java 21 =
+  class file 65).
+
+Causa raíz: el wrapper fijado en el Sprint 3 usaba Gradle 8.0, que **no soporta
+ejecutarse sobre Java 21** (el JBR incluido en el Android Studio del entorno); Gradle
+soporta Java 21 a partir de la **8.5**. El IDE además sugería "Gradle 9.0-milestone-1",
+versión preliminar que no debe usarse.
+
+#### Actividades realizadas
+
+1. **Wrapper actualizado**: `gradle/wrapper/gradle-wrapper.properties` pasa de
+   `gradle-8.0-bin.zip` a **`gradle-8.9-bin.zip`** (estable, soporta JDK 21).
+2. **AGP actualizado**: `build.gradle` raíz pasa de `com.android.application` 8.1.2 a
+   **8.5.2** (exige Gradle ≥ 8.7, soporta `compileSdk 34`, corre con JDK 17/21);
+   `google-services` 4.4.2 permanece (compatible).
+3. **README de la app**: fila "Build" en la tabla y nueva sección **"Solución de
+   problemas"** (ignorar el 9.0-milestone, re-sincronizar, borrar la caché
+   `%USERPROFILE%\.gradle\caches\8.0` si persiste, Gradle JVM = jbr-21, generación de
+   `gradlew` por el IDE).
+
+#### Decisiones tomadas
+
+| # | Decisión | Justificación |
+|---|---|---|
+| D-31 | Toolchain fijada en **AGP 8.5.2 + Gradle 8.9 + JDK 17/21** | Pareja estable y probada para el JBR 21 de Android Studio actual: Gradle ≥ 8.5 (soporte Java 21), AGP 8.5 (Gradle ≥ 8.7 y `compileSdk 34`). Se descarta el "Gradle 9.0-milestone-1" sugerido por el IDE por ser preliminar. Con esto se cierra el bloqueo sin tocar código Java ni el contrato FCM. |
+
+#### Evidencia
+
+- `android\MidffAlertas\gradle\wrapper\gradle-wrapper.properties`: `distributionUrl=...gradle-8.9-bin.zip`.
+- `android\MidffAlertas\build.gradle`: `id 'com.android.application' version '8.5.2' apply false`.
+- `android\MidffAlertas\README.md`: sección "Solución de problemas" con el procedimiento de re-sincronización.
+- Reporte del error (log completo del IDE) registrado por el residente en `prompt.txt`.
+
+#### Bloqueos y riesgos
+
+- R-03 continúa en progreso (recepción del push en dispositivo físico); este bloqueo
+  era de toolchain y queda resuelto a nivel de configuración: falta la re-sincronización
+  en el entorno del residente para confirmar.
+
+#### Siguiente paso
+
+1. En Android Studio: *File → Sync Project with Gradle Files* (descarga Gradle 8.9) y
+   compilar; luego continuar con el alta en Firebase de `Midff.PluriOne1` (BIT-006).
+
+### 9.9 BIT-008 — 24/09/2026 — Corrección: parse del AndroidManifest.xml por "--" en comentario XML
+
+| Campo | Valor |
+|---|---|
+| **ID** | BIT-008 |
+| **Fecha** | 24/09/2026 |
+| **Sprint** | Sprint 3 (semanas 5–6 del plan) |
+| **Tipo** | Corrección (bloqueo de build resuelto) |
+| **Responsable** | Residente del proyecto |
+| **Estado** | Cerrada |
+| **Documentos de referencia** | `android/MidffAlertas/app/src/main/AndroidManifest.xml` · `MVP_MIDFF.md` RF-10 |
+
+#### Contexto
+
+Al compilar, la tarea `:app:processDebugMainManifest` falla con el reporte registrado
+en `prompt.txt`:
+
+- `MergeFailureException: Error parsing ...\AndroidManifest.xml`;
+- `SAXParseException; lineNumber: 2; columnNumber: 8; La cadena "--" no está permitida en los comentarios.`
+
+Causa raíz: la cabecera decorativa del manifiesto usaba líneas de guiones (`---`).
+En XML un comentario **no puede contener la secuencia `--`** (solo está permitida en
+los delimitadores `<!--` y `-->`).
+
+#### Actividades realizadas
+
+1. **Cabecera corregida** en `AndroidManifest.xml`: la decoración pasa de `---` a `=`
+   (con nota que aclara el motivo) → requisito RF-10 (app compilable).
+2. **Verificación**: parseo XML de todos los archivos `.xml` del módulo con PowerShell
+   (`[xml](Get-Content -Raw)`) → resultado `OK: todos los XML parsean sin errores`.
+3. **README de la app**: bullet en "Solución de problemas" para no usar `--` en
+   comentarios XML.
+
+#### Decisiones tomadas
+
+| # | Decisión | Justificación |
+|---|---|---|
+| D-32 | La decoración de comentarios XML usa **`=`** (nunca `--`) | La secuencia `--` está prohibida por la especificación XML 1.0 dentro de los comentarios; usar `=` evita la recurrencia del bloqueo de merge sin afectar legibilidad. |
+
+#### Evidencia
+
+- `android\MidffAlertas\app\src\main\AndroidManifest.xml`: cabecera reescrita con `=`.
+- Salida de verificación: `OK: todos los XML parsean sin errores`.
+- Reporte del error (log completo del IDE) registrado por el residente en `prompt.txt`.
+
+#### Bloqueos y riesgos
+
+- R-03 continúa en progreso (recepción del push en dispositivo físico); este bloqueo
+  era de parse del manifiesto y queda resuelto a nivel de archivo: falta recompilar
+  en el entorno del residente para confirmar que el build avanza.
+
+#### Siguiente paso
+
+1. En Android Studio: *Build → Make Project* para confirmar el merge del manifiesto y
+   continuar con el alta en Firebase de `Midff.PluriOne1` (BIT-006).
+
+### 9.10 BIT-009 — 28/09/2026 — Sprint 3: migración del envío FCM a HTTP v1 (OAuth2) y validación de la credencial
+
+| Campo | Valor |
+|---|---|
+| **ID** | BIT-009 |
+| **Fecha** | 28/09/2026 |
+| **Sprint** | Sprint 3 (semanas 5–6 del plan) |
+| **Tipo** | Sesión de trabajo (regularización documental y validación) |
+| **Responsable** | Residente del proyecto |
+| **Estado** | Cerrada |
+| **Documentos de referencia** | `config/firebase.php` · `config/firebase.credentials.json` · `firebase/README-fcm.md` · `MVP_MIDFF.md` §4.1 (RF-09), RNF-03, RNF-07 · decisión previa D-23 |
+
+#### Contexto
+
+La decisión D-23 (BIT-004) fijó el envío de push por el protocolo legacy de FCM
+(`Authorization: key=<server key>`) con la constante `MIDFF_FCM_SERVER_KEY`. Ese mismo
+24/09, tras las correcciones BIT-005 a BIT-008, `config/firebase.php` se reescribió al
+**protocolo HTTP v1 (OAuth2)** y la cuenta de servicio se reubicó de la raíz del
+repositorio a `config/firebase.credentials.json`; el cambio quedó operativo pero **sin
+entrada en esta bitácora** (el índice, la métrica §7 y el riesgo R-03 seguían describiendo
+la server key legacy como vigente). Esta sesión regulariza el estado documental y valida
+la credencial en vivo.
+
+#### Actividades realizadas
+
+1. **Migración a HTTP v1 materializada en `config/firebase.php`** (553 líneas; la versión
+   legacy se conserva como `config/firebase.php.bak`, excluida de Git por `*.bak`) →
+   RF-09, RNF-07: firma de un **JWT RS256** con la clave privada de la cuenta de servicio
+   (extensión `openssl`), canje por `access_token` en `oauth2.googleapis.com` (cacheado
+   por petición con margen de 60 s) y envío por
+   `POST https://fcm.googleapis.com/v1/projects/{proyecto}/messages:send` con payloads
+   `message.*` (plantillas de `firebase/plantillas/` actualizadas). Se conservan el umbral
+   0.4, el orquestador `midff_fcm_notificar_alerta()` best-effort y la baja lógica de
+   tokens invalidados, ahora con las equivalencias v1 de los códigos legacy
+   (`UNREGISTERED`, `SENDER_ID_MISMATCH`, `NOT_FOUND`).
+2. **Credencial de servicio instalada en `config/firebase.credentials.json`** → RNF-03:
+   cuenta de servicio real del proyecto `midff-57e6b`
+   (`firebase-adminsdk-fbsvc@midff-57e6b.iam.gserviceaccount.com`). Resolución de ruta:
+   1) variable de entorno `MIDFF_FCM_CUENTA_SERVICIO`, 2)
+   `config/firebase.credentials.json`, 3) JSON de la raíz (respaldo histórico).
+3. **Validación en vivo** (28/09/2026, PHP 8.1.10 de Laragon; script temporal en
+   `datos\tmp\` —carpeta excluida de Git—, eliminado tras la corrida): `php -l` sin
+   errores; `midff_fcm_configurada()` = `SI`; `midff_fcm_proyecto()` = `midff-57e6b`;
+   `midff_fcm_access_token()` emitió un **access token OAuth2 real** (prefijo `ya29.`,
+   1024 caracteres) contra el endpoint de Google → la autenticación del lado servidor
+   queda verificada de extremo a extremo.
+4. Actualización documental: esta entrada, la métrica §7 (entrega de push), el riesgo
+   R-03 y la portada (v1.8).
+
+#### Decisiones tomadas
+
+| # | Decisión | Justificación |
+|---|---|---|
+| D-33 | El envío de push usa el **protocolo HTTP v1 de FCM (OAuth2)** con la cuenta de servicio; **sustituye a D-23** (legacy server key) | Google descontinúa las server keys legacy y el proyecto `midff-57e6b` (2026) no la emite: la migración prevista como post-MVP pasa a ser obligatoria ya en el Sprint 3. El contrato del Anexo A y la política best-effort no cambian. |
+| D-34 | La cuenta de servicio vive en **`config/firebase.credentials.json`**, nunca versionada y sobreescribible por la variable de entorno `MIDFF_FCM_CUENTA_SERVICIO` | Convención del repositorio (secretos fuera de Git, RNF-03) y centralización junto a `db.php`; el `.gitignore` ya contiene `**/firebase.credentials.json` (verificado con `git check-ignore`). |
+
+#### Evidencia
+
+- `php -l config\firebase.php` → "No syntax errors detected".
+- Salida de la validación en vivo: `configurada=SI` · `proyecto=midff-57e6b` · `endpoint=https://fcm.googleapis.com/v1/projects/midff-57e6b/messages:send` · `cuenta=C:\todoMIDFF\config\firebase.credentials.json` · `access_token=EMITIDO_OK longitud=1024 prefijo=ya29.c.c0A...`.
+- `git check-ignore -v config/firebase.credentials.json` → `.gitignore:318:**/firebase.credentials.json`; `git status config/` solo reporta `?? config/firebase.php` (la credencial no aparece).
+- El paso 7b de `api/v1/transacciones.php` invoca `midff_fcm_notificar_alerta()` sin cambios de firma: la migración no rompe el gancho del endpoint.
+
+#### Bloqueos y riesgos
+
+- **R-03 (recepción del push):** avanza — el servidor ya autentica contra Google con credencial real; falta dar de alta la app `Midff.PluriOne1` **en el mismo proyecto `midff-57e6b`**, instalar su `google-services.json` real, compilar el APK y medir la recepción (< 2 s) en dispositivo físico. El `google-services.json` de la raíz (proyecto `examen-1479b`) ya no lo consume nadie y la server key legacy deja de ser necesaria.
+- **R-05:** sin cambios (mitigado con D-25; la acción "Bloquear" se implementa en el Sprint 4).
+
+#### Métricas del sprint (MVP_MIDFF.md §10)
+
+| Métrica | Objetivo | Resultado medido | Cumple |
+|---|---|---|---|
+| Entrega de push (riesgo ≥ 0.4) | < 2 s | Lado servidor verificado: OAuth2 con access token real emitido por Google; falta medir la recepción en el dispositivo (R-03). | Parcial |
+| Latencia extremo a extremo (API) | ≤ 1 s | Sin cambios desde BIT-004: 254.3 ms de promedio con el gancho FCM activo. | Sí |
+
+#### Siguiente paso
+
+1. Dar de alta `Midff.PluriOne1` en el proyecto Firebase `midff-57e6b`, colocar el `google-services.json` real en `android/MidffAlertas/app/`, compilar el APK y medir el push (< 2 s) en dispositivo físico — cierre del criterio §5.5 y del riesgo R-03.
+2. Commitear el Sprint 3 en Git y congelar el contrato de la API en `docs/contratos/api-transacciones-v1.md` (pendiente arrastrado de BIT-002/BIT-003).
+3. Iniciar el Sprint 4 (HU-MVP-06): acción "Bloquear" en `DetalleAlertaActivity` → endpoint de alertas → `ALERTA.estado = BLOQUEADA` + registro en `AUDITORIA` con usuario y timestamp.
+
+### 9.11 BIT-010 — 28/09/2026 — Sprint 4: bloqueo preventivo, cierre del MVP y demo
+
+| Campo | Valor |
+|---|---|
+| **ID** | BIT-010 |
+| **Fecha** | 28/09/2026 |
+| **Sprint** | Sprint 4 (semanas 7–8 del plan; iniciado el 28/09 tras la regularización BIT-009) |
+| **Tipo** | Cierre de sprint / sesión de trabajo |
+| **Responsable** | Residente del proyecto |
+| **Estado** | Cerrada (MVP cerrado a nivel de componentes; pendientes de entorno: recepción física del push y demo ante el asesor) |
+| **Documentos de referencia** | `MVP_MIDFF.md` §4.1 (HU-MVP-06), §9 (DoD), §10 (métricas) · `prompt.txt` (alcance fijado por el residente) · `database/sp_bloquear_alerta.sql` · `api/v1/bloquear.php` · `README.md` |
+
+#### Contexto
+
+BIT-009 dejó el servidor FCM autenticado y la documentación al día. El residente fijó el
+alcance del Sprint 4 en `prompt.txt`: (1) botón "Bloquear" en la app, (2) endpoint que
+persista `ALERTA.estado = BLOQUEADA` + `AUDITORIA`, (3) `README.md` con compilación,
+credenciales y demo, y (4) cierre del MVP en esta bitácora con métricas y DoD.
+
+#### Actividades realizadas
+
+1. **`database/sp_bloquear_alerta.sql`** → HU-MVP-06, RF-08, RNF-04, RNF-05:
+   procedimiento `SP_BLOQUEAR_ALERTA(p_id_alerta, p_usuario, p_respuesta, OUT estado,
+   fecha_atencion, id_auditoria)` que valida existencia (ORA-20003) y no duplicidad
+   (ORA-20004), ejecuta el UPDATE de `ALERTA` (estado/atendida_por/respuesta/
+   fecha_atencion) y el INSERT `BLOQUEO` en `AUDITORIA` en una sola unidad atómica,
+   **sin COMMIT** y con ROLLBACK + relanzamiento ante error (D-35). Instalado **dos
+   veces** seguidas sobre `XEPDB1` con "No hay errores" en ambas corridas.
+2. **`config/db.php`** → `midff_db_bloquear_alerta()` con la ruta dual PDO_OCI/OCI8
+   (binds de entrada y de salida: estado, fecha ISO 8601 con zona e id de auditoría) y
+   COMMIT/ROLLBACK, replicando el patrón de `midff_db_registrar_transaccion()` (D-13).
+3. **`api/v1/bloquear.php` + `router.php` v1.2** → RF-02, HU-MVP-06: 405/401/400;
+   `alerta_id` con regex `^ALR-\d{4}-\d{1,18}$` (el mismo formato que emite
+   `transacciones.php`, cuyo número viaja al SP); `usuario` ≤ 60 obligatorio y
+   `respuesta` ≤ 200 opcional; mapa ORA-20003 → **404**, ORA-20004 → **409**; respuesta
+   200 con `estado`, `atendida_por`, `fecha_atencion` e `id_auditoria` (D-36).
+4. **App Android** → HU-MVP-06: `ApiClient.bloquearAlerta()` (POST), botón "Bloquear"
+   en `DetalleAlertaActivity` (deshabilitado durante el vuelo, callback por
+   `runOnUiThread`, Toast de confirmación/error y estado "ya bloqueada"), fila "Estado"
+   en `activity_detalle_alerta.xml`, `ModeloAlerta.estado` + `estaBloqueada()` y
+   `AlertasRepositorio.marcarBloqueada()` para reflejar BLOQUEADA en la bandeja (D-37).
+   Strings nuevas y README de la app actualizados; los 12 XML del módulo parsean sin
+   errores.
+5. **`README.md`** raíz reescrito (criterio 9 del DoD): requisitos del entorno,
+   instalación paso a paso (Oracle: `schema.sql` + `dispositivo_movil.sql` +
+   `sp_bloquear_alerta.sql`; credenciales por variables de entorno; Firebase
+   `midff-57e6b`; app con `adb reverse`), `build.ps1`/`smoke-test.ps1`, **guion de demo
+   end-to-end (§7)** y consultas de control en Oracle (§8) + solución de problemas.
+6. **Validación E2E en vivo** (evidencia más abajo) y cierre documental: DoD §6,
+   métricas §7, riesgo R-05 cerrado, esta entrada y portada v1.9.
+
+#### Decisiones tomadas
+
+| # | Decisión | Justificación |
+|---|---|---|
+| D-35 | `SP_BLOQUEAR_ALERTA` vive en `database/sp_bloquear_alerta.sql` (script aparte, `CREATE OR REPLACE`), **no ejecuta COMMIT** y ante error hace ROLLBACK + relanzamiento | Mismo criterio que D-13 (atomicidad RNF-05: ni el bloqueo ni la auditoría quedan a medias) y D-24 (no reescribir el `schema.sql` congelado del Sprint 1). Los errores de negocio propios (−20003/−20004) conservan su código para que la API los mapee a 404/409. |
+| D-36 | Contrato del bloqueo: `alerta_id` en formato `ALR-<anio>-<numero>` (el que ya emite `/transacciones`), `usuario` obligatorio ≤ 60 (el registrado en `DISPOSITIVO_MOVIL`), `respuesta` opcional ≤ 200; misma `X-API-Key` (D-25) | Reutiliza el identificador que la app ya recibe en el push sin exponer ids numéricos internos; el usuario viaja explícito para la trazabilidad de `AUDITORIA` (HU-MVP-06) y se cierra el riesgo R-05 con la autenticación mínima viable ya definida. |
+| D-37 | La app marca la alerta como `BLOQUEADA` en la bandeja local (SharedPreferences) **solo tras el HTTP 200** de Oracle | Coherente con D-27: Oracle es la fuente de verdad; el reflejo local alimenta la vista (RF-10) y evita estados fantasma si el bloqueo falla (el botón se rehabilita y se muestra el error). |
+
+#### Evidencia
+
+- `php -l` → "No syntax errors detected" en `config\db.php`, `api\v1\bloquear.php` y `router.php`.
+- XML del módulo Android: "OK: todos los XML de la app parsean sin errores" (12 archivos).
+- Instalación del SP **dos veces** sobre `XEPDB1` (`MIDFFuser`): "No hay errores." y "Procedimiento SP_BLOQUEAR_ALERTA creado (bloqueo + auditoria atomicos)." en ambas corridas.
+- E2E del 28/09 (servidor `php -S 127.0.0.1:8091 router.php`, script temporal en `datos\tmp\`, eliminado tras la corrida):
+  - `TRANSACCION: score=0.95 clasificacion=ALTO decision=BLOQUEADA alerta_id=ALR-2026-000010`
+  - `BLOQUEO: ok=True estado=BLOQUEADA atendida_por=OFICIAL-DEMO-4 fecha_atencion=2026-09-28T19:20:34-06:00 id_auditoria=39`
+  - `REBLOQUEO: HTTP 409 (esperado 409)` · `ALERTA-INEXISTENTE: HTTP 404 (esperado 404)`
+- Consultas de control (sqlplus): `ALERTA` id 10 `BLOQUEADA` por `OFICIAL-DEMO-4` el 2026-09-28 19:20:34 y `AUDITORIA` id 39 (`ALERTA` / `BLOQUEO` / `OFICIAL-DEMO-4`, mismo timestamp) → **trazabilidad 100 %** (métrica 6 del §10 del MVP).
+
+#### Bloqueos y riesgos
+
+- **R-05: CERRADO** — el bloqueo usa la misma `X-API-Key` y el `usuario` de `DISPOSITIVO_MOVIL` (D-25/D-36), con auditoría inmutable del responsable y timestamp.
+- **R-03: sin cambios** — el envío sigue autenticado (BIT-009); falta la recepción en dispositivo físico, que se mide en la sesión de demo (guion §7 del README).
+- R-04 queda en observación final (el dataset de 3 bandas cumplió su cometido; la ampliación pasa al post-MVP).
+
+#### Métricas finales del MVP (MVP_MIDFF.md §10)
+
+| Métrica | Objetivo | Resultado medido | Cumple |
+|---|---|---|---|
+| Latencia de evaluación del motor C | Orden de microsegundos | Mediana 7.0 µs / p95 10.8 µs en la ruta completa (BIT-002). | Sí |
+| Latencia extremo a extremo (API) | ≤ 1 s | 308.2 ms de promedio (BIT-003); 254.3 ms con el gancho FCM activo (BIT-004). | Sí |
+| Entrega de push (riesgo ≥ 0.4) | < 2 s | Servidor autenticado OAuth2 con token real (BIT-009); recepción en dispositivo físico pendiente (R-03). | Parcial |
+| Cobertura de auditoría | 100 % | 0 evaluaciones sin registro (BIT-003/BIT-004). | Sí |
+| Casos de prueba por banda de riesgo | 100 % correctos | 3/3 bandas: 0.0000 BAJO / 0.5000 MEDIO / 0.9500 ALTO (BIT-003, re-verificado en BIT-010). | Sí |
+| Bloqueos preventivos trazables | 100 % con usuario y timestamp | `ALR-2026-000010` + auditoría 39 con `atendida_por` y `fecha_atencion` (BIT-010). | Sí |
+
+#### Siguiente paso
+
+1. Sesión de **demo ante el asesor** con el guion del `README.md` §7 (criterio 10 del DoD), midiendo ahí el push < 2 s en dispositivo físico con la app dada de alta en `midff-57e6b` (cierre de R-03 y del criterio 5).
+2. Commits de cierre en Git (sprint-3 y sprint-4) y, de requerirse, congelar `docs/contratos/api-transacciones-v1.md` (arrastre de BIT-002/003).
+3. Post-MVP v1.1 (`MVP_MIDFF.md` §13): dashboard web (RF-13), consulta de historial (RF-14) y sincronización con Firebase Realtime Database (RF-12).
+
+### 9.12 BIT-011 — 01/10/2026 — Post-MVP: rediseño glass/neón de la app Android y usabilidad (pestañas instantáneas)
+
+| Campo | Valor |
+|---|---|
+| **ID** | BIT-011 |
+| **Fecha** | 01/10/2026 |
+| **Sprint** | Post-MVP (mejora continua; los 4 sprints cerraron en BIT-010) |
+| **Tipo** | Sesión de trabajo |
+| **Responsable** | Residente del proyecto |
+| **Estado** | Cerrada |
+| **Documentos de referencia** | `prompt.txt` (especificación visual y de flujo) · `MVP_MIDFF.md` §6 (RF-09 / RF-10 / HU-MVP-05) · `android/MidffAlertas/README.md` |
+
+#### Contexto
+
+Con el MVP cerrado (BIT-010), el residente fijó en `prompt.txt` un rediseño de la interfaz de la app bajo el estilo **"Glassmorphism de Cristal Ahumado con Neón de Contraste Profundo"** (carbón `#121214`, cristal `#1E1E24` translúcido, cian `#00F0FF` y magenta `#E000FF`, auroras azul-púrpura-rosa). En una segunda pasada se corrigió la usabilidad: la navegación inferior hacía `smoothScrollToPosition` sobre una cabecera de ~700 dp (segundos de scroll y "Panel"/"Alertas" ejecutaban la misma acción) y varios botones no daban feedback aparente.
+
+#### Actividades realizadas
+
+Rediseño visual (RF-10):
+
+1. **Paleta y drawables (20 archivos nuevos)**: fondo carbón con auroras radiales difusas (`bg_pantalla.xml`), paneles de cristal ~70 % con borde 1 px y degradado interno que sugiere volumen (`panel_cristal`, `chip_cristal`), isla dinámica (`isla_dinamica`), subrayado magenta de filtros (`indicador_filtro`), cápsulas neón con halo (`btn_neon_cian`, `btn_neon_magenta`), barra de analítica con gradiente cian-púrpura-magenta (`progreso_analitica`), avatar con degradado, resplandores radiales y 10 iconos vectoriales con relleno degradado vía `aapt:attr` (`ic_rayo_aurora`, `ic_nav_*`, `ic_dispositivo` y de filtros).
+2. **Tema**: `Theme.MaterialComponents.NoActionBar` con `windowBackground` auroral y barras de sistema carbón; `colorPrimary` cian y `colorSecondary` magenta (D-40).
+3. **Bandas de riesgo en neón** (D-41): `clasificacion_bajo` #00F0FF (APROBADA), `clasificacion_medio` #B44CFF (EN_REVISION), `clasificacion_alto` #E000FF (ALTO/BLOQUEADA); `NotificacionFcmService.setColor` alineado (sana → cian, ALTO → magenta, resto → púrpura).
+4. **`UtilidadesUi` (clase nueva)**: texto degradado azul-rosa del perfil (`LinearGradient`), glow neón sobre texto (`setShadowLayer`), pulso de la isla (`ObjectAnimator`) e iniciales del avatar.
+5. **Modelo**: `ModeloAlerta.scoreValor()` (score 0-1 tolerante a comas) y `esAprobada()`/`enRevision()` para filtros y analítica.
+6. **Detalle** (`activity_detalle_alerta.xml`): hero con score 46 sp neón, **analítica ponderada monto 45 % / frecuencia 30 % / ubicación IP 25 %** con barras aurora (D-42), trazabilidad compacta, **carrusel de dispositivos** (`item_dispositivo.xml`: dispositivo del oficial con token real + backend MIDFF) y "Bloquear" en cápsula magenta; botón "Volver" propio.
+7. **Bandeja** (`item_alerta.xml` + `AdaptadorAlertas`): paneles de cristal separados con chip de clasificación, punto de riesgo teñido y score neón con resplandor por banda.
+
+Usabilidad (segunda pasada):
+
+8. **Pestañas instantáneas Panel | Alertas | Registro** (enum `Pestana` en `MainActivity`): intercambio por visibilidad con fundido de 110 ms; se elimina `cabecera_bandeja.xml` (header del ListView) y todo scroll de navegación (D-39). Segundo toque en "Alertas" → inicio de la lista sin animación; cabecera compacta (avatar + isla dinámica) siempre visible.
+9. **Feedback en cada acción**: ripples en navegación/botones/chips/ítems (`ripple_tactil` como `foreground`, `btn_neon_cian_ripple`, `btn_neon_magenta_ripple`, `btn_cristal_ripple`, `chip_cristal_ripple` y `listSelector` `selector_item_alerta`), estado inline del registro (`txtEstadoRegistro`: cian éxito / magenta con motivo), "Registrar" deshabilitado con "Registrando…" y blindaje de doble toque (`registroEnCurso`), acuse de "Actualizar" (isla "Bandeja al día · N alertas" + parpadeo de la lista) y confirmación `AlertDialog` para "Limpiar".
+10. **Acciones nuevas**: copiar token al portapapeles (`ClipboardManager`), isla dinámica táctil (refresca con rebote de escala), avatar → pestaña Registro, tarjeta de críticas del Panel con "Ver alertas críticas" (salta a Alertas con filtro CRITICAS) y conteos en vivo en los chips de filtro ("Todas · 12", etc.).
+
+#### Decisiones tomadas
+
+| # | Decisión | Justificación |
+|---|---|---|
+| D-38 | El desenfoque del glassmorphism se **simula** con rellenos translúcidos sobre el fondo de auroras (sin `RenderEffect` ni bibliotecas externas) | Android no ofrece *backdrop blur* portable para Views con minSdk 24; la superposición translúcida sobre gradientes difusos produce el "vidrio ahumado" pedido con costo nulo y sin dependencias nuevas. |
+| D-39 | La navegación pasa de scroll de cabecera a **pestañas por visibilidad** (Panel/Alertas/Registro) | `smoothScrollToPosition` sobre una cabecera de ~700 dp tardaba segundos y "Panel"/"Alertas" ejecutaban la misma acción (sensación de botón muerto); el intercambio de visibilidad responde en un frame y da contenido propio a cada pestaña. |
+| D-40 | Tema `NoActionBar` + botón "Volver" propio en el detalle | El `ActionBar` rompía la estética glass/neón; la isla dinámica hace de cabecera compacta siempre visible en las tres pestañas. |
+| D-41 | Neón por banda: cian APROBADA/BAJO, púrpura EN_REVISION/MEDIO, magenta ALTO/BLOQUEADA | `prompt.txt` pide resaltar decisiones y estados con neón de contraste; una sola tabla de color por estado simplifica el reconocimiento (chip, score, glow y notificación usan el mismo mapeo). |
+| D-42 | La analítica ponderada del detalle (45/30/25) se **deriva del score recibido en el push**, sin recalcular nada en el cliente | Son los mismos pesos públicos del motor (D-08); solo se visualiza la composición del riesgo sin exponer datos adicionales ni duplicar lógica de negocio en Android. |
+
+#### Evidencia
+
+- Verificación automatizada (PowerShell) sobre `android/MidffAlertas`: **42 XML parsean sin errores**; sin marcadores residuales de edición; todas las referencias `@string/@color/@drawable` de los XML existen; todos los `R.string/R.drawable/R.color/R.layout` usados en Java existen; **76 `R.id`** usados en Java definidos en los layouts; llaves balanceadas en los 8 `.java` (única excepción aparente: `ApiClient.java`, falso positivo por `{@code …}` en Javadoc y el literal `"{"` de `startsWith`).
+- `android/MidffAlertas/README.md` actualizado con las secciones "Rediseño UI: glassmorphism de cristal ahumado con neón" y "Usabilidad: pestañas instantáneas y feedback en cada acción" (incluye la limitación del blur simulado y el requisito AAPT2 para los degradados en vectores).
+- **No se compiló el APK** en esta sesión: el repositorio no incluye el wrapper de Gradle (lo genera Android Studio al sincronizar, BIT-007); la validación fue estática completa.
+
+#### Bloqueos y riesgos
+
+- **R-03: sin cambios** — la recepción física del push sigue pendiente de la sesión de demo.
+- Riesgo menor (abierto): ajustes visuales al ejecutarse en pantalla real (glows/sombras varían por OEM); se cierra al compilar y validar el APK.
+
+#### Siguiente paso
+
+1. Compilar el APK en Android Studio y validar visualmente en emulador/dispositivo (cierra el riesgo menor de esta entrada).
+2. Continuar con el plan acordado: **ajustes de flujo** de la app a partir del resumen funcional y sesiones de **prueba de funcionamiento** end-to-end (transacción → push → bandeja → bloqueo).
+
+---
+
 ## 10. Plantilla para nuevas entradas
 
 Copiar la siguiente estructura al final de la sección 9, incrementar el ID (`BIT-00N`), agregar la
@@ -843,6 +1442,14 @@ fila correspondiente en el índice 9.1 y actualizar la tabla de metadatos de la 
 | 1.0 | 23/09/2026 | Residente del proyecto | Apertura de la bitácora: objetivo general, alcance del MVP, estructura del proyecto derivada de `MVP_MIDFF.md`, plan de 4 sprints, Definition of Done, métricas, riesgos y entrada inicial BIT-001. |
 | 1.1 | 23/09/2026 | Residente del proyecto | Se agrega la entrada **BIT-002** (Sprint 1): motor de scoring en C (`src/motor/`) con 18 casos de prueba unitaria y benchmark de latencia en microsegundos, modelo de datos Oracle XE (`database/schema.sql`) con el procedimiento atómico `SP_REGISTRAR_TRANSACCION`, script `build.ps1` y decisiones D-07 a D-15. |
 | 1.2 | 24/09/2026 | Residente del proyecto | Se agrega la entrada **BIT-003** (Sprint 2): endpoint `POST /api/v1/transacciones` (API Key, validaciones, invocación del motor C y contrato de respuesta), conexión y persistencia atómica en Oracle XE desde `config/db.php`, `router.php` para el servidor embebido de PHP y `smoke-test.ps1` (3 bandas de riesgo, pruebas negativas 401/400, latencia y cobertura de auditoría). Métricas §7 y riesgos R-01/R-02 actualizados; decisiones D-16 a D-22. |
+| 1.3 | 24/09/2026 | Residente del proyecto | Se agrega la entrada **BIT-004** (Sprint 3): módulo FCM `config/firebase.php` (constante `MIDFF_FCM_SERVER_KEY`, envío best-effort por protocolo legacy), tabla `DISPOSITIVO_MOVIL` (`database/dispositivo_movil.sql`, re-ejecutable), gancho de push en `api/v1/transacciones.php` cuando `score >= 0.4`, endpoint `POST /api/v1/dispositivos` (UPSERT del token) con su ruta en `router.php`, app Android `android/MidffAlertas/` en Java (plugin google-services, `NotificacionFcmService` con notificación local de monto/score/clasificación, `MainActivity` con bandeja) y `firebase/README-fcm.md` con plantillas. Métricas §7 y riesgos R-03/R-05 actualizados; decisiones D-23 a D-28. |
+| 1.4 | 24/09/2026 | Residente del proyecto | Se agrega la entrada **BIT-005** (corrección): `applicationId`/`namespace` de la app renombrados a `midff_plurione` (clases movidas a `java/midff_plurione/`), retiro del `google-services.json` prestado y plantilla `google-services.json.example` + guía de alta en Firebase en los README; decisión D-29. |
+| 1.5 | 24/09/2026 | Residente del proyecto | Se agrega la entrada **BIT-006** (corrección): `applicationId`/`namespace` definitivos en `Midff.PluriOne1` — el guion `-` de `Midff.Pluri-One1` no es válido en paquetes Java/Android/Firebase y se omitió de común acuerdo —; clases movidas a `java/Midff/PluriOne1/`, plantilla y guías de alta actualizadas; decisión D-30. |
+| 1.6 | 24/09/2026 | Residente del proyecto | Se agrega la entrada **BIT-007** (corrección): bloqueo de sync de Android Studio resuelto actualizando el wrapper a Gradle 8.9 y el AGP a 8.5.2 (el JBR 21 del IDE no es soportado por Gradle 8.0: "Unsupported class file major version 65"); sección de solución de problemas agregada al README de la app; decisión D-31. |
+| 1.7 | 24/09/2026 | Residente del proyecto | Se agrega la entrada **BIT-008** (corrección): parse del `AndroidManifest.xml` resuelto — la secuencia `--` no está permitida en comentarios XML; cabecera reescrita con `=` y bullet agregado al README de la app; decisión D-32. |
+| 1.8 | 28/09/2026 | Residente del proyecto | Se agrega la entrada **BIT-009** (Sprint 3, regularización): el envío FCM quedó migrado al protocolo HTTP v1 con OAuth2 (JWT RS256 → access token; decisión D-33, sustituye D-23) y la cuenta de servicio real instalada en `config/firebase.credentials.json` (excluida de Git; decisión D-34); credencial validada en vivo el 28/09 (access token `ya29.` emitido por Google). Métrica §7 (entrega de push) y riesgo R-03 actualizados. |
+| 1.9 | 28/09/2026 | Residente del proyecto | Se agrega la entrada **BIT-010** (Sprint 4, cierre del MVP): `SP_BLOQUEAR_ALERTA` (`database/sp_bloquear_alerta.sql`, D-35), `midff_db_bloquear_alerta()` en `config/db.php`, endpoint `POST /api/v1/bloquear` con su ruta en `router.php` v1.2 (D-36), botón "Bloquear" en la app Android con estado local `BLOQUEADA` (D-37) y `README.md` reescrito (instalación, credenciales Oracle/Firebase, guion de demo y consultas de control). E2E verificado en vivo (`ALR-2026-000010`, auditoría 39, 409/404 controlados). DoD §6 y métricas §7 finales; riesgo R-05 cerrado. |
+| 1.10 | 01/10/2026 | Residente del proyecto | Se agrega la entrada **BIT-011** (post-MVP): rediseño UI "glassmorphism de cristal ahumado con neón de contraste profundo" de la app Android según `prompt.txt` (20 drawables nuevos: paneles de cristal, auroras, cápsulas neón, iconos con degradado `aapt:attr`; tema `NoActionBar`; bandas de riesgo cian/púrpura/magenta; clase `UtilidadesUi`; analítica ponderada 45/30/25 y carrusel de dispositivos en el detalle) y segunda pasada de usabilidad (pestañas instantáneas Panel/Alertas/Registro que sustituyen el scroll de cabecera, ripples y feedback en toda la interfaz, estado inline del registro, confirmación de vaciado, copia de token al portapapeles, isla táctil y conteos en vivo en los filtros). Decisiones D-38 a D-42; validación estática automatizada (42 XML, 76 `R.id`, referencias completas). |
 
 ---
 

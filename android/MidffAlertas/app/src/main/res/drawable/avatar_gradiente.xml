@@ -1,0 +1,14 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Avatar circular con degradado aurora azul-rosa -->
+<shape xmlns:android="http://schemas.android.com/apk/res/android"
+    android:shape="oval">
+    <gradient
+        android:angle="315"
+        android:startColor="@color/aurora_azul"
+        android:centerColor="@color/aurora_purpura"
+        android:endColor="@color/aurora_rosa"
+        android:type="linear" />
+    <stroke
+        android:width="1dp"
+        android:color="#4DFFFFFF" />
+</shape>

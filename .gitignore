@@ -1,0 +1,442 @@
+# =============================================================================
+# MIDFF — Motor Inteligente de Detección de Fraude Financiero
+# Repositorio híbrido: C · PHP 8+ · Oracle SQL · Android (Java) · PowerShell
+# Documento base: MVP_MIDFF.md v1.0 (derivado de PRD_MIDFF.md v1.0)
+# Creado: 23/09/2026 | Sprint 1
+#
+# Convención: cada sección agrupa los artefactos de una tecnología.
+# Los archivos de configuración y credenciales locales NUNCA se versionan;
+# en su lugar se versiona la plantilla equivalente (*.example).
+# =============================================================================
+
+# -----------------------------------------------------------------------------
+# 0. SISTEMA OPERATIVO, TEMPORALES Y RESPUESTOS
+# -----------------------------------------------------------------------------
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+Desktop.ini
+$RECYCLE.BIN/
+.DS_Store
+.AppleDouble
+.LSOverride
+._*
+.Spotlight-V100
+.Trashes
+*.lnk
+
+# Temporales, respaldos y editores de texto
+*.bak
+*.old
+*.orig
+*.rej
+*.tmp
+*.temp
+*~
+*.swp
+*.swo
+*.swn
+.#*
+\#*\#
+
+# Registros de aplicación (la bitácora del proyecto es BITACORA.md, no logs)
+*.log
+*.log.*
+logs/
+log/
+
+# Documentos ofimáticos temporales (Word / Excel / PowerPoint)
+~$*.docx
+~$*.xlsx
+~$*.pptx
+~$*.vsd*
+
+# Artefactos comprimidos de entrega (usar Releases o la carpeta de evidencias)
+*.zip
+*.rar
+*.7z
+*.tar
+*.tar.gz
+*.tgz
+
+# -----------------------------------------------------------------------------
+# 1. ENTORNOS DE DESARROLLO (VSCode, Visual Studio, Android Studio, JetBrains)
+# -----------------------------------------------------------------------------
+.vscode/*
+!.vscode/settings.json
+!.vscode/tasks.json
+!.vscode/launch.json
+!.vscode/extensions.json
+!.vscode/*.code-snippets
+!.vscode/*.code-workspace
+!.vscode/c_cpp_properties.json
+
+# Visual Studio (motor C con MSVC / .sln)
+.vs/
+*.sln.docstates
+*.suo
+*.user
+*.userosscache
+*.VC.db
+*.VC.VC.opendb
+Debug/
+Release/
+x64/
+ARM64/
+
+# JetBrains / Eclipse / NetBeans (VSCode y Android Studio son los IDE oficiales)
+.idea/
+*.iml
+*.ipr
+*.iws
+.project
+.classpath
+.settings/
+nbproject/private/
+.buildpath
+.nb-gradle/
+.navigation/
+.AndroidStudio*/
+out/
+bin/
+dist/
+
+# -----------------------------------------------------------------------------
+# 2. MOTOR C (motor-c/) — compilación, enlazado, cobertura y pruebas
+# -----------------------------------------------------------------------------
+# Objetos, bibliotecas y símbolos de depuración
+*.o
+*.obj
+*.lo
+*.la
+*.a
+*.lib
+*.so
+*.so.*
+*.dylib
+*.dll
+*.exp
+*.ilk
+*.pdb
+*.idb
+*.gch
+*.pch
+*.res
+*.tlog
+*.obj.d
+
+# Ejecutables y volcados de fallo
+*.exe
+*.out
+*.app
+*.dSYM/
+*.stackdump
+core
+core.*
+vgcore.*
+
+# Dependencias y respaldos generados por el compilador
+*.d
+*.su
+.deps/
+deps/
+
+# Cobertura de código y perfilado (gcov / gprof)
+*.gcda
+*.gcno
+*.gcov
+*.profraw
+*.profdata
+gcov/
+coverage/
+perf.data*
+callgrind.out.*
+
+# Salidas de compilación del motor (se regeneran con scripts/build.ps1)
+# Layout del Sprint 1 (BIT-002 / D-07): src/motor/ · motor-c/ es la estructura objetivo de la bitácora §4
+motor-c/build/
+motor-c/obj/
+motor-c/out/
+motor-c/bin/
+motor-c/dist/
+motor-c/*.exe
+src/motor/bin/
+src/motor/build/
+src/motor/obj/
+src/motor/out/
+src/motor/dist/
+
+# -----------------------------------------------------------------------------
+# 3. BACKEND / API REST — PHP 8+ (api/)
+# -----------------------------------------------------------------------------
+# Dependencias de Composer (se restauran con `composer install`)
+# NOTA: composer.json y composer.lock SÍ se versionan.
+vendor/
+api/vendor/
+composer.phar
+composer-setup.php
+
+# Cachés y resultados de pruebas (PHPUnit / PHP_CodeSniffer / PHPStan)
+.phpunit.result.cache
+.phpunit.cache/
+.php-cs-fixer.cache
+.phpcs-cache
+.phpstan.cache
+.psalm/
+/build/phpunit
+/build/coverage/
+coverage.xml
+clover.xml
+
+# Caché, sesiones y logs de la aplicación (almacenamiento local)
+api/almacenamiento/cache/
+api/almacenamiento/logs/
+api/almacenamiento/tmp/
+api/almacenamiento/sesiones/
+api/tmp/
+api/cache/
+storage/logs/
+storage/framework/cache/
+storage/framework/sessions/
+sessions/
+php_errors.log
+
+# Configuración local y credenciales de la API (NO versionar; ver config.example.php)
+api/src/Config/config.local.php
+api/src/Config/credenciales.local.php
+api/config.local.php
+api/.htaccess.local
+*.local.php
+
+# Archivos de intercambio de PHP/Composer
+*.php~
+*.php.orig
+composer.lock.bak
+
+# -----------------------------------------------------------------------------
+# 4. ORACLE DATABASE (db/) — SQL*Plus, SQLcl, SQL*Loader y billeteras
+# -----------------------------------------------------------------------------
+# Salidas de spool, trazas y auditoría del motor Oracle
+*.spool
+*.lst
+*.trc
+*.trm
+*.aud
+audit/
+trace/
+alert/
+admin/*.log
+
+# Volcados, exportaciones e importaciones de datos (no versionar datos)
+*.dmp
+*.dpdump
+*.bad
+*.dis
+*.csv.gz
+expdat.dmp
+db/dumps/
+datos/dumps/
+
+# Billeteras, llaves y contraseñas de conexión (seguridad)
+wallet/
+**/wallet/
+cwallet.sso
+ewallet.p12
+*.sso
+*.p12
+*.pfx
+orapwd*
+tnsnames.ora
+sqlnet.ora
+db/credenciales/
+db/secrets/
+db/*.local.sql
+db/*.secret.sql
+
+# Archivos binarios del servidor Oracle XE dentro del repositorio
+oradata/
+flash_recovery_area/
+ORCLCDB/
+XEPDB1/
+
+# NOTA: los scripts DDL/DML (*.sql), el esquema y las consultas de control
+# SÍ se versionan (db/ddl, db/dml, db/scripts). Las plantillas de conexión
+# se versionan como *.ora.example / *.example.sql.
+
+# -----------------------------------------------------------------------------
+# 5. APP ANDROID — Java / Gradle / Android Studio (android/)
+# -----------------------------------------------------------------------------
+# Salidas de compilación y empaquetado
+*.apk
+*.aab
+*.ap_
+*.aar
+*.dex
+*.class
+*.hprof
+*.deploy
+captures/
+release/
+android/**/build/
+android/**/bin/
+android/**/gen/
+android/**/out/
+android/**/release/
+android/**/.cxx/
+android/**/.externalNativeBuild/
+
+# Gradle (el wrapper gradle-wrapper.jar SÍ se versiona para builds reproducibles)
+.gradle/
+android/.gradle/
+buildSrc/build/
+gradle-app.setting
+.gradletasknamecache
+.gradletime
+kotlin-profile
+.gradle-local.properties
+
+# Configuración local del SDK (rutas de cada máquina)
+local.properties
+android/local.properties
+
+# Firmas y keystores de la app (seguridad: nunca versionar)
+*.jks
+*.keystore
+keystore.properties
+signing.properties
+
+# Archivos generados por el plugin de Google Services (Firebase)
+# Se versiona la plantilla android/MidffAlertas/google-services.json.example
+google-services.json
+**/google-services.json
+
+# Credenciales de servidor Firebase (cuentas de servicio / Admin SDK)
+serviceAccountKey.json
+*-firebase-adminsdk-*.json
+firebase-adminsdk*.json
+firebase.credentials.json
+**/firebase.credentials.json
+
+.firebase/
+firebase-debug.log*
+firebase-debug.*.log
+*-debug.log
+.ui-studio/
+android/.idea/
+.navigation/
+*.hprof
+lint/intermediates/
+lint/generated/
+lint/outputs/
+lint/tmp/
+
+# -----------------------------------------------------------------------------
+# 6. AUTOMATIZACIÓN — PowerShell (scripts/, pruebas/)
+# -----------------------------------------------------------------------------
+# Resultados de pruebas Pester y transcripciones (Start-Transcript)
+scripts/salidas/
+scripts/logs/
+pruebas/salidas/
+pruebas/resultados/
+TestResults/
+*.trx
+*.testresults.xml
+pester.xml
+testResults.xml
+*.clixml
+*.transcript.txt
+
+# Historial de consola de PowerShell
+ConsoleHost_history.txt
+PSReadLine/
+Microsoft.PowerShell_profile.ps1
+
+# Paquetes NuGet usados por módulos PowerShell (bin/ y obj/ ya están excluidos)
+packages/
+*.nupkg
+*.snupkg
+
+# Configuración local con credenciales del entorno de residencia
+scripts/config.local.psd1
+scripts/config.local.ps1
+**/config.local.psd1
+**/secrets.ps1
+secrets/
+.apikey
+api-key.txt
+
+# NOTA: los scripts de trabajo (*.ps1, *.psm1, *.psd1) SÍ se versionan,
+# incluidos build.ps1, smoke-test.ps1, desplegar.ps1 y scripts/lib/*.psm1.
+
+# -----------------------------------------------------------------------------
+# 7. DOCUMENTACIÓN, DATOS Y ENTREGABLES (docs/, datos/, pruebas/)
+# -----------------------------------------------------------------------------
+# Salidas generadas de documentación y compilación de PDF
+docs/_build/
+docs/_site/
+docs/salidas/
+docs/build/
+docs/*.pdf.tmp
+*.aux
+*.toc
+*.lof
+*.lot
+*.out.pdf
+
+# Resultados generados por las pruebas y benchmarks (los casos SÍ se versionan)
+datos/resultados/*
+!datos/resultados/.gitkeep
+datos/generados/
+datos/tmp/
+pruebas/evidencias/
+benchmarks/resultados/
+*.csv.tmp
+
+# NOTA: datos/datasets/*.json, pruebas/casos/*.json y pruebas/e2e/*.ps1
+# SÍ se versionan: son la línea base de casos por banda de riesgo del MVP.
+
+# -----------------------------------------------------------------------------
+# 8. SECRETOS Y VARIABLES DE ENTORNO (aplican a todo el stack)
+# -----------------------------------------------------------------------------
+.env
+.env.*
+!.env.example
+*.env.local
+apikey.txt
+X-API-Key.txt
+*.secret.*
+!*.secret.example.*
+*.pem
+*.key
+!*.pub
+id_rsa*
+config.local.*
+!config.local.example.*
+
+# -----------------------------------------------------------------------------
+# 9. ARCHIVOS QUE SÍ SE VERSIONAN (no agregar reglas que los excluyan)
+# -----------------------------------------------------------------------------
+# Raíz y documentación
+#   README.md · PRD_MIDFF.md · MVP_MIDFF.md · BITACORA.md · ideas.txt · .gitignore
+# Motor C (src/motor/ es el layout entregado en el Sprint 1; motor-c/ es la estructura objetivo)
+#   scoring.c · json_io.c · cronometro.c · *.h · pruebas/test_scoring.c · pruebas/test_latencia.c
+#   pruebas/marco_pruebas.h   (la carpeta bin/ con los ejecutables queda excluida)
+# Base de datos Oracle (database/ y db/)
+#   database/schema.sql · db/ddl/*.sql · db/dml/*.sql · db/scripts/*.sql · tnsnames.ora.example
+# API REST PHP (api/)
+#   composer.json · composer.lock · public/ · src/**/*.php (excepto *.local.php)
+# App Android (android/)
+#   build.gradle · settings.gradle · gradle.properties · gradle/wrapper/*
+#   app/src/** (java, res, AndroidManifest.xml) · google-services.json.example
+# Firebase (firebase/)
+#   README-fcm.md · plantillas/payload-*.json
+# Automatización (build.ps1 en la raíz y scripts/)
+#   build.ps1 · scripts/build.ps1 · scripts/smoke-test.ps1 · scripts/desplegar.ps1
+#   scripts/config.psd1 · scripts/lib/*.psm1
+# Pruebas y datos (pruebas/, datos/)
+#   pruebas/casos/*.json · pruebas/e2e/*.ps1 · datos/datasets/*.json
+# Plantillas de configuración (nunca con credenciales reales)
+#   .env.example · api/src/Config/config.example.php · android/**/google-services.json.example
+# =============================================================================
+# Fin del archivo .gitignore — MIDFF (última actualización: 23/09/2026)
+# =============================================================================

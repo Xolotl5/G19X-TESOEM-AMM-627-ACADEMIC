@@ -1,0 +1,59 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- MIDFF: tarjeta de cristal del carrusel de dispositivos moviles y
+     cuentas vinculadas (DISPOSITIVO_MOVIL) -->
+<LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="264dp"
+    android:layout_height="wrap_content"
+    android:layout_marginEnd="12dp"
+    android:background="@drawable/panel_cristal"
+    android:orientation="vertical"
+    android:padding="16dp">
+
+    <FrameLayout
+        android:layout_width="42dp"
+        android:layout_height="42dp"
+        android:background="@drawable/chip_cristal">
+
+        <ImageView
+            android:layout_width="22dp"
+            android:layout_height="22dp"
+            android:layout_gravity="center"
+            android:contentDescription="@string/dispositivos_titulo"
+            android:src="@drawable/ic_dispositivo" />
+    </FrameLayout>
+
+    <TextView
+        android:id="@+id/txtDispTitulo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:textColor="@color/texto_titulo"
+        android:textSize="14sp"
+        android:textStyle="bold" />
+
+    <TextView
+        android:id="@+id/txtDispDetalle"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="4dp"
+        android:textColor="@color/texto_secundario"
+        android:textSize="11sp" />
+
+    <TextView
+        android:id="@+id/txtDispEstado"
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="12dp"
+        android:background="@drawable/chip_cristal"
+        android:paddingBottom="3dp"
+        android:paddingEnd="10dp"
+        android:paddingStart="10dp"
+        android:paddingTop="3dp"
+        android:shadowColor="#6600F0FF"
+        android:shadowDx="0"
+        android:shadowDy="0"
+        android:shadowRadius="10"
+        android:textColor="@color/neon_cian"
+        android:textSize="10sp"
+        android:textStyle="bold" />
+</LinearLayout>

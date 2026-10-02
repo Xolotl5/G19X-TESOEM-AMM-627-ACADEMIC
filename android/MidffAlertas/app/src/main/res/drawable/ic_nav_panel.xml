@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Navegación "Panel": retícula con relleno aurora azul-púrpura -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:pathData="M3,3h8v8h-8z M13,3h8v5h-8z M13,10h8v11h-8z M3,13h8v8h-8z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="3"
+                android:startY="3"
+                android:endX="21"
+                android:endY="21"
+                android:startColor="#3E5BFF"
+                android:centerColor="#8B3DFF"
+                android:endColor="#FF4FD8" />
+        </aapt:attr>
+    </path>
+</vector>

@@ -1,158 +1,499 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- MIDFF (Sprint 3): detalle de la alerta (monto, score, clasificacion) -->
+<!-- MIDFF: detalle de la alerta rediseñado. Hero de cristal con score y
+     clasificacion en neon, analitica ponderada (monto 45%, frecuencia 30%,
+     ubicacion IP 25%) con degradados aurora, trazabilidad y carrusel de
+     dispositivos; accion Bloquear en capsula de cristal con borde
+     resplandeciente magenta (HU-MVP-06) -->
 <ScrollView xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:fillViewport="true">
+    android:fillViewport="true"
+    android:scrollbars="none">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:orientation="vertical"
-        android:padding="16dp">
+        android:paddingBottom="28dp"
+        android:paddingEnd="16dp"
+        android:paddingStart="16dp"
+        android:paddingTop="14dp">
 
-        <TextView
-            android:id="@+id/txtDetalleTitulo"
+        <LinearLayout
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:textAppearance="?attr/textAppearanceHeadlineSmall" />
+            android:gravity="center_vertical"
+            android:orientation="horizontal">
 
+            <FrameLayout
+                android:id="@+id/btnRegresar"
+                android:layout_width="44dp"
+                android:layout_height="44dp"
+                android:background="@drawable/chip_cristal_ripple">
+
+                <ImageView
+                    android:layout_width="20dp"
+                    android:layout_height="20dp"
+                    android:layout_gravity="center"
+                    android:contentDescription="@string/detalle_regresar"
+                    android:src="@drawable/ic_regresar" />
+            </FrameLayout>
+
+            <TextView
+                android:layout_width="0dp"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="12dp"
+                android:layout_weight="1"
+                android:text="@string/detalle_titulo_pantalla"
+                android:textColor="@color/texto_titulo"
+                android:textSize="16sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="14dp"
+            android:background="@drawable/panel_cristal"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:id="@+id/txtDetalleTitulo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:textAppearance="?attr/textAppearanceHeadlineSmall"
+                android:textColor="@color/texto_titulo" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:id="@+id/txtValorScore"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:fontFamily="sans-serif-medium"
+                    android:shadowColor="#6600F0FF"
+                    android:shadowDx="0"
+                    android:shadowDy="0"
+                    android:shadowRadius="22"
+                    android:textColor="@color/neon_cian"
+                    android:textSize="46sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="18dp"
+                    android:layout_weight="1"
+                    android:orientation="vertical">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:text="@string/etiqueta_score_riesgo"
+                        android:textColor="@color/texto_secundario"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/txtValorClasificacion"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:background="@drawable/chip_cristal"
+                        android:paddingBottom="4dp"
+                        android:paddingEnd="12dp"
+                        android:paddingStart="12dp"
+                        android:paddingTop="4dp"
+                        android:textColor="@color/texto_titulo"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+                </LinearLayout>
+            </LinearLayout>
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/panel_cristal"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:letterSpacing="0.1"
+                android:text="@string/analitica_titulo"
+                android:textColor="@color/texto_secundario"
+                android:textSize="11sp" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/analitica_monto"
+                    android:textColor="@color/texto_titulo"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/peso_monto"
+                    android:textColor="@color/texto_secundario"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <ProgressBar
+                android:id="@+id/barraMonto"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="10dp"
+                android:layout_marginTop="6dp"
+                android:max="100"
+                android:progress="0"
+                android:progressDrawable="@drawable/progreso_analitica" />
+
+            <TextView
+                android:id="@+id/txtPesoMonto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:shadowColor="#6600F0FF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="10"
+                android:textColor="@color/neon_cian"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/analitica_frecuencia"
+                    android:textColor="@color/texto_titulo"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/peso_frecuencia"
+                    android:textColor="@color/texto_secundario"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <ProgressBar
+                android:id="@+id/barraFrecuencia"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="10dp"
+                android:layout_marginTop="6dp"
+                android:max="100"
+                android:progress="0"
+                android:progressDrawable="@drawable/progreso_analitica" />
+
+            <TextView
+                android:id="@+id/txtPesoFrecuencia"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:shadowColor="#66E000FF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="10"
+                android:textColor="@color/neon_purpura"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/analitica_ip"
+                    android:textColor="@color/texto_titulo"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+
+                <TextView
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:text="@string/peso_ip"
+                    android:textColor="@color/texto_secundario"
+                    android:textSize="11sp" />
+            </LinearLayout>
+
+            <ProgressBar
+                android:id="@+id/barraIp"
+                style="?android:attr/progressBarStyleHorizontal"
+                android:layout_width="match_parent"
+                android:layout_height="10dp"
+                android:layout_marginTop="6dp"
+                android:max="100"
+                android:progress="0"
+                android:progressDrawable="@drawable/progreso_analitica" />
+
+            <TextView
+                android:id="@+id/txtPesoIp"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="4dp"
+                android:shadowColor="#66E000FF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="10"
+                android:textColor="@color/neon_magenta"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
+        <LinearLayout
+            android:layout_width="match_parent"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="12dp"
+            android:background="@drawable/panel_cristal"
+            android:orientation="vertical"
+            android:padding="18dp">
+
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:letterSpacing="0.1"
+                android:text="@string/datos_transaccion_titulo"
+                android:textColor="@color/texto_secundario"
+                android:textSize="11sp" />
+
+            <TextView
+                style="@style/EtiquetaDetalle"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:text="@string/etiqueta_monto" />
+
+            <TextView
+                android:id="@+id/txtValorMonto"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:shadowColor="#6600F0FF"
+                android:shadowDx="0"
+                android:shadowDy="0"
+                android:shadowRadius="16"
+                android:textColor="@color/neon_cian"
+                android:textSize="30sp"
+                android:textStyle="bold" />
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="14dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/EtiquetaDetalle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/etiqueta_decision" />
+
+                <TextView
+                    android:id="@+id/txtValorDecision"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/texto_titulo"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/EtiquetaDetalle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/etiqueta_cliente" />
+
+                <TextView
+                    android:id="@+id/txtValorCliente"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/texto_secundario"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/EtiquetaDetalle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/etiqueta_transaccion" />
+
+                <TextView
+                    android:id="@+id/txtValorTransaccion"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/texto_secundario"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/EtiquetaDetalle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/etiqueta_alerta" />
+
+                <TextView
+                    android:id="@+id/txtValorAlerta"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/texto_secundario"
+                    android:textSize="13sp" />
+            </LinearLayout>
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/EtiquetaDetalle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/etiqueta_fecha" />
+
+                <TextView
+                    android:id="@+id/txtValorFecha"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/texto_secundario"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/EtiquetaDetalle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/etiqueta_recibida" />
+
+                <TextView
+                    android:id="@+id/txtValorRecibida"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:textColor="@color/texto_secundario"
+                    android:textSize="13sp" />
+            </LinearLayout>
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="12dp"
+                android:gravity="center_vertical"
+                android:orientation="horizontal">
+
+                <TextView
+                    style="@style/EtiquetaDetalle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/etiqueta_estado" />
+
+                <TextView
+                    android:id="@+id/txtValorEstado"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/chip_cristal"
+                    android:paddingBottom="3dp"
+                    android:paddingEnd="10dp"
+                    android:paddingStart="10dp"
+                    android:paddingTop="3dp"
+                    android:textSize="11sp"
+                    android:textStyle="bold" />
+            </LinearLayout>
+        </LinearLayout>
         <TextView
-            style="@style/EtiquetaDetalle"
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
             android:layout_marginTop="16dp"
-            android:text="@string/etiqueta_monto" />
+            android:layout_marginBottom="8dp"
+            android:letterSpacing="0.12"
+            android:text="@string/dispositivos_titulo"
+            android:textAllCaps="true"
+            android:textColor="@color/texto_secundario"
+            android:textSize="12sp"
+            android:textStyle="bold" />
 
-        <TextView
-            android:id="@+id/txtValorMonto"
-            style="@style/ValorDetalle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <TextView
-            style="@style/EtiquetaDetalle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/etiqueta_score" />
-
-        <TextView
-            android:id="@+id/txtValorScore"
-            style="@style/ValorDetalle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <TextView
-            style="@style/EtiquetaDetalle"
+        <HorizontalScrollView
             android:layout_width="match_parent"
             android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/etiqueta_clasificacion" />
+            android:scrollbars="none">
 
-        <TextView
-            android:id="@+id/txtValorClasificacion"
-            style="@style/ValorDetalle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <TextView
-            style="@style/EtiquetaDetalle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/etiqueta_decision" />
-
-        <TextView
-            android:id="@+id/txtValorDecision"
-            style="@style/ValorDetalle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <TextView
-            style="@style/EtiquetaDetalle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/etiqueta_cliente" />
-
-        <TextView
-            android:id="@+id/txtValorCliente"
-            style="@style/ValorDetalle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <TextView
-            style="@style/EtiquetaDetalle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/etiqueta_transaccion" />
-
-        <TextView
-            android:id="@+id/txtValorTransaccion"
-            style="@style/ValorDetalle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <TextView
-            style="@style/EtiquetaDetalle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/etiqueta_alerta" />
-
-        <TextView
-            android:id="@+id/txtValorAlerta"
-            style="@style/ValorDetalle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <TextView
-            style="@style/EtiquetaDetalle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/etiqueta_fecha" />
-
-        <TextView
-            android:id="@+id/txtValorFecha"
-            style="@style/ValorDetalle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <TextView
-            style="@style/EtiquetaDetalle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/etiqueta_recibida" />
-
-        <TextView
-            android:id="@+id/txtValorRecibida"
-            style="@style/ValorDetalle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
-
-        <TextView
-            style="@style/EtiquetaDetalle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="12dp"
-            android:text="@string/etiqueta_estado" />
-
-        <TextView
-            android:id="@+id/txtValorEstado"
-            style="@style/ValorDetalle"
-            android:layout_width="match_parent"
-            android:layout_height="wrap_content" />
+            <LinearLayout
+                android:id="@+id/carruselDispositivos"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:orientation="horizontal"
+                android:paddingBottom="4dp" />
+        </HorizontalScrollView>
 
         <!-- HU-MVP-06 (Sprint 4): bloqueo preventivo contra POST /api/v1/bloquear -->
-        <Button
+        <androidx.appcompat.widget.AppCompatButton
             android:id="@+id/btnBloquear"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_marginTop="24dp"
-            android:text="@string/btn_bloquear" />
+            android:layout_height="56dp"
+            android:layout_marginTop="20dp"
+            android:background="@drawable/btn_neon_magenta_ripple"
+            android:letterSpacing="0.06"
+            android:text="@string/btn_bloquear"
+            android:textColor="@color/texto_titulo"
+            android:textSize="14sp"
+            android:textStyle="bold" />
     </LinearLayout>
 </ScrollView>
+

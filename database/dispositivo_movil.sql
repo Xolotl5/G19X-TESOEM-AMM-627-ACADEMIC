@@ -115,10 +115,10 @@ COMMENT ON COLUMN DISPOSITIVO_MOVIL.fecha_registro  IS 'Alta del dispositivo en 
 --------------------------------------------------------------------------------
 -- 6. CONSULTA DE CONTROL: dispositivos que recibiran el push (RF-09)
 --------------------------------------------------------------------------------
--- SELECT id_dispositivo, usuario, rol, activo,
---        TO_CHAR(fecha_registro, 'YYYY-MM-DD HH24:MI:SS') AS registrado,
---        SUBSTR(token_fcm, -6)                            AS token_final
---   FROM DISPOSITIVO_MOVIL ORDER BY id_dispositivo;
+ SELECT id_dispositivo, usuario, rol, activo,
+        TO_CHAR(fecha_registro, 'YYYY-MM-DD HH24:MI:SS') AS registrado,
+        SUBSTR(token_fcm, -6)                            AS token_final
+   FROM DISPOSITIVO_MOVIL ORDER BY id_dispositivo;
 
 PROMPT ========================================================================
 PROMPT  Tabla DISPOSITIVO_MOVIL (Sprint 3) instalada: el endpoint
@@ -127,5 +127,7 @@ PROMPT  el push FCM a los registros con activo = 1 cuando score >= 0.4.
 PROMPT ========================================================================
 SET DEFINE ON
 
+SELECT id_dispositivo, usuario, rol, activo, fecha_registro
+  FROM DISPOSITIVO_MOVIL;
 -- Fin del archivo dispositivo_movil.sql - MIDFF Sprint 3 (24/09/2026)
 

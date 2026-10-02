@@ -1,0 +1,43 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Fondo carbón profundo con auroras difusas azul-púrpura-rosa que se
+     insinúan detrás de los paneles de cristal ahumado -->
+<layer-list xmlns:android="http://schemas.android.com/apk/res/android">
+    <item>
+        <shape android:shape="rectangle">
+            <solid android:color="@color/fondo_carbon" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="radial"
+                android:centerX="0.12"
+                android:centerY="0.06"
+                android:gradientRadius="440dp"
+                android:startColor="#333E5BFF"
+                android:endColor="#003E5BFF" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="radial"
+                android:centerX="0.92"
+                android:centerY="0.16"
+                android:gradientRadius="420dp"
+                android:startColor="#2EFF4FD8"
+                android:endColor="#00FF4FD8" />
+        </shape>
+    </item>
+    <item>
+        <shape android:shape="rectangle">
+            <gradient
+                android:type="radial"
+                android:centerX="0.45"
+                android:centerY="0.96"
+                android:gradientRadius="520dp"
+                android:startColor="#308B3DFF"
+                android:endColor="#008B3DFF" />
+        </shape>
+    </item>
+</layer-list>

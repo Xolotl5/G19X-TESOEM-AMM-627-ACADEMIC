@@ -1,15 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- MIDFF (Sprint 3): paleta y colores por banda de riesgo -->
+<!-- MIDFF: paleta del rediseño "Glassmorphism de cristal ahumado con neón
+     de contraste profundo" (prompt.txt): carbón + cristal + neón + aurora -->
 <resources>
-    <color name="midff_primario">#0D3B66</color>
-    <color name="midff_primario_oscuro">#062A4A</color>
-    <color name="midff_acento">#FA8231</color>
+    <!-- Fondo carbón profundo (no negro total) -->
+    <color name="fondo_carbon">#121214</color>
+    <color name="fondo_carbon_claro">#18181C</color>
+
+    <!-- Cristal ahumado: paneles translúcidos al 50-70% con borde suave -->
+    <color name="cristal">#1E1E24</color>
+    <color name="cristal_70">#B31E1E24</color>
+    <color name="cristal_50">#801E1E24</color>
+    <color name="cristal_borde">#2EFFFFFF</color>
+    <color name="cristal_borde_suave">#26FFFFFF</color>
+
+    <!-- Neones de contraste profundo -->
+    <color name="neon_cian">#00F0FF</color>
+    <color name="neon_magenta">#E000FF</color>
+    <color name="neon_purpura">#B44CFF</color>
+
+    <!-- Aurora: degradados orgánicos azul-púrpura-rosa -->
+    <color name="aurora_azul">#3E5BFF</color>
+    <color name="aurora_purpura">#8B3DFF</color>
+    <color name="aurora_rosa">#FF4FD8</color>
+
+    <!-- Texto -->
+    <color name="texto_titulo">#FFFFFF</color>
+    <color name="texto_secundario">#A0A0AB</color>
+    <color name="texto_fecha">#8A8A95</color>
+
+    <!-- Mapeo del tema Material al nuevo lenguaje visual -->
+    <color name="midff_primario">#00F0FF</color>
+    <color name="midff_primario_oscuro">#18181C</color>
+    <color name="midff_acento">#E000FF</color>
     <color name="blanco">#FFFFFF</color>
 
-    <!-- Bandas de riesgo (contrato: BAJO < 0.4 | MEDIO 0.4-0.7 | ALTO > 0.7) -->
-    <color name="clasificacion_bajo">#2E7D32</color>
-    <color name="clasificacion_medio">#9A6A00</color>
-    <color name="clasificacion_alto">#C62828</color>
-
-    <color name="texto_fecha">#757575</color>
+    <!-- Bandas de riesgo con neón: cian APROBADA, púrpura EN_REVISION,
+         magenta BLOQUEADA / riesgo ALTO (contrato: BAJO menor 0.4,
+         MEDIO 0.4-0.7, ALTO mayor 0.7) -->
+    <color name="clasificacion_bajo">#00F0FF</color>
+    <color name="clasificacion_medio">#B44CFF</color>
+    <color name="clasificacion_alto">#E000FF</color>
 </resources>

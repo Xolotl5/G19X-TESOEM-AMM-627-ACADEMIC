@@ -114,3 +114,50 @@ FCM y las presenta en una bandeja de entrada (`MVP_MIDFF.md` §6 · RF-10).
 - El botón **"Bloquear"** (HU-MVP-06, Sprint 4) está implementado:
   `DetalleAlertaActivity` lo envía a `POST /api/v1/bloquear` (requiere
   `database/sp_bloquear_alerta.sql` instalado en Oracle XE).
+
+## Rediseño UI: glassmorphism de cristal ahumado con neón (prompt.txt)
+
+La interfaz se rediseñó como panel de control híbrido con el estilo
+**"Glassmorphism de Cristal Ahumado con Neón de Contraste Profundo"**:
+
+| Elemento | Implementación |
+|---|---|
+| Fondo | Carbón profundo `#121214` con auroras radiales difusas azul-púrpura-rosa (`bg_pantalla.xml`). |
+| Paneles | Cristal ahumado translúcido (~60-70%) con degradado vertical interno y borde 1px semitransparente (`panel_cristal.xml`, `chip_cristal.xml`). |
+| Neones | Cian `#00F0FF` y magenta `#E000FF`: texto de filtros activo (cian), subrayado magenta, scores/montos grandes con glow (`shadowLayer`), botones cápsula con halo (`btn_neon_cian/btn_neon_magenta.xml`). |
+| Bandas de riesgo | Cian APROBADA/BAJO, púrpura `#B44CFF` EN_REVISION/MEDIO, magenta ALTO/BLOQUEADA. |
+| Cabecera (`cabecera_bandeja.xml`) | Avatar circular con degradado aurora + usuario en texto degradado azul-rosa (`UtilidadesUi.textoDegradado`), isla dinámica "Motor C · Escaneando" con punto pulsante, panel de riesgo global (score máximo) y volumen monitoreado en cian neón. |
+| Filtros | Chips de cristal (Todas/Aprobadas/En Revisión/Bloqueadas) + rayo aurora de Críticas con badge; filtran la bandeja en `MainActivity` (enum `Filtro`). |
+| Detalle | Hero con score gigante, analítica ponderada (monto 45% / frecuencia 30% / ubicación IP 25%) con barras de gradiente cian-púrpura-magenta, trazabilidad, carrusel de dispositivos (`item_dispositivo.xml`) y "Bloquear" en cápsula magenta. |
+| Navegación | Banda inferior de cristal helado con iconos aurora; el activo se tiñe de cian con resplandor (`marcarNavegacion`). |
+
+**Nota técnica**: el desenfoque de fondo (`backdrop-filter: blur`) no existe
+como tal en Views de Android; se simula con rellenos translúcidos sobre las
+auroras del fondo, como es práctica estándar. El tema pasó de
+`DarkActionBar` a `NoActionBar` (la isla dinámica hace de cabecera; el
+detalle tiene su botón "Volver"). Los iconos con relleno degradado usan
+`aapt:attr` en los vectores (requiere AAPT2, incluido en AGP 8.x).
+
+## Usabilidad: pestañas instantáneas y feedback en cada acción
+
+La navegación inferior ya **no hace scroll** de una lista larga: la pantalla
+se divide en tres **pestañas que se intercambian por visibilidad** con un
+fundido de ~110 ms (`Pestana.PANEL | ALERTAS | REGISTRO` en `MainActivity`):
+
+| Acción | Comportamiento |
+|---|---|
+| Panel / Alertas / Registro (nav inferior) | Cambio **instantáneo** de pestaña + resaltado cian. Segundo toque en "Alertas" salta al inicio de la lista (`setSelection(0)`, sin animación). |
+| Isla dinámica | Táctil: al pulsarla refresca la bandeja con rebote de escala y actualiza su texto. |
+| Avatar | Salta a la pestaña Registro y enfoca el campo de usuario. |
+| Registrar token | Se deshabilita y muestra "Registrando…" mientras la API responde (ignora dobles toques); el resultado (éxito cian / fallo magenta con motivo) queda **inline** en `txtEstadoRegistro`. |
+| Actualizar | Refresca y da acuse: texto en la isla ("Bandeja al día · N alertas") + parpadeo corto de la lista. |
+| Limpiar | Pide confirmación con `AlertDialog` antes de vaciar la bandeja local. |
+| Copiar token | Copia el token FCM al portapapeles (`ClipboardManager`). |
+| Ver alertas críticas (Panel) | Salta a Alertas y aplica el filtro CRITICAS. |
+| Filtros | Chips con **conteo en vivo** ("Todas · 12", "Bloqueadas · 3") y respuesta inmediata. |
+
+Además, **todo lo tocable tiene ripple**: nav inferior (`foreground`),
+botones (`btn_neon_*_ripple`, `btn_cristal_ripple`), chips
+(`chip_cristal_ripple`) y los ítems de la bandeja (`listSelector`
+`selector_item_alerta`). La cabecera compacta (avatar + isla) está siempre
+visible en las tres pestañas.

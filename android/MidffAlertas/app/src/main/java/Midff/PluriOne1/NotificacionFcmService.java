@@ -126,7 +126,8 @@ public class NotificacionFcmService extends FirebaseMessagingService {
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(alerta.detalleLargo()))
                 .setPriority(sana ? NotificationCompat.PRIORITY_DEFAULT : NotificationCompat.PRIORITY_HIGH)
                 .setCategory(sana ? NotificationCompat.CATEGORY_STATUS : NotificationCompat.CATEGORY_ALARM)
-                .setColor(sana ? 0xFF2E7D32 : (alerta.esRiesgoAlto() ? 0xFFC62828 : 0xFF0D3B66))
+                .setColor(sana ? 0xFF00F0FF
+                        : (alerta.esRiesgoAlto() ? 0xFFE000FF : 0xFF8B3DFF))
                 .setAutoCancel(true)
                 .setContentIntent(pendiente);
 

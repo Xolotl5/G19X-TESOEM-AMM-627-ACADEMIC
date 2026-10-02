@@ -136,6 +136,30 @@ public class ModeloAlerta {
         return "BLOQUEADA".equalsIgnoreCase(estado);
     }
 
+    /**
+     * Score como número entre 0 y 1 para la analítica visual del detalle
+     * (rediseño glass/neón); 0 si el texto no es legible.
+     */
+    public double scoreValor() {
+        try {
+            return Math.max(0d, Math.min(1d,
+                    Double.parseDouble(score.replace(',', '.'))));
+        } catch (Exception e) {
+            return 0d;
+        }
+    }
+
+    /** Cierto para transacciones aprobadas (banda BAJO o decisión APROBADA). */
+    public boolean esAprobada() {
+        return esSana()
+                || (decision != null && decision.toUpperCase(Locale.US).contains("APROB"));
+    }
+
+    /** Cierto mientras la alerta espera al oficial (ni aprobada ni bloqueada). */
+    public boolean enRevision() {
+        return !estaBloqueada() && !esAprobada();
+    }
+
     public String tituloNotificacion() {
         if (esSana()) {
             return "MIDFF: transaccion aprobada (riesgo " + clasificacion + ")";

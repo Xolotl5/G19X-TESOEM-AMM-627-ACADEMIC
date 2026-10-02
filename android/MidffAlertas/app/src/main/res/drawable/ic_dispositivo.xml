@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- Dispositivo móvil del carrusel con relleno aurora -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:aapt="http://schemas.android.com/aapt"
+    android:width="24dp"
+    android:height="24dp"
+    android:viewportWidth="24"
+    android:viewportHeight="24">
+    <path android:pathData="M7,1h10a2,2 0,0 1,2 2v18a2,2 0,0 1,-2 2H7a2,2 0,0 1,-2 -2V3a2,2 0,0 1,2 -2zM10.5,19h3v2h-3z">
+        <aapt:attr name="android:fillColor">
+            <gradient
+                android:type="linear"
+                android:startX="5"
+                android:startY="1"
+                android:endX="19"
+                android:endY="23"
+                android:startColor="#00F0FF"
+                android:centerColor="#8B3DFF"
+                android:endColor="#FF4FD8" />
+        </aapt:attr>
+    </path>
+</vector>

@@ -2,14 +2,18 @@ package Midff.PluriOne1;
 
 import android.util.Log;
 
+import org.json.JSONException;
 import org.json.JSONObject;
 
 import java.io.BufferedReader;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
+import java.net.ConnectException;
 import java.net.HttpURLConnection;
+import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
 
 /**
@@ -63,7 +67,7 @@ public final class ApiClient {
         } catch (Exception e) {
             Log.e(ETIQUETA, "no fue posible armar el cuerpo del registro", e);
             if (callback != null) {
-                callback.terminado(false, String.valueOf(e.getMessage()));
+                callback.terminado(false, mensajeDeExcepcion(e));
             }
         }
     }
@@ -82,7 +86,7 @@ public final class ApiClient {
         } catch (Exception e) {
             Log.e(ETIQUETA, "no fue posible armar el cuerpo del bloqueo", e);
             if (callback != null) {
-                callback.terminado(false, String.valueOf(e.getMessage()));
+                callback.terminado(false, mensajeDeExcepcion(e));
             }
         }
     }
@@ -107,12 +111,12 @@ public final class ApiClient {
                 int codigo = conexion.getResponseCode();
                 String texto = leer(codigo >= 400 ? conexion.getErrorStream() : conexion.getInputStream());
                 if (callback != null) {
-                    callback.terminado(codigo == 200, "HTTP " + codigo + ": " + texto);
+                    callback.terminado(codigo == 200, mensajeHttp(codigo, texto));
                 }
             } catch (Exception e) {
                 Log.e(ETIQUETA, "fallo la llamada a " + ruta, e);
                 if (callback != null) {
-                    callback.terminado(false, String.valueOf(e.getMessage()));
+                    callback.terminado(false, mensajeDeExcepcion(e));
                 }
             } finally {
                 if (conexion != null) {
@@ -135,5 +139,54 @@ public final class ApiClient {
             }
         }
         return constructor.toString();
+    }
+
+    // ------------------------------------------------------------------------
+    // Mensajes de error accionables (los muestra el Toast de la app)
+    // ------------------------------------------------------------------------
+
+    /**
+     * Mensaje para una respuesta HTTP distinta de 200. En lugar del JSON crudo,
+     * extrae el campo {@code error} del contrato de errores de la API
+     * (p. ej. {@code HTTP 400 - token_fcm invalido: se espera...}).
+     */
+    private static String mensajeHttp(int codigo, String texto) {
+        String detalle = extraerError(texto);
+        return detalle.isEmpty() ? "HTTP " + codigo : "HTTP " + codigo + " - " + detalle;
+    }
+
+    /** Toma el campo "error" del cuerpo JSON; si no aplica, devuelve el texto tal cual. */
+    private static String extraerError(String texto) {
+        if (texto == null) {
+            return "";
+        }
+        String limpio = texto.trim();
+        if (!limpio.startsWith("{")) {
+            return limpio;
+        }
+        try {
+            return new JSONObject(limpio).optString("error", limpio);
+        } catch (JSONException e) {
+            return limpio;
+        }
+    }
+
+    /**
+     * Traduce una excepcion de red en un mensaje diagnosticable sin Logcat:
+     * incluye el tipo de fallo (ConnectException, SocketTimeoutException, ...) y,
+     * cuando es un problema de conexion, la URL base y la ayuda del puente adb.
+     */
+    private static String mensajeDeExcepcion(Exception e) {
+        String detalle = e.getMessage();
+        String base = e.getClass().getSimpleName()
+                + (detalle == null || detalle.trim().isEmpty() ? "" : ": " + detalle);
+        if (e instanceof ConnectException
+                || e instanceof UnknownHostException
+                || e instanceof SocketTimeoutException) {
+            // En una sola linea: en Android 12+ los Toast del sistema recortan
+            // el texto a ~2 lineas, asi el motivo nunca queda oculto.
+            base += " | verifique la API MIDFF (en USB: adb reverse tcp:8090 tcp:8090)";
+        }
+        return base;
     }
 }

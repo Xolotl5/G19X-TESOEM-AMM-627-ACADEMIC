@@ -1,25 +1,36 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- MIDFF (Sprint 3): tema base + estilos del detalle de alerta -->
+<!-- MIDFF: tema del rediseño glass/neón (sin ActionBar: la isla dinámica
+     hace de cabecera) + estilos del detalle de alerta -->
 <resources>
 
-    <style name="Theme.MidffAlertas" parent="Theme.MaterialComponents.DayNight.DarkActionBar">
-        <item name="colorPrimary">@color/midff_primario</item>
-        <item name="colorPrimaryVariant">@color/midff_primario_oscuro</item>
-        <item name="colorOnPrimary">@color/blanco</item>
-        <item name="colorSecondary">@color/midff_acento</item>
-        <item name="colorSecondaryVariant">@color/midff_acento</item>
+    <style name="Theme.MidffAlertas" parent="Theme.MaterialComponents.NoActionBar">
+        <item name="colorPrimary">@color/neon_cian</item>
+        <item name="colorPrimaryVariant">@color/aurora_purpura</item>
+        <item name="colorOnPrimary">@color/fondo_carbon</item>
+        <item name="colorSecondary">@color/neon_magenta</item>
+        <item name="colorSecondaryVariant">@color/aurora_rosa</item>
         <item name="colorOnSecondary">@color/blanco</item>
-        <item name="android:statusBarColor">@color/midff_primario_oscuro</item>
+        <item name="android:colorBackground">@color/fondo_carbon</item>
+        <item name="android:windowBackground">@drawable/bg_pantalla</item>
+        <item name="android:statusBarColor">@color/fondo_carbon</item>
+        <item name="android:navigationBarColor">@color/fondo_carbon</item>
+        <item name="android:textColor">@color/texto_titulo</item>
+        <item name="android:textColorHint">@color/texto_secundario</item>
+        <item name="editTextColor">@color/texto_titulo</item>
+        <item name="android:windowLightStatusBar">false</item>
     </style>
 
-    <!-- Etiqueta pequena del detalle de alerta -->
+    <!-- Etiqueta pequeña (contenido secundario: IPs, fechas, IDs) -->
     <style name="EtiquetaDetalle">
         <item name="android:textAppearance">?attr/textAppearanceCaption</item>
-        <item name="android:textColor">@color/texto_fecha</item>
+        <item name="android:textColor">@color/texto_secundario</item>
+        <item name="android:letterSpacing">0.08</item>
     </style>
 
-    <!-- Valor grande del detalle de alerta -->
+    <!-- Valor grande del detalle: blanco nítido para títulos y números -->
     <style name="ValorDetalle">
         <item name="android:textAppearance">?attr/textAppearanceHeadline6</item>
+        <item name="android:textColor">@color/texto_titulo</item>
+        <item name="android:textStyle">bold</item>
     </style>
 </resources>

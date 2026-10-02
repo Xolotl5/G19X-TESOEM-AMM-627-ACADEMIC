@@ -1,93 +1,750 @@
 <?xml version="1.0" encoding="utf-8"?>
-<!-- MIDFF (Sprint 3): bandeja de alertas + registro del token FCM -->
+<!-- MIDFF: bandeja rediseñada con PESTAÑAS INSTANTÁNEAS (Panel | Alertas |
+     Registro) que se intercambian por visibilidad (sin scroll largo). La
+     cabecera compacta (avatar + isla dinamica) esta siempre visible y la
+     navegacion inferior es de cristal helado con ripple tactil -->
 <LinearLayout xmlns:android="http://schemas.android.com/apk/res/android"
     android:layout_width="match_parent"
     android:layout_height="match_parent"
-    android:orientation="vertical"
-    android:padding="16dp">
-
-    <TextView
-        android:id="@+id/txtTitulo"
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:text="@string/titulo_app"
-        android:textAppearance="?attr/textAppearanceHeadlineSmall" />
-
-    <TextView
-        android:id="@+id/txtToken"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:ellipsize="middle"
-        android:singleLine="true"
-        android:text="@string/token_pendiente"
-        android:textAppearance="?attr/textAppearanceCaption"
-        android:textIsSelectable="true" />
-
-    <EditText
-        android:id="@+id/edtUsuario"
-        android:layout_width="match_parent"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:hint="@string/hint_usuario"
-        android:inputType="text"
-        android:maxLines="1" />
+    android:background="@drawable/bg_pantalla"
+    android:orientation="vertical">
 
     <LinearLayout
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
-        android:layout_marginTop="8dp"
-        android:orientation="horizontal">
+        android:gravity="center_vertical"
+        android:orientation="horizontal"
+        android:paddingBottom="6dp"
+        android:paddingEnd="16dp"
+        android:paddingStart="16dp"
+        android:paddingTop="10dp">
 
-        <Button
-            android:id="@+id/btnRegistrar"
+        <FrameLayout
+            android:id="@+id/contenedorAvatar"
+            android:layout_width="40dp"
+            android:layout_height="40dp"
+            android:background="@drawable/avatar_gradiente">
+
+            <TextView
+                android:id="@+id/txtAvatarIniciales"
+                android:layout_width="match_parent"
+                android:layout_height="match_parent"
+                android:gravity="center"
+                android:textColor="@color/texto_titulo"
+                android:textSize="14sp"
+                android:textStyle="bold" />
+        </FrameLayout>
+
+        <LinearLayout
             android:layout_width="0dp"
             android:layout_height="wrap_content"
-            android:layout_marginEnd="4dp"
+            android:layout_marginStart="10dp"
             android:layout_weight="1"
-            android:text="@string/btn_registrar" />
+            android:orientation="vertical">
 
-        <Button
-            android:id="@+id/btnActualizar"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_marginEnd="4dp"
-            android:layout_weight="1"
-            android:text="@string/btn_actualizar" />
+            <TextView
+                android:id="@+id/txtUsuarioHeader"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:fontFamily="sans-serif-medium"
+                android:textColor="@color/texto_titulo"
+                android:textSize="16sp" />
 
-        <Button
-            android:id="@+id/btnLimpiar"
-            android:layout_width="0dp"
-            android:layout_height="wrap_content"
-            android:layout_weight="1"
-            android:text="@string/btn_limpiar" />
+            <TextView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:text="@string/rol_oficial"
+                android:textColor="@color/texto_secundario"
+                android:textSize="11sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/islaDinamica"
+            android:layout_width="wrap_content"
+            android:layout_height="30dp"
+            android:background="@drawable/isla_dinamica"
+            android:gravity="center"
+            android:orientation="horizontal"
+            android:paddingEnd="12dp"
+            android:paddingStart="12dp">
+
+            <View
+                android:id="@+id/puntoEstado"
+                android:layout_width="10dp"
+                android:layout_height="10dp"
+                android:background="@drawable/punto_estado" />
+
+            <TextView
+                android:id="@+id/txtIslaEstado"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginStart="6dp"
+                android:text="@string/isla_estado_conectando"
+                android:textColor="#CDCDD6"
+                android:textSize="11sp" />
+        </LinearLayout>
     </LinearLayout>
-
-    <TextView
-        android:layout_width="wrap_content"
-        android:layout_height="wrap_content"
-        android:layout_marginTop="16dp"
-        android:text="@string/titulo_bandeja"
-        android:textAppearance="?attr/textAppearanceTitleMedium" />
 
     <FrameLayout
         android:layout_width="match_parent"
         android:layout_height="0dp"
-        android:layout_marginTop="8dp"
         android:layout_weight="1">
-
-        <ListView
-            android:id="@+id/listaAlertas"
+        <ScrollView
+            android:id="@+id/pestanaPanel"
             android:layout_width="match_parent"
-            android:layout_height="match_parent" />
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:scrollbars="none">
 
-        <TextView
-            android:id="@+id/txtBandejaVacia"
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingBottom="16dp"
+                android:paddingEnd="16dp"
+                android:paddingStart="16dp">
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/panel_cristal"
+                    android:orientation="horizontal"
+                    android:padding="18dp">
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/etiqueta_riesgo_global"
+                            android:textColor="@color/texto_secundario"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/txtRiesgoGlobal"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:fontFamily="sans-serif-medium"
+                            android:shadowColor="#6600F0FF"
+                            android:shadowDx="0"
+                            android:shadowDy="0"
+                            android:shadowRadius="18"
+                            android:text="@string/cero_inicial"
+                            android:textColor="@color/neon_cian"
+                            android:textSize="34sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/sublabel_riesgo"
+                            android:textColor="@color/texto_fecha"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+
+                    <View
+                        android:layout_width="1dp"
+                        android:layout_height="match_parent"
+                        android:layout_marginEnd="14dp"
+                        android:layout_marginStart="14dp"
+                        android:background="@color/cristal_borde_suave" />
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/etiqueta_volumen"
+                            android:textColor="@color/texto_secundario"
+                            android:textSize="11sp" />
+
+                        <TextView
+                            android:id="@+id/txtVolumen"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:layout_marginTop="2dp"
+                            android:fontFamily="sans-serif-medium"
+                            android:shadowColor="#6600F0FF"
+                            android:shadowDx="0"
+                            android:shadowDy="0"
+                            android:shadowRadius="18"
+                            android:text="@string/cero_inicial"
+                            android:textColor="@color/neon_cian"
+                            android:textSize="34sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/volumen_moneda"
+                            android:textColor="@color/texto_fecha"
+                            android:textSize="10sp" />
+                    </LinearLayout>
+                </LinearLayout>
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/panel_cristal"
+                    android:gravity="center_vertical"
+                    android:orientation="horizontal"
+                    android:padding="16dp">
+
+                    <FrameLayout
+                        android:layout_width="40dp"
+                        android:layout_height="40dp"
+                        android:background="@drawable/chip_cristal">
+
+                        <ImageView
+                            android:layout_width="22dp"
+                            android:layout_height="22dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@string/panel_criticas_titulo"
+                            android:src="@drawable/ic_rayo_aurora" />
+                    </FrameLayout>
+
+                    <LinearLayout
+                        android:layout_width="0dp"
+                        android:layout_height="wrap_content"
+                        android:layout_marginStart="12dp"
+                        android:layout_weight="1"
+                        android:orientation="vertical">
+
+                        <TextView
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:text="@string/panel_criticas_titulo"
+                            android:textColor="@color/texto_titulo"
+                            android:textSize="14sp"
+                            android:textStyle="bold" />
+
+                        <TextView
+                            android:id="@+id/txtCriticasDetalle"
+                            android:layout_width="match_parent"
+                            android:layout_height="wrap_content"
+                            android:textColor="@color/texto_secundario"
+                            android:textSize="11sp" />
+                    </LinearLayout>
+                </LinearLayout>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnVerCriticas"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/btn_neon_magenta_ripple"
+                    android:text="@string/btn_ver_criticas"
+                    android:textColor="@color/texto_titulo"
+                    android:textSize="12sp"
+                    android:textStyle="bold" />
+
+                <LinearLayout
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/panel_cristal"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:letterSpacing="0.1"
+                        android:text="@string/titulo_tarjeta_registro"
+                        android:textColor="@color/texto_secundario"
+                        android:textSize="11sp" />
+
+                    <TextView
+                        android:id="@+id/txtEstadoDispositivo"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="6dp"
+                        android:textColor="#CDCDD6"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnIrRegistro"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="10dp"
+                    android:background="@drawable/btn_cristal_ripple"
+                    android:text="@string/btn_ir_registro"
+                    android:textColor="@color/texto_titulo"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </ScrollView>
+        <LinearLayout
+            android:id="@+id/pestanaAlertas"
             android:layout_width="match_parent"
-            android:layout_height="wrap_content"
-            android:layout_gravity="center"
-            android:gravity="center"
-            android:padding="24dp"
-            android:text="@string/bandeja_vacia" />
+            android:layout_height="match_parent"
+            android:orientation="vertical"
+            android:visibility="gone">
+
+            <HorizontalScrollView
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginBottom="2dp"
+                android:layout_marginTop="8dp"
+                android:paddingEnd="16dp"
+                android:paddingStart="16dp"
+                android:scrollbars="none">
+
+                <LinearLayout
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:orientation="horizontal">
+
+                    <LinearLayout
+                        android:id="@+id/chipTodas"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/chip_cristal_ripple"
+                        android:gravity="center_horizontal"
+                        android:orientation="vertical"
+                        android:paddingBottom="9dp"
+                        android:paddingEnd="14dp"
+                        android:paddingStart="14dp"
+                        android:paddingTop="9dp">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <ImageView
+                                android:layout_width="15dp"
+                                android:layout_height="15dp"
+                                android:contentDescription="@string/filtro_todas"
+                                android:src="@drawable/ic_todas" />
+
+                            <TextView
+                                android:id="@+id/etiquetaTodas"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:text="@string/filtro_todas"
+                                android:textColor="@color/texto_secundario"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <View
+                            android:id="@+id/lineaTodas"
+                            android:layout_width="28dp"
+                            android:layout_height="3dp"
+                            android:layout_marginTop="6dp"
+                            android:background="@drawable/indicador_filtro"
+                            android:visibility="invisible" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/chipAprobadas"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/chip_cristal_ripple"
+                        android:gravity="center_horizontal"
+                        android:orientation="vertical"
+                        android:paddingBottom="9dp"
+                        android:paddingEnd="14dp"
+                        android:paddingStart="14dp"
+                        android:paddingTop="9dp">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <ImageView
+                                android:layout_width="15dp"
+                                android:layout_height="15dp"
+                                android:contentDescription="@string/filtro_aprobadas"
+                                android:src="@drawable/ic_aprobada" />
+
+                            <TextView
+                                android:id="@+id/etiquetaAprobadas"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:text="@string/filtro_aprobadas"
+                                android:textColor="@color/texto_secundario"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <View
+                            android:id="@+id/lineaAprobadas"
+                            android:layout_width="28dp"
+                            android:layout_height="3dp"
+                            android:layout_marginTop="6dp"
+                            android:background="@drawable/indicador_filtro"
+                            android:visibility="invisible" />
+                    </LinearLayout>
+                    <LinearLayout
+                        android:id="@+id/chipRevision"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/chip_cristal_ripple"
+                        android:gravity="center_horizontal"
+                        android:orientation="vertical"
+                        android:paddingBottom="9dp"
+                        android:paddingEnd="14dp"
+                        android:paddingStart="14dp"
+                        android:paddingTop="9dp">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <ImageView
+                                android:layout_width="15dp"
+                                android:layout_height="15dp"
+                                android:contentDescription="@string/filtro_revision"
+                                android:src="@drawable/ic_revision" />
+
+                            <TextView
+                                android:id="@+id/etiquetaRevision"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:text="@string/filtro_revision"
+                                android:textColor="@color/texto_secundario"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <View
+                            android:id="@+id/lineaRevision"
+                            android:layout_width="28dp"
+                            android:layout_height="3dp"
+                            android:layout_marginTop="6dp"
+                            android:background="@drawable/indicador_filtro"
+                            android:visibility="invisible" />
+                    </LinearLayout>
+
+                    <LinearLayout
+                        android:id="@+id/chipBloqueadas"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="10dp"
+                        android:background="@drawable/chip_cristal_ripple"
+                        android:gravity="center_horizontal"
+                        android:orientation="vertical"
+                        android:paddingBottom="9dp"
+                        android:paddingEnd="14dp"
+                        android:paddingStart="14dp"
+                        android:paddingTop="9dp">
+
+                        <LinearLayout
+                            android:layout_width="wrap_content"
+                            android:layout_height="wrap_content"
+                            android:gravity="center_vertical"
+                            android:orientation="horizontal">
+
+                            <ImageView
+                                android:layout_width="15dp"
+                                android:layout_height="15dp"
+                                android:contentDescription="@string/filtro_bloqueadas"
+                                android:src="@drawable/ic_bloqueada" />
+
+                            <TextView
+                                android:id="@+id/etiquetaBloqueadas"
+                                android:layout_width="wrap_content"
+                                android:layout_height="wrap_content"
+                                android:layout_marginStart="6dp"
+                                android:text="@string/filtro_bloqueadas"
+                                android:textColor="@color/texto_secundario"
+                                android:textSize="12sp"
+                                android:textStyle="bold" />
+                        </LinearLayout>
+
+                        <View
+                            android:id="@+id/lineaBloqueadas"
+                            android:layout_width="28dp"
+                            android:layout_height="3dp"
+                            android:layout_marginTop="6dp"
+                            android:background="@drawable/indicador_filtro"
+                            android:visibility="invisible" />
+                    </LinearLayout>
+
+                    <FrameLayout
+                        android:id="@+id/chipCriticas"
+                        android:layout_width="44dp"
+                        android:layout_height="44dp"
+                        android:layout_marginEnd="8dp"
+                        android:background="@drawable/chip_cristal_ripple">
+
+                        <ImageView
+                            android:layout_width="24dp"
+                            android:layout_height="24dp"
+                            android:layout_gravity="center"
+                            android:contentDescription="@string/filtro_criticas"
+                            android:src="@drawable/ic_rayo_aurora" />
+
+                        <TextView
+                            android:id="@+id/badgeCriticas"
+                            android:layout_width="18dp"
+                            android:layout_height="18dp"
+                            android:layout_gravity="end|top"
+                            android:background="@drawable/badge_criticas"
+                            android:gravity="center"
+                            android:textColor="@color/texto_titulo"
+                            android:textSize="10sp"
+                            android:textStyle="bold"
+                            android:visibility="gone" />
+                    </FrameLayout>
+                </LinearLayout>
+            </HorizontalScrollView>
+            <FrameLayout
+                android:layout_width="match_parent"
+                android:layout_height="0dp"
+                android:layout_weight="1">
+
+                <ListView
+                    android:id="@+id/listaAlertas"
+                    android:layout_width="match_parent"
+                    android:layout_height="match_parent"
+                    android:clipToPadding="false"
+                    android:divider="@android:color/transparent"
+                    android:dividerHeight="12dp"
+                    android:listSelector="@drawable/selector_item_alerta"
+                    android:paddingBottom="16dp"
+                    android:paddingEnd="16dp"
+                    android:paddingStart="16dp"
+                    android:paddingTop="6dp"
+                    android:scrollbars="none" />
+
+                <TextView
+                    android:id="@+id/txtBandejaVacia"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_gravity="center"
+                    android:gravity="center"
+                    android:padding="32dp"
+                    android:text="@string/bandeja_vacia"
+                    android:textColor="@color/texto_secundario" />
+            </FrameLayout>
+        </LinearLayout>
+        <ScrollView
+            android:id="@+id/pestanaRegistro"
+            android:layout_width="match_parent"
+            android:layout_height="match_parent"
+            android:fillViewport="true"
+            android:scrollbars="none"
+            android:visibility="gone">
+
+            <LinearLayout
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:orientation="vertical"
+                android:paddingBottom="16dp"
+                android:paddingEnd="16dp"
+                android:paddingStart="16dp"
+                android:paddingTop="8dp">
+
+                <LinearLayout
+                    android:id="@+id/tarjetaRegistro"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:background="@drawable/panel_cristal"
+                    android:orientation="vertical"
+                    android:padding="16dp">
+
+                    <TextView
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:letterSpacing="0.1"
+                        android:text="@string/titulo_tarjeta_registro"
+                        android:textColor="@color/texto_secundario"
+                        android:textSize="11sp" />
+
+                    <EditText
+                        android:id="@+id/edtUsuario"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/campo_cristal"
+                        android:hint="@string/hint_usuario"
+                        android:imeOptions="actionDone"
+                        android:inputType="text"
+                        android:maxLines="1"
+                        android:textColor="@color/texto_titulo"
+                        android:textColorHint="@color/texto_secundario"
+                        android:textSize="13sp" />
+
+                    <LinearLayout
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="12dp"
+                        android:orientation="horizontal">
+
+                        <androidx.appcompat.widget.AppCompatButton
+                            android:id="@+id/btnRegistrar"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/btn_neon_cian_ripple"
+                            android:text="@string/btn_registrar"
+                            android:textColor="@color/neon_cian"
+                            android:textSize="12sp"
+                            android:textStyle="bold" />
+
+                        <androidx.appcompat.widget.AppCompatButton
+                            android:id="@+id/btnActualizar"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_marginEnd="6dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/btn_cristal_ripple"
+                            android:text="@string/btn_actualizar"
+                            android:textColor="@color/texto_titulo"
+                            android:textSize="12sp" />
+
+                        <androidx.appcompat.widget.AppCompatButton
+                            android:id="@+id/btnLimpiar"
+                            android:layout_width="0dp"
+                            android:layout_height="44dp"
+                            android:layout_weight="1"
+                            android:background="@drawable/btn_cristal_ripple"
+                            android:text="@string/btn_limpiar"
+                            android:textColor="@color/texto_titulo"
+                            android:textSize="12sp" />
+                    </LinearLayout>
+
+                    <TextView
+                        android:id="@+id/txtToken"
+                        android:layout_width="match_parent"
+                        android:layout_height="wrap_content"
+                        android:layout_marginTop="10dp"
+                        android:ellipsize="middle"
+                        android:singleLine="true"
+                        android:text="@string/token_pendiente"
+                        android:textAppearance="?attr/textAppearanceCaption"
+                        android:textColor="@color/texto_fecha"
+                        android:textIsSelectable="true" />
+
+                    <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/btnCopiarToken"
+                        android:layout_width="match_parent"
+                        android:layout_height="40dp"
+                        android:layout_marginTop="10dp"
+                        android:background="@drawable/btn_cristal_ripple"
+                        android:text="@string/btn_copiar_token"
+                        android:textColor="@color/texto_titulo"
+                        android:textSize="12sp" />
+                </LinearLayout>
+
+                <TextView
+                    android:id="@+id/txtEstadoRegistro"
+                    android:layout_width="match_parent"
+                    android:layout_height="wrap_content"
+                    android:layout_marginTop="12dp"
+                    android:text="@string/estado_registro_pendiente"
+                    android:textColor="@color/texto_secundario"
+                    android:textSize="12sp" />
+            </LinearLayout>
+        </ScrollView>
     </FrameLayout>
+    <LinearLayout
+        android:id="@+id/barraNavegacion"
+        android:layout_width="match_parent"
+        android:layout_height="64dp"
+        android:background="@drawable/nav_cristal"
+        android:orientation="horizontal">
+
+        <LinearLayout
+            android:id="@+id/navPanel"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:foreground="@drawable/ripple_tactil"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/iconoNavPanel"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:contentDescription="@string/nav_panel"
+                android:src="@drawable/ic_nav_panel" />
+
+            <TextView
+                android:id="@+id/etiquetaNavPanel"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:text="@string/nav_panel"
+                android:textColor="@color/texto_secundario"
+                android:textSize="10sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/navAlertas"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:foreground="@drawable/ripple_tactil"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/iconoNavAlertas"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:contentDescription="@string/nav_alertas"
+                android:src="@drawable/ic_nav_alertas" />
+
+            <TextView
+                android:id="@+id/etiquetaNavAlertas"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:text="@string/nav_alertas"
+                android:textColor="@color/texto_secundario"
+                android:textSize="10sp" />
+        </LinearLayout>
+
+        <LinearLayout
+            android:id="@+id/navAjustes"
+            android:layout_width="0dp"
+            android:layout_height="match_parent"
+            android:layout_weight="1"
+            android:foreground="@drawable/ripple_tactil"
+            android:gravity="center"
+            android:orientation="vertical">
+
+            <ImageView
+                android:id="@+id/iconoNavAjustes"
+                android:layout_width="22dp"
+                android:layout_height="22dp"
+                android:contentDescription="@string/nav_ajustes"
+                android:src="@drawable/ic_nav_ajustes" />
+
+            <TextView
+                android:id="@+id/etiquetaNavAjustes"
+                android:layout_width="wrap_content"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="3dp"
+                android:text="@string/nav_ajustes"
+                android:textColor="@color/texto_secundario"
+                android:textSize="10sp" />
+        </LinearLayout>
+    </LinearLayout>
 </LinearLayout>

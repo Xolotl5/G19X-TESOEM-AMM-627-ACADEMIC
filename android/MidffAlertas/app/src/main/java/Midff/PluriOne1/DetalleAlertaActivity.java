@@ -1,22 +1,29 @@
 package Midff.PluriOne1;
 
 import android.os.Bundle;
+import android.view.LayoutInflater;
+import android.view.View;
 import android.widget.Button;
+import android.widget.LinearLayout;
+import android.widget.ProgressBar;
 import android.widget.TextView;
 import android.widget.Toast;
 
 import androidx.appcompat.app.AppCompatActivity;
 
+import java.util.Locale;
+
 /**
- * Detalle de la alerta (RF-10): monto, score y clasificacion de la
- * transaccion que disparo el push, con su trazabilidad hacia Oracle
- * (id de transaccion, id de alerta, decision y fecha de evaluacion).
+ * Detalle de la alerta (RF-10), rediseñado glass/neón: score y montos en
+ * cian neón con resplandor según la clasificación (cian APROBADA,
+ * púrpura/magenta EN_REVISION o BLOQUEADA), analítica ponderada
+ * (monto 45%, frecuencia 30%, ubicación IP 25%) con degradados aurora y
+ * carrusel de dispositivos vinculados (DISPOSITIVO_MOVIL).
  *
- * <p>Sprint 4 (HU-MVP-06): el boton "Bloquear" envia
- * {@code POST /api/v1/bloquear} con el usuario del oficial registrado en
- * {@link AlertasRepositorio}; Oracle persiste {@code ALERTA.estado =
- * BLOQUEADA} mas el registro BLOQUEO en AUDITORIA (usuario y timestamp),
- * y la app refleja el estado en la bandeja local.</p>
+ * <p>Sprint 4 (HU-MVP-06): el botón "Bloquear" (cápsula de cristal con
+ * borde magenta neón) envía {@code POST /api/v1/bloquear} con el usuario
+ * del oficial; Oracle persiste {@code ALERTA.estado = BLOQUEADA} más el
+ * registro BLOQUEO en AUDITORIA, y la app refleja el estado en la bandeja.</p>
  *
  * <p>Recibe la alerta serializada en el extra
  * {@link NotificacionFcmService#EXTRA_ALERTA_JSON}.</p>
@@ -38,21 +45,30 @@ public class DetalleAlertaActivity extends AppCompatActivity {
             return;
         }
 
+        findViewById(R.id.btnRegresar).setOnClickListener(v -> finish());
+
+        int colorNeon = colorNeonPorAlerta();
+        int cian = getColor(R.color.neon_cian);
+
         TextView titulo = findViewById(R.id.txtDetalleTitulo);
         titulo.setText(alerta.tituloNotificacion());
-        titulo.setTextColor(alerta.esRiesgoAlto()
-                ? getColor(R.color.clasificacion_alto)
-                : getColor(R.color.clasificacion_medio));
+        UtilidadesUi.resplandor(titulo, UtilidadesUi.colorGlow(colorNeon), 16f);
 
-        ((TextView) findViewById(R.id.txtValorMonto))
-                .setText(getString(R.string.formato_monto, alerta.monto, alerta.moneda));
-        ((TextView) findViewById(R.id.txtValorScore)).setText(alerta.score);
+        TextView score = findViewById(R.id.txtValorScore);
+        score.setText(alerta.score);
+        score.setTextColor(colorNeon);
+        UtilidadesUi.resplandor(score, UtilidadesUi.colorGlow(colorNeon), 22f);
 
         TextView clasificacion = findViewById(R.id.txtValorClasificacion);
         clasificacion.setText(alerta.clasificacion);
-        clasificacion.setTextColor(alerta.esRiesgoAlto()
-                ? getColor(R.color.clasificacion_alto)
-                : getColor(R.color.clasificacion_medio));
+        clasificacion.setTextColor(colorNeon);
+        UtilidadesUi.resplandor(clasificacion, UtilidadesUi.colorGlow(colorNeon), 12f);
+
+        // El monto siempre se destaca en cian neón (dato clave del panel).
+        TextView monto = findViewById(R.id.txtValorMonto);
+        monto.setText(getString(R.string.formato_monto, alerta.monto, alerta.moneda));
+        monto.setTextColor(cian);
+        UtilidadesUi.resplandor(monto, UtilidadesUi.colorGlow(cian), 16f);
 
         ((TextView) findViewById(R.id.txtValorDecision)).setText(alerta.decision);
         ((TextView) findViewById(R.id.txtValorCliente)).setText(alerta.idCliente);
@@ -61,11 +77,9 @@ public class DetalleAlertaActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.txtValorFecha)).setText(alerta.fechaEvaluacion);
         ((TextView) findViewById(R.id.txtValorRecibida)).setText(alerta.fechaRecepcion());
 
-        TextView estado = findViewById(R.id.txtValorEstado);
-        estado.setText(alerta.estaBloqueada() ? "BLOQUEADA" : alerta.estado);
-        estado.setTextColor(alerta.estaBloqueada()
-                ? getColor(R.color.clasificacion_alto)
-                : getColor(R.color.clasificacion_medio));
+        pintarEstado(findViewById(R.id.txtValorEstado));
+        pintarAnalitica();
+        poblarCarrusel();
 
         botonBloquear = findViewById(R.id.btnBloquear);
         if (alerta.estaBloqueada()) {
@@ -73,6 +87,80 @@ public class DetalleAlertaActivity extends AppCompatActivity {
         } else {
             botonBloquear.setOnClickListener(v -> bloquear());
         }
+    }
+
+    /** Neón de la alerta: magenta BLOQUEADA/ALTO, cian APROBADA, púrpura resto. */
+    private int colorNeonPorAlerta() {
+        if (alerta.estaBloqueada() || alerta.esRiesgoAlto()) {
+            return getColor(R.color.clasificacion_alto);
+        }
+        if (alerta.esAprobada()) {
+            return getColor(R.color.clasificacion_bajo);
+        }
+        return getColor(R.color.clasificacion_medio);
+    }
+
+    /** Chip de estado con resplandor según clasificación. */
+    private void pintarEstado(TextView estado) {
+        int color = alerta.estaBloqueada()
+                ? getColor(R.color.clasificacion_alto)
+                : (alerta.esAprobada()
+                        ? getColor(R.color.clasificacion_bajo)
+                        : getColor(R.color.clasificacion_medio));
+        estado.setText(alerta.estaBloqueada() ? "BLOQUEADA" : alerta.estado);
+        estado.setTextColor(color);
+        UtilidadesUi.resplandor(estado, UtilidadesUi.colorGlow(color), 10f);
+    }
+
+    /** Analítica ponderada: monto 45%, frecuencia 30%, ubicación IP 25%. */
+    private void pintarAnalitica() {
+        double s = alerta.scoreValor();
+
+        ProgressBar barraMonto = findViewById(R.id.barraMonto);
+        barraMonto.setProgress((int) Math.round(s * 45d));
+        ((TextView) findViewById(R.id.txtPesoMonto))
+                .setText(String.format(Locale.US, "%.2f", s * 0.45d));
+
+        ProgressBar barraFrecuencia = findViewById(R.id.barraFrecuencia);
+        barraFrecuencia.setProgress((int) Math.round(s * 30d));
+        ((TextView) findViewById(R.id.txtPesoFrecuencia))
+                .setText(String.format(Locale.US, "%.2f", s * 0.30d));
+
+        ProgressBar barraIp = findViewById(R.id.barraIp);
+        barraIp.setProgress((int) Math.round(s * 25d));
+        ((TextView) findViewById(R.id.txtPesoIp))
+                .setText(String.format(Locale.US, "%.2f", s * 0.25d));
+    }
+
+    /** Carrusel de tarjetas de cristal: dispositivo actual y backend MIDFF. */
+    private void poblarCarrusel() {
+        LinearLayout carrusel = findViewById(R.id.carruselDispositivos);
+        carrusel.removeAllViews();
+        LayoutInflater inflador = LayoutInflater.from(this);
+
+        String token = AlertasRepositorio.leerToken(this);
+        String colaToken = token == null
+                ? "pendiente"
+                : "…" + token.substring(Math.max(0, token.length() - 8));
+
+        View dispositivo = inflador.inflate(R.layout.item_dispositivo, carrusel, false);
+        ((TextView) dispositivo.findViewById(R.id.txtDispTitulo))
+                .setText(R.string.dispositivo_actual_titulo);
+        ((TextView) dispositivo.findViewById(R.id.txtDispDetalle))
+                .setText(getString(R.string.dispositivo_actual_detalle, colaToken));
+        ((TextView) dispositivo.findViewById(R.id.txtDispEstado))
+                .setText(R.string.estado_activo);
+        carrusel.addView(dispositivo);
+
+        View backend = inflador.inflate(R.layout.item_dispositivo, carrusel, false);
+        ((TextView) backend.findViewById(R.id.txtDispTitulo))
+                .setText(R.string.backend_titulo);
+        ((TextView) backend.findViewById(R.id.txtDispDetalle))
+                .setText(getString(R.string.backend_detalle, ApiClient.baseUrl));
+        TextView estadoBackend = backend.findViewById(R.id.txtDispEstado);
+        estadoBackend.setText(R.string.estado_enlazado);
+        estadoBackend.setTextColor(getColor(R.color.neon_purpura));
+        carrusel.addView(backend);
     }
 
     /**
@@ -89,9 +177,7 @@ public class DetalleAlertaActivity extends AppCompatActivity {
                 runOnUiThread(() -> {
                     if (ok) {
                         alerta.estado = "BLOQUEADA";
-                        TextView estado = findViewById(R.id.txtValorEstado);
-                        estado.setText("BLOQUEADA");
-                        estado.setTextColor(getColor(R.color.clasificacion_alto));
+                        pintarEstado(findViewById(R.id.txtValorEstado));
                         new AlertasRepositorio(this).marcarBloqueada(alerta.idAlerta);
                         deshabilitarBoton(getString(R.string.bloqueo_ya));
                         Toast.makeText(this, R.string.bloqueo_ok, Toast.LENGTH_LONG).show();
@@ -99,7 +185,7 @@ public class DetalleAlertaActivity extends AppCompatActivity {
                         botonBloquear.setEnabled(true);
                         botonBloquear.setText(R.string.btn_bloquear);
                         Toast.makeText(this,
-                                getString(R.string.bloqueo_fallo) + "\n" + mensaje,
+                                getString(R.string.bloqueo_fallo, mensaje),
                                 Toast.LENGTH_LONG).show();
                     }
                 }));
