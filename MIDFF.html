@@ -1,0 +1,416 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>MIDFF · Consola del Banco</title>
+<style>
+:root{--bg:#0b1220;--panel:#111a2e;--panel2:#0e1626;--text:#e2e8f0;--muted:#8ea3bf;--ok:#22c55e;--warn:#f59e0b;--alto:#ef4444;--brand:#38bdf8;--border:#23324d;--input:#0a111e}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,"Segoe UI",Roboto,sans-serif;background:radial-gradient(1200px 600px at 80% -10%,#14304d55,transparent),var(--bg);color:var(--text);min-height:100vh}
+.contenedor{max-width:1180px;margin:0 auto;padding:22px}
+h1{font-size:20px;margin:0}
+.sub{color:var(--muted);font-size:12.5px;margin-top:2px}
+.tarjeta{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:16px}
+.tarjeta h2{font-size:14px;margin:0 0 12px;color:#cfe0f5;letter-spacing:.4px;text-transform:uppercase}
+label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
+input,select{width:100%;padding:10px 11px;background:var(--input);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:14px}
+button{border:0;border-radius:9px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;color:#06121f;background:var(--brand)}
+button:disabled{opacity:.5;cursor:not-allowed}
+button.secundario{background:#28395c;color:#dbe7f7}
+button.peligro{background:#b91c1c;color:#fff}
+button.mini{padding:5px 10px;font-size:12px}
+.mensaje{font-size:12.5px;min-height:16px;margin-top:8px}
+.error{color:var(--alto)}.ok{color:var(--ok)}
+.oculto{display:none!important}
+#pantallaLogin{display:flex;align-items:center;justify-content:center;min-height:92vh}
+#cajaLogin{width:380px;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--border);border-radius:16px;padding:26px;box-shadow:0 20px 60px #0009}
+.logo{display:flex;gap:10px;align-items:center;margin-bottom:6px}
+.logo .escudo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#38bdf8,#818cf8);display:flex;align-items:center;justify-content:center;font-size:19px;flex:none}
+header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
+.chips{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
+.chip{background:#16233c;border:1px solid var(--border);border-radius:999px;padding:5px 12px;font-size:12px;color:#bcd0ea}
+.chip b{color:#fff}
+.vivo{display:inline-flex;align-items:center;gap:6px}
+.vivo::before{content:'';width:8px;height:8px;border-radius:50%;background:var(--ok);box-shadow:0 0 8px var(--ok);animation:pulso 1.6s infinite}
+@keyframes pulso{50%{opacity:.35}}
+nav.tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
+nav.tabs button{background:#16233c;color:#bcd0ea;border:1px solid var(--border)}
+nav.tabs button.activo{background:var(--brand);color:#06121f;border-color:transparent}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--border);border-radius:12px;padding:14px}
+.kpi .titulo{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
+.kpi .valor{font-size:22px;font-weight:700;margin-top:6px}
+.kpi .detalle{font-size:11.5px;color:var(--muted);margin-top:3px}
+.dos-col{display:grid;grid-template-columns:1.2fr .8fr;gap:16px}
+@media(max-width:800px){.dos-col{grid-template-columns:1fr}}
+table{width:100%;border-collapse:collapse;font-size:13px}
+th{color:var(--muted);text-align:left;font-size:11px;text-transform:uppercase;letter-spacing:.5px;padding:8px 10px;border-bottom:1px solid var(--border)}
+td{padding:9px 10px;border-bottom:1px solid #1b2942;vertical-align:middle}
+tr:last-child td{border-bottom:0}
+.tag{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700}
+.tag-bajo{background:#0d3320;color:#4ade80}.tag-medio{background:#3a2c07;color:#fbbf24}.tag-alto{background:#3d1220;color:#f87171}
+.tag-pend{background:#31281a;color:#fbbf24}.tag-aten{background:#0d3320;color:#4ade80}
+.puntaje{font-family:ui-monospace,Consolas,monospace;font-weight:700}
+.serie{display:flex;align-items:flex-end;gap:3px;height:120px;margin-top:8px}
+.serie .col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;height:100%}
+.serie .barra{border-radius:3px 3px 0 0;min-height:2px}
+.serie .b-bajo{background:#16a34a88}.serie .b-medio{background:#f59e0b99}.serie .b-alto{background:#ef4444cc}
+.ejes{display:flex;justify-content:space-between;color:var(--muted);font-size:10.5px;margin-top:4px}
+.filtros{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr auto;gap:10px;align-items:end}
+@media(max-width:800px){.filtros{grid-template-columns:1fr 1fr}}
+.nota{font-size:12px;color:var(--muted);margin-top:10px}
+.modal{position:fixed;inset:0;background:#020617cc;display:flex;align-items:center;justify-content:center;padding:16px;z-index:50}
+.modal .caja{width:400px;max-width:100%;background:var(--panel);border:1px solid var(--border);border-radius:14px;padding:22px}
+</style>
+</head>
+<body>
+<!-- ============ PANTALLA DE LOGIN ============ -->
+<div id="pantallaLogin">
+  <div id="cajaLogin">
+    <div class="logo"><div class="escudo">🛡️</div><div><h1>MIDFF · Consola del Banco</h1><div class="sub">Motor Inteligente de Detección de Fraude Financiero</div></div></div>
+    <label>Usuario</label>
+    <input id="loginUsuario" autocomplete="username" placeholder="admin">
+    <label>Contraseña</label>
+    <input id="loginClave" type="password" autocomplete="current-password" placeholder="••••••••">
+    <div style="margin-top:16px"><button id="btnLogin" style="width:100%" onclick="iniciarSesion()">Iniciar sesión</button></div>
+    <div id="loginMensaje" class="mensaje"></div>
+    <div class="nota">Acceso restringido al personal autorizado del banco. Toda acción queda registrada en auditoría (Oracle).</div>
+  </div>
+</div>
+
+<!-- ============ CONSOLA ============ -->
+<div id="consola" class="contenedor oculto">
+  <header>
+    <div class="logo"><div class="escudo">🛡️</div>
+      <div><h1>MIDFF · Consola del Banco</h1><div class="sub" id="subTitulo">—</div></div>
+    </div>
+    <div class="chips">
+      <span class="chip vivo">En vivo · 20 s</span>
+      <span class="chip"><b id="chipUsuario">—</b></span>
+      <button class="secundario mini" onclick="abrirCambioClave()">Cambiar contraseña</button>
+      <button class="peligro mini" onclick="cerrarSesion()">Cerrar sesión</button>
+    </div>
+  </header>
+
+  <nav class="tabs">
+    <button id="tabResumen" class="activo" onclick="elegirTab('resumen')">📊 Resumen</button>
+    <button id="tabAlertas" onclick="elegirTab('alertas')">🚨 Alertas</button>
+    <button id="tabClientes" onclick="elegirTab('clientes')">👥 Clientes</button>
+  </nav>
+
+  <!-- ===== RESUMEN ===== -->
+  <section id="secResumen">
+    <div class="kpis">
+      <div class="kpi"><div class="titulo">Transacciones hoy</div><div class="valor" id="kpiTx">—</div><div class="detalle" id="kpiMonto">—</div></div>
+      <div class="kpi"><div class="titulo">Alertas hoy</div><div class="valor" id="kpiAlertas">—</div><div class="detalle" id="kpiPendientes">—</div></div>
+      <div class="kpi"><div class="titulo">Score promedio 24 h</div><div class="valor" id="kpiScore">—</div><div class="detalle" id="kpiLatencia">—</div></div>
+      <div class="kpi"><div class="titulo">Banda ALTO 24 h</div><div class="valor" style="color:var(--alto)" id="kpiAlto">—</div><div class="detalle" id="kpiBandas">—</div></div>
+    </div>
+    <div class="dos-col">
+      <div class="tarjeta">
+        <h2>Volumen por hora (últimas 24 h)</h2>
+        <div class="serie" id="serie"></div>
+        <div class="ejes"><span id="serieDesde">—</span><span id="serieHasta">—</span></div>
+        <div class="nota"><span class="tag tag-bajo">BAJO</span> <span class="tag tag-medio">MEDIO</span> <span class="tag tag-alto">ALTO</span> · evaluaciones del motor C</div>
+      </div>
+      <div class="tarjeta">
+        <h2>Top clientes por riesgo</h2>
+        <table><thead><tr><th>Cliente</th><th>Score</th><th>Alertas</th></tr></thead><tbody id="tablaTop"><tr><td colspan="3">Sin datos.</td></tr></tbody></table>
+      </div>
+    </div>
+  </section>
+  <!-- ===== ALERTAS ===== -->
+  <section id="secAlertas" class="oculto">
+    <div class="tarjeta">
+      <h2>Historial de transacciones y alertas (incluye sanas)</h2>
+      <div class="filtros">
+        <div><label>Cliente (contiene)</label><input id="fCliente" placeholder="CLI-…"></div>
+        <div><label>Banda</label><select id="fBanda"><option value="">Todas</option><option>ALTO</option><option>MEDIO</option><option>BAJO</option></select></div>
+        <div><label>Estado</label><select id="fEstado"><option value="">Todos</option><option>PENDIENTE</option><option>BLOQUEADA</option><option>ATENDIDA</option></select></div>
+        <div><label>Máximo</label><select id="fLimite"><option>50</option><option>100</option><option>200</option></select></div>
+        <button onclick="cargarAlertas()">Aplicar</button>
+      </div>
+    </div>
+    <div class="tarjeta">
+      <table>
+        <thead><tr><th>ID</th><th>Creada</th><th>Cliente</th><th>Monto</th><th>Score</th><th>Banda</th><th>Decisión</th><th>Estado</th><th>Reporte cliente</th><th>Atendida por</th><th></th></tr></thead>
+        <tbody id="tablaAlertas"><tr><td colspan="11">Sin datos. Pulse «Aplicar».</td></tr></tbody>
+      </table>
+      <div class="nota">«Bloquear» ejecuta el bloqueo preventivo oficial (POST /api/v1/bloquear → SP_BLOQUEAR_ALERTA + auditoría en Oracle).</div>
+    </div>
+  </section>
+
+  <!-- ===== CLIENTES ===== -->
+  <section id="secClientes" class="oculto">
+    <div class="tarjeta">
+      <h2>Clientes monitoreados</h2>
+      <div class="filtros" style="grid-template-columns:1.4fr auto">
+        <div><label>Buscar cliente</label><input id="fBuscarCliente" placeholder="CLI-…"></div>
+        <button onclick="pintarClientes()">Buscar</button>
+      </div>
+    </div>
+    <div class="tarjeta">
+      <table>
+        <thead><tr><th>Cliente</th><th>Transacciones</th><th>Monto total</th><th>Score prom.</th><th>Alertas</th><th>Dispositivos</th><th>Última actividad</th><th></th></tr></thead>
+        <tbody id="tablaClientes"><tr><td colspan="8">Sin datos.</td></tr></tbody>
+      </table>
+      <div class="nota">Los dispositivos activos son teléfonos con la app registrada (DISPOSITIVO_MOVIL). «Ver alertas» abre la bandeja filtrada por ese cliente.</div>
+    </div>
+  </section>
+</div>
+
+<!-- ===== MODAL CAMBIO DE CONTRASEÑA ===== -->
+<div id="modalClave" class="modal oculto">
+  <div class="caja">
+    <h2 style="margin:0 0 4px">Cambiar contraseña</h2>
+    <div class="sub" id="modalClaveSub">Por seguridad, defina una contraseña definitiva (mínimo 8 caracteres).</div>
+    <label>Contraseña actual</label><input id="claveActual" type="password" autocomplete="current-password">
+    <label>Nueva contraseña</label><input id="claveNueva" type="password" autocomplete="new-password">
+    <label>Confirmar nueva contraseña</label><input id="claveNueva2" type="password" autocomplete="new-password">
+    <div id="modalClaveMsg" class="mensaje"></div>
+    <div style="display:flex;gap:8px;margin-top:12px">
+      <button class="secundario" onclick="cerrarCambioClave()" id="btnCancelarClave">Cancelar</button>
+      <button style="flex:1" onclick="guardarClave()">Guardar</button>
+    </div>
+  </div>
+</div>
+<script>
+/* =================== MIDFF.html · Consola del Banco (BIT-019) ==============
+ * Autenticación: POST /api/v1/admin/sesion → token Bearer HMAC (8 h).
+ * Consultas:    GET /api/v1/admin/{resumen,alertas,clientes}.
+ * Bloqueo:      POST /api/v1/bloquear (X-API-Key) → SP_BLOQUEAR_ALERTA.
+ * Abrir via http://127.0.0.1:8091/MIDFF.html (mismo servidor PHP). */
+const $ = id => document.getElementById(id);
+let token = sessionStorage.getItem('midff.token') || '';
+let adminNombre = sessionStorage.getItem('midff.nombre') || '';
+let tabActual = 'resumen';
+let clientesCache = [];
+
+function encabezados(json) {
+  const h = {'Authorization': 'Bearer ' + token};
+  if (json) h['Content-Type'] = 'application/json';
+  return h;
+}
+
+async function llamar(ruta, opciones = {}) {
+  const res = await fetch(ruta, opciones);
+  const json = await res.json().catch(() => ({error: 'respuesta no JSON (HTTP ' + res.status + ')'}));
+  if (res.status === 401) { cerrarSesion(true); throw new Error(json.error || 'sesión expirada'); }
+  if (!res.ok || json.error) throw new Error(json.error || 'HTTP ' + res.status);
+  return json;
+}
+
+/* =================== SESIÓN =================== */
+async function iniciarSesion() {
+  const btn = $('btnLogin');
+  btn.disabled = true; btn.textContent = 'Verificando…';
+  $('loginMensaje').textContent = ''; $('loginMensaje').className = 'mensaje';
+  try {
+    const json = await llamar('/api/v1/admin/sesion', {
+      method: 'POST', headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({usuario: $('loginUsuario').value.trim(), clave: $('loginClave').value})
+    });
+    token = json.token; adminNombre = json.nombre;
+    sessionStorage.setItem('midff.token', token);
+    sessionStorage.setItem('midff.nombre', adminNombre);
+    entrarConsola();
+    if (json.debe_cambiar_clave) abrirCambioClave(true);
+  } catch (e) {
+    $('loginMensaje').textContent = e.message; $('loginMensaje').className = 'mensaje error';
+  } finally { btn.disabled = false; btn.textContent = 'Iniciar sesión'; }
+}
+
+function entrarConsola() {
+  $('pantallaLogin').classList.add('oculto');
+  $('consola').classList.remove('oculto');
+  $('chipUsuario').textContent = adminNombre;
+  $('subTitulo').textContent = 'Bandeja antifraude · motor C + Oracle XE · ' + new Date().toLocaleDateString('es-MX');
+  elegirTab('resumen', true);
+}
+
+function cerrarSesion(auto) {
+  sessionStorage.removeItem('midff.token'); sessionStorage.removeItem('midff.nombre');
+  token = ''; adminNombre = '';
+  $('consola').classList.add('oculto'); $('pantallaLogin').classList.remove('oculto');
+  if (auto) $('loginMensaje').textContent = 'La sesión expiró; inicie de nuevo.';
+}
+
+/* =================== CAMBIO DE CONTRASEÑA =================== */
+function abrirCambioClave(obligatorio) {
+  $('modalClaveSub').textContent = obligatorio
+    ? 'Su contraseña es temporal: defina una definitiva (mínimo 8 caracteres) para continuar.'
+    : 'Defina una nueva contraseña (mínimo 8 caracteres).';
+  $('btnCancelarClave').classList.toggle('oculto', !!obligatorio);
+  $('claveActual').value = $('claveNueva').value = $('claveNueva2').value = '';
+  $('modalClaveMsg').textContent = '';
+  $('modalClave').classList.remove('oculto');
+  $('claveActual').focus();
+}
+function cerrarCambioClave() { $('modalClave').classList.add('oculto'); }
+
+async function guardarClave() {
+  const msg = $('modalClaveMsg');
+  msg.className = 'mensaje';
+  if ($('claveNueva').value !== $('claveNueva2').value) { msg.className = 'mensaje error'; msg.textContent = 'La confirmación no coincide.'; return; }
+  if ($('claveNueva').value.length < 8) { msg.className = 'mensaje error'; msg.textContent = 'Mínimo 8 caracteres.'; return; }
+  try {
+    await llamar('/api/v1/admin/clave', {
+      method: 'POST', headers: encabezados(true),
+      body: JSON.stringify({clave_actual: $('claveActual').value, clave_nueva: $('claveNueva').value})
+    });
+    msg.className = 'mensaje ok'; msg.textContent = 'Contraseña actualizada.';
+    setTimeout(cerrarCambioClave, 900);
+  } catch (e) { msg.className = 'mensaje error'; msg.textContent = e.message; }
+}
+
+/* =================== TABS + AUTO-REFRESCO =================== */
+function elegirTab(tab, silencioso) {
+  tabActual = tab;
+  for (const t of ['resumen', 'alertas', 'clientes']) {
+    $('tab' + t[0].toUpperCase() + t.slice(1)).classList.toggle('activo', t === tab);
+    $('sec' + t[0].toUpperCase() + t.slice(1)).classList.toggle('oculto', t !== tab);
+  }
+  if (!silencioso) refrescar();
+}
+function refrescar() {
+  if (tabActual === 'resumen') cargarResumen();
+  if (tabActual === 'alertas') cargarAlertas();
+  if (tabActual === 'clientes') cargarClientes();
+}
+setInterval(() => { if (token) refrescar(); }, 20000);
+/* =================== RESUMEN =================== */
+async function cargarResumen() {
+  try {
+    const r = await llamar('/api/v1/admin/resumen', {headers: encabezados()});
+    $('kpiTx').textContent = r.transacciones.hoy;
+    $('kpiMonto').textContent = '$' + Number(r.transacciones.monto_hoy).toLocaleString('es-MX');
+    $('kpiAlertas').textContent = r.alertas.hoy;
+    $('kpiPendientes').textContent = r.alertas.pendientes + ' pendiente(s) de atender';
+    $('kpiScore').textContent = Number(r.motor_24h.score_promedio).toFixed(3);
+    $('kpiLatencia').textContent = 'Motor: ' + Number(r.motor_24h.latencia_promedio_us).toLocaleString('es-MX') + ' µs prom.';
+    $('kpiAlto').textContent = r.bandas_24h.ALTO;
+    $('kpiBandas').textContent = 'MEDIO ' + r.bandas_24h.MEDIO + ' · BAJO ' + r.bandas_24h.BAJO;
+    pintarTop(r.top_clientes || []);
+    pintarSerie(r.serie_24h || []);
+  } catch (e) { console.error('resumen:', e.message); }
+}
+
+function pintarTop(filas) {
+  const tb = $('tablaTop');
+  if (!filas.length) { tb.innerHTML = '<tr><td colspan="3">Sin transacciones aún.</td></tr>'; return; }
+  tb.innerHTML = filas.map(f =>
+    '<tr><td><b>' + f.ID_CLIENTE + '</b></td><td class="puntaje">' + f.SCORE_PROMEDIO + '</td><td>' + f.ALERTAS + '</td></tr>').join('');
+}
+
+function pintarSerie(serie) {
+  const cont = $('serie');
+  const horas = [...new Set(serie.map(p => p.hora))];
+  if (!horas.length) {
+    cont.innerHTML = '<div class="nota">Sin evaluaciones en las últimas 24 h.</div>';
+    $('serieDesde').textContent = $('serieHasta').textContent = '—'; return;
+  }
+  const porHora = {};
+  for (const p of serie) {
+    porHora[p.hora] = porHora[p.hora] || {BAJO: 0, MEDIO: 0, ALTO: 0};
+    porHora[p.hora][p.banda] = p.n;
+  }
+  const max = Math.max(1, ...Object.values(porHora).map(h => h.BAJO + h.MEDIO + h.ALTO));
+  cont.innerHTML = horas.map(h => {
+    const d = porHora[h];
+    const escala = v => Math.round(v / max * 100);
+    return '<div class="col" title="' + h + ' → BAJO ' + d.BAJO + ' · MEDIO ' + d.MEDIO + ' · ALTO ' + d.ALTO + '">'
+      + '<div class="barra b-alto" style="height:' + escala(d.ALTO) + '%"></div>'
+      + '<div class="barra b-medio" style="height:' + escala(d.MEDIO) + '%"></div>'
+      + '<div class="barra b-bajo" style="height:' + escala(d.BAJO) + '%"></div></div>';
+  }).join('');
+  $('serieDesde').textContent = horas[0];
+  $('serieHasta').textContent = horas[horas.length - 1];
+}
+/* =================== ALERTAS =================== */
+async function cargarAlertas() {
+  const tb = $('tablaAlertas');
+  const qs = new URLSearchParams();
+  if ($('fCliente').value.trim()) qs.set('cliente', $('fCliente').value.trim());
+  if ($('fBanda').value) qs.set('banda', $('fBanda').value);
+  if ($('fEstado').value) qs.set('estado', $('fEstado').value);
+  qs.set('limite', $('fLimite').value || 50);
+  try {
+    const r = await llamar('/api/v1/admin/alertas?' + qs.toString(), {headers: encabezados()});
+    const filas = r.alertas || [];
+    if (!filas.length) { tb.innerHTML = '<tr><td colspan="11">Sin alertas con esos filtros.</td></tr>'; return; }
+    tb.innerHTML = filas.map(a => {
+      const banda = (a.CLASIFICACION || '').toLowerCase();
+      const esSana = !a.ALERTA_ID;
+      const claseEstado = esSana ? 'tag-bajo'
+        : (a.ESTADO === 'PENDIENTE' ? 'tag-pend' : (a.ESTADO === 'BLOQUEADA' ? 'tag-alto' : 'tag-aten'));
+      const bloqueada = a.ESTADO === 'BLOQUEADA' || a.ESTADO === 'ATENDIDA';
+      const resp = (a.RESPUESTA || '').toUpperCase();
+      const reporte = resp.startsWith('NO_FUI_YO')
+        ? '<span class="tag tag-alto">⚑ NO FUI YO</span>' + (resp.includes('::') ? '<div class="nota" style="margin:4px 0 0">' + a.RESPUESTA.split('::')[1].trim() + '</div>' : '')
+        : (resp.startsWith('SI_FUI_YO') ? '<span class="tag tag-aten">✓ SÍ FUI YO</span>' : '—');
+      return '<tr>'
+        + '<td class="puntaje">' + (a.ALERTA_ID || '<span style="color:var(--muted)">' + (a.UID_TRANSACCION || '').slice(-8) + '</span>') + '</td>'
+        + '<td>' + a.CREADA + '</td>'
+        + '<td><b>' + a.ID_CLIENTE + '</b></td>'
+        + '<td>$' + Number(a.MONTO).toLocaleString('es-MX') + ' ' + (a.MONEDA || '') + '</td>'
+        + '<td class="puntaje">' + Number(a.SCORE).toFixed(3) + '</td>'
+        + '<td><span class="tag tag-' + banda + '">' + a.CLASIFICACION + '</span></td>'
+        + '<td>' + a.DECISION + '</td>'
+        + '<td><span class="tag ' + claseEstado + '">' + (esSana ? 'SANA' : a.ESTADO) + '</span></td>'
+        + '<td>' + reporte + '</td>'
+        + '<td>' + (a.ATENDIDA_POR || '—') + '</td>'
+        + '<td>' + (!esSana && !bloqueada ? '<button class="peligro mini" onclick="bloquearAlerta(\'' + a.ALERTA_ID + '\', \'' + a.ID_CLIENTE + '\')">Bloquear</button>' : '') + '</td>'
+        + '</tr>';
+    }).join('');
+  } catch (e) { tb.innerHTML = '<tr><td colspan="11" class="error">' + e.message + '</td></tr>'; }
+}
+
+async function bloquearAlerta(alertaId, cliente) {
+  const respuesta = prompt('Bloqueo preventivo de ' + alertaId + ' (cliente ' + cliente + ')\nComentario para la auditoría (opcional):');
+  if (respuesta === null) return;
+  try {
+    const r = await llamar('/api/v1/bloquear', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-API-Key': 'MIDFF-API-KEY-2026-SPRINT2'},
+      body: JSON.stringify({alerta_id: alertaId, usuario: adminNombre || 'admin', respuesta: respuesta.trim()})
+    });
+    alert('✅ ' + (r.mensaje || 'Alerta bloqueada') + '\nAuditoría id: ' + (r.id_auditoria ?? '—'));
+    cargarAlertas();
+  } catch (e) { alert('❌ ' + e.message); }
+}
+
+/* =================== CLIENTES =================== */
+async function cargarClientes() {
+  const tb = $('tablaClientes');
+  try {
+    const r = await llamar('/api/v1/admin/clientes', {headers: encabezados()});
+    clientesCache = r.clientes || [];
+    pintarClientes();
+  } catch (e) { tb.innerHTML = '<tr><td colspan="8" class="error">' + e.message + '</td></tr>'; }
+}
+
+function pintarClientes() {
+  const tb = $('tablaClientes');
+  const buscar = $('fBuscarCliente').value.trim().toUpperCase();
+  const filas = clientesCache.filter(c => !buscar || (c.ID_CLIENTE || '').toUpperCase().includes(buscar));
+  if (!filas.length) { tb.innerHTML = '<tr><td colspan="8">Sin clientes con ese criterio.</td></tr>'; return; }
+  tb.innerHTML = filas.map(c =>
+    '<tr><td><b>' + c.ID_CLIENTE + '</b></td><td>' + c.TRANSACCIONES + '</td>'
+    + '<td>$' + Number(c.MONTO_TOTAL).toLocaleString('es-MX') + '</td>'
+    + '<td class="puntaje">' + c.SCORE_PROMEDIO + '</td><td>' + c.ALERTAS + '</td>'
+    + '<td>' + (c.DISPOSITIVOS || 0) + '</td><td>' + (c.ULTIMA_ACTIVIDAD || '—') + '</td>'
+    + '<td><button class="secundario mini" onclick="verAlertasDe(\'' + c.ID_CLIENTE + '\')">Ver alertas</button></td></tr>').join('');
+}
+
+function verAlertasDe(cliente) {
+  $('fCliente').value = cliente;
+  elegirTab('alertas');
+}
+
+/* =================== ARRANQUE =================== */
+$('loginClave').addEventListener('keydown', e => { if (e.key === 'Enter') iniciarSesion(); });
+if (token) entrarConsola();
+</script>
+</body>
+</html>

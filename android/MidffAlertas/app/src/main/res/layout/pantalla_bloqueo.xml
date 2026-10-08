@@ -1,0 +1,64 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- MIDFF: pantalla de bloqueo biometrico (BIT-015). Dialog de pantalla
+     completa que cubre la app hasta que el cliente se autentique con la
+     huella, el rostro o el PIN del dispositivo -->
+<FrameLayout xmlns:android="http://schemas.android.com/apk/res/android"
+    android:layout_width="match_parent"
+    android:layout_height="match_parent"
+    android:background="@drawable/bg_pantalla">
+
+    <LinearLayout
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:layout_gravity="center"
+        android:gravity="center_horizontal"
+        android:orientation="vertical">
+
+        <FrameLayout
+            android:layout_width="76dp"
+            android:layout_height="76dp"
+            android:background="@drawable/chip_cristal">
+
+            <ImageView
+                android:layout_width="38dp"
+                android:layout_height="38dp"
+                android:layout_gravity="center"
+                android:contentDescription="@string/bloqueo_mensaje"
+                android:src="@drawable/ic_candado" />
+        </FrameLayout>
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="18dp"
+            android:shadowColor="#6600F0FF"
+            android:shadowDx="0"
+            android:shadowDy="0"
+            android:shadowRadius="14"
+            android:text="@string/bloqueo_mensaje"
+            android:textColor="@color/texto_titulo"
+            android:textSize="16sp"
+            android:textStyle="bold" />
+
+        <TextView
+            android:layout_width="wrap_content"
+            android:layout_height="wrap_content"
+            android:layout_marginTop="6dp"
+            android:gravity="center"
+            android:text="@string/bloqueo_subtitulo"
+            android:textColor="@color/texto_secundario"
+            android:textSize="12sp" />
+
+        <androidx.appcompat.widget.AppCompatButton
+            android:id="@+id/btnReintentarBloqueo"
+            android:layout_width="wrap_content"
+            android:layout_height="44dp"
+            android:layout_marginTop="22dp"
+            android:background="@drawable/btn_cristal_ripple"
+            android:paddingEnd="24dp"
+            android:paddingStart="24dp"
+            android:text="@string/btn_reintentar"
+            android:textColor="@color/texto_titulo"
+            android:textSize="13sp" />
+    </LinearLayout>
+</FrameLayout>

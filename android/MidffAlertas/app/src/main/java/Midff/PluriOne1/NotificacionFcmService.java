@@ -49,9 +49,15 @@ public class NotificacionFcmService extends FirebaseMessagingService {
         Log.i(ETIQUETA, "token FCM recibido: ..." + token.substring(Math.max(0, token.length() - 6)));
         AlertasRepositorio.guardarToken(this, token);
 
-        String usuario = AlertasRepositorio.leerUsuario(this);
-        ApiClient.registrarDispositivo(usuario, "OFICIAL", token, (ok, mensaje) ->
-                Log.i(ETIQUETA, "autoregistro del dispositivo " + (ok ? "OK" : "FALLO") + ": " + mensaje));
+        // BIT-017: la sesion define usuario (correo) e id_cliente para que el
+        // push llegue SOLO a este cliente; sin sesion queda el modo legado.
+        String correo    = SesionCliente.leerCorreo(this);
+        String usuario   = !correo.isEmpty() ? correo : AlertasRepositorio.leerUsuario(this);
+        String idCliente = SesionCliente.leerIdCliente(this);
+        DescubrimientoApi.asegurar(this, (apiOk, urlBase, motivo) ->
+                ApiClient.registrarDispositivo(usuario, "CLIENTE", idCliente, token, (ok, mensaje) ->
+                        Log.i(ETIQUETA, "autoregistro del dispositivo "
+                                + (ok ? "OK" : "FALLO") + ": " + mensaje)));
     }
 
     /**
@@ -85,11 +91,10 @@ public class NotificacionFcmService extends FirebaseMessagingService {
             return;
         }
 
-        // La transaccion sana no es una alerta: solo se muestra como
-        // notificacion informativa, sin contaminar la bandeja de alertas.
-        if (!alerta.esSana()) {
-            new AlertasRepositorio(this).guardar(alerta);
-        }
+        // BIT-022: TODAS las transacciones quedan en el historial de la app:
+        // las sanas aparecen bajo el filtro "Aprobadas" (ModeloAlerta.esAprobada)
+        // y las de riesgo en el resto de la bandeja.
+        new AlertasRepositorio(this).guardar(alerta);
         mostrarNotificacionLocal(alerta);
     }
 

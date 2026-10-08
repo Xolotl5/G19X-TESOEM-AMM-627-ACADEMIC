@@ -31,7 +31,8 @@ import java.util.Locale;
 public class DetalleAlertaActivity extends AppCompatActivity {
 
     private ModeloAlerta alerta;
-    private Button botonBloquear;
+    private Button botonNoFui;
+    private Button botonSiFui;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -81,11 +82,15 @@ public class DetalleAlertaActivity extends AppCompatActivity {
         pintarAnalitica();
         poblarCarrusel();
 
-        botonBloquear = findViewById(R.id.btnBloquear);
+        // BIT-020: el cliente responde a SU alerta; el bloqueo preventivo es
+        // decision del banco desde la consola MIDFF.html.
+        botonNoFui = findViewById(R.id.btnNoFuiYo);
+        botonSiFui = findViewById(R.id.btnSiFuiYo);
         if (alerta.estaBloqueada()) {
-            deshabilitarBoton(getString(R.string.bloqueo_ya));
+            deshabilitarBotones(getString(R.string.bloqueo_ya));
         } else {
-            botonBloquear.setOnClickListener(v -> bloquear());
+            botonNoFui.setOnClickListener(v -> reportar("NO_FUI_YO"));
+            botonSiFui.setOnClickListener(v -> reportar("SI_FUI_YO"));
         }
     }
 
@@ -164,36 +169,42 @@ public class DetalleAlertaActivity extends AppCompatActivity {
     }
 
     /**
-     * Accion "Bloquear" (HU-MVP-06): POST /api/v1/bloquear contra la API MIDFF.
+     * Respuesta del cliente (BIT-020): POST /api/v1/reportar contra la API
+     * MIDFF con su id_cliente de sesion; el banco ve la bandera en la consola.
      * El callback llega en el hilo de red, por lo que la vista se toca via
      * runOnUiThread.
      */
-    private void bloquear() {
-        botonBloquear.setEnabled(false);
-        botonBloquear.setText(R.string.bloqueando);
+    private void reportar(String respuesta) {
+        botonNoFui.setEnabled(false);
+        botonSiFui.setEnabled(false);
+        botonNoFui.setText(R.string.reportando);
 
-        String usuario = AlertasRepositorio.leerUsuario(this);
-        ApiClient.bloquearAlerta(alerta.idAlerta, usuario, null, (ok, mensaje) ->
+        String idCliente = SesionCliente.leerIdCliente(this);
+        if (idCliente.isEmpty()) {
+            idCliente = alerta.idCliente;
+        }
+        ApiClient.reportarAlerta(alerta.idAlerta, idCliente, respuesta, null, (ok, mensaje) ->
                 runOnUiThread(() -> {
                     if (ok) {
-                        alerta.estado = "BLOQUEADA";
-                        pintarEstado(findViewById(R.id.txtValorEstado));
-                        new AlertasRepositorio(this).marcarBloqueada(alerta.idAlerta);
-                        deshabilitarBoton(getString(R.string.bloqueo_ya));
-                        Toast.makeText(this, R.string.bloqueo_ok, Toast.LENGTH_LONG).show();
+                        deshabilitarBotones(getString(R.string.reporte_ya));
+                        Toast.makeText(this, R.string.reporte_ok, Toast.LENGTH_LONG).show();
                     } else {
-                        botonBloquear.setEnabled(true);
-                        botonBloquear.setText(R.string.btn_bloquear);
+                        botonNoFui.setEnabled(true);
+                        botonSiFui.setEnabled(true);
+                        botonNoFui.setText(R.string.btn_no_fui_yo);
+                        botonSiFui.setText(R.string.btn_si_fui_yo);
                         Toast.makeText(this,
-                                getString(R.string.bloqueo_fallo, mensaje),
+                                getString(R.string.reporte_fallo, mensaje),
                                 Toast.LENGTH_LONG).show();
                     }
                 }));
     }
 
-    private void deshabilitarBoton(String texto) {
-        botonBloquear.setEnabled(false);
-        botonBloquear.setText(texto);
-        botonBloquear.setOnClickListener(null);
+    private void deshabilitarBotones(String texto) {
+        botonNoFui.setEnabled(false);
+        botonSiFui.setEnabled(false);
+        botonNoFui.setText(texto);
+        botonSiFui.setOnClickListener(null);
+        botonNoFui.setOnClickListener(null);
     }
 }

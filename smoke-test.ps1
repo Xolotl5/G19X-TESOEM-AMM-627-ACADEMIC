@@ -23,7 +23,7 @@
     RNF-05 y el criterio 8 del MVP (automatizacion minima).
 
 .PARAMETER UrlApi
-    URL base de la API (por omision http://127.0.0.1:8090).
+    URL base de la API (por omision http://127.0.0.1:8091).
 
 .PARAMETER ApiKey
     Valor del encabezado X-API-Key (por omision la variable de entorno
@@ -50,7 +50,7 @@
 
 [CmdletBinding()]
 param(
-    [string] $UrlApi = 'http://127.0.0.1:8090',
+    [string] $UrlApi = 'http://127.0.0.1:8091',
 
     [string] $ApiKey = '',
 

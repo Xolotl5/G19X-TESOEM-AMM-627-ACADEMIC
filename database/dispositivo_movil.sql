@@ -9,7 +9,7 @@
 -- CONTENIDO
 --   1. Limpieza re-ejecutable (tabla y secuencia propias)
 --   2. Secuencia SEQ_DISPOSITIVO_MOVIL
---   3. Tabla DISPOSITIVO_MOVIL (id, usuario, rol, token_fcm, activo, fechas)
+--   3. Tabla DISPOSITIVO_MOVIL (id, usuario, rol, id_cliente, token, activo, fechas)
 --   4. Triggers de identificador y de fecha de actualizacion
 --   5. Comentarios de tabla y columna
 --   6. Consulta de control (dispositivos que recibiran el push)
@@ -26,9 +26,10 @@
 --      token, de modo que una reinstalacion reutiliza su fila.
 --   d) Los tokens invalidos reportados por FCM (NotRegistered y similares)
 --      reciben BAJA LOGICA (activo = 0): el MVP no elimina registros.
---   e) usuario + rol identifican al oficial de seguridad que atiende alertas
---      (mitigacion del riesgo R-05: identificador de oficial definido en el
---      Sprint 3; la accion de bloqueo llega en el Sprint 4).
+--   e) usuario + rol identifican al usuario (cliente u oficial) y id_cliente
+--      vincula el dispositivo al cliente cuyas transacciones debe recibir
+--      (BIT-017: filtro del push por cliente; instalaciones ya creadas usan
+--      database/dispositivo_movil_id_cliente.sql para agregar la columna).
 --------------------------------------------------------------------------------
 
 SET DEFINE OFF
@@ -64,6 +65,7 @@ CREATE TABLE DISPOSITIVO_MOVIL (
     id_dispositivo      NUMBER(18)               NOT NULL,
     usuario             VARCHAR2(60)             NOT NULL,
     rol                 VARCHAR2(30)             DEFAULT 'OFICIAL' NOT NULL,
+    id_cliente          VARCHAR2(40)             DEFAULT NULL NULL,
     token_fcm           VARCHAR2(255)            NOT NULL,
     activo              NUMBER(1)                DEFAULT 1 NOT NULL,
     fecha_registro      TIMESTAMP WITH TIME ZONE DEFAULT SYSTIMESTAMP NOT NULL,
@@ -71,7 +73,7 @@ CREATE TABLE DISPOSITIVO_MOVIL (
     CONSTRAINT pk_dispositivo_movil      PRIMARY KEY (id_dispositivo),
     CONSTRAINT uq_dispositivo_movil_tok  UNIQUE (token_fcm),
     CONSTRAINT ck_dispositivo_movil_act  CHECK (activo IN (0, 1)),
-    CONSTRAINT ck_dispositivo_movil_rol  CHECK (rol IN ('OFICIAL', 'SUPERVISOR', 'ADMIN')),
+    CONSTRAINT ck_dispositivo_movil_rol  CHECK (rol IN ('OFICIAL', 'SUPERVISOR', 'ADMIN', 'CLIENTE')),
     CONSTRAINT ck_dispositivo_movil_long CHECK (LENGTH(token_fcm) >= 64)
 );
 
@@ -106,8 +108,9 @@ PROMPT [5/6] Triggers TRG_DISPOSITIVO_MOVIL_ID y TRG_DISPOSITIVO_MOVIL_UPD cread
 --------------------------------------------------------------------------------
 COMMENT ON TABLE  DISPOSITIVO_MOVIL                 IS 'Dispositivos Android registrados para recibir alertas push via FCM cuando el score >= 0.4 (Sprint 3, RF-09/RF-10)';
 COMMENT ON COLUMN DISPOSITIVO_MOVIL.id_dispositivo  IS 'Identificador consecutivo (SEQ_DISPOSITIVO_MOVIL)';
-COMMENT ON COLUMN DISPOSITIVO_MOVIL.usuario         IS 'Identificador del oficial de seguridad que atiende alertas (riesgo R-05)';
-COMMENT ON COLUMN DISPOSITIVO_MOVIL.rol             IS 'Rol del usuario: OFICIAL, SUPERVISOR o ADMIN';
+COMMENT ON COLUMN DISPOSITIVO_MOVIL.usuario         IS 'Identificador del usuario (cliente u oficial) registrado desde la app';
+COMMENT ON COLUMN DISPOSITIVO_MOVIL.rol             IS 'Rol del usuario: CLIENTE, OFICIAL, SUPERVISOR o ADMIN';
+COMMENT ON COLUMN DISPOSITIVO_MOVIL.id_cliente      IS 'Cliente dueno del dispositivo: el push de una transaccion llega SOLO a los dispositivos con su id_cliente (BIT-017)';
 COMMENT ON COLUMN DISPOSITIVO_MOVIL.token_fcm       IS 'Token FCM del dispositivo; unico, se reutiliza al reinstalar la app';
 COMMENT ON COLUMN DISPOSITIVO_MOVIL.activo          IS '1 = recibe notificaciones; 0 = baja logica (token invalido segun FCM)';
 COMMENT ON COLUMN DISPOSITIVO_MOVIL.fecha_registro  IS 'Alta del dispositivo en la bandeja de notificacion';
@@ -115,19 +118,20 @@ COMMENT ON COLUMN DISPOSITIVO_MOVIL.fecha_registro  IS 'Alta del dispositivo en 
 --------------------------------------------------------------------------------
 -- 6. CONSULTA DE CONTROL: dispositivos que recibiran el push (RF-09)
 --------------------------------------------------------------------------------
- SELECT id_dispositivo, usuario, rol, activo,
+ SELECT id_dispositivo, usuario, rol, id_cliente, activo,
         TO_CHAR(fecha_registro, 'YYYY-MM-DD HH24:MI:SS') AS registrado,
         SUBSTR(token_fcm, -6)                            AS token_final
    FROM DISPOSITIVO_MOVIL ORDER BY id_dispositivo;
 
 PROMPT ========================================================================
 PROMPT  Tabla DISPOSITIVO_MOVIL (Sprint 3) instalada: el endpoint
-PROMPT  POST /api/v1/dispositivos puede registrar tokens y la API enviara
-PROMPT  el push FCM a los registros con activo = 1 cuando score >= 0.4.
+PROMPT  POST /api/v1/dispositivos registra tokens con su id_cliente y la API
+PROMPT  envia el push FCM SOLO a los dispositivos activos cuyo id_cliente
+PROMPT  coincida con el de la transaccion (score >= 0.4, BIT-017).
 PROMPT ========================================================================
 SET DEFINE ON
 
-SELECT id_dispositivo, usuario, rol, activo, fecha_registro
+SELECT id_dispositivo, usuario, rol, id_cliente, activo, fecha_registro
   FROM DISPOSITIVO_MOVIL;
 -- Fin del archivo dispositivo_movil.sql - MIDFF Sprint 3 (24/09/2026)
 

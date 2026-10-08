@@ -247,12 +247,14 @@ function midff_fcm_enmascarar_token(string $token): string
 
 /* -----------------------------------------------------------------------------
  * 3. DISPOSITIVOS REGISTRADOS (Oracle XE, tabla DISPOSITIVO_MOVIL del Sprint 3)
- *    Devuelve la lista de token_fcm con activo = 1. Ante cualquier fallo
- *    (tabla inexistente, driver ausente, etc.) devuelve [] y deja rastro en el
- *    log: la notificacion se omite, pero la transaccion sigue su curso.
+ *    Devuelve la lista de token_fcm con activo = 1. Con $idCliente no vacio
+ *    (BIT-017) entrega SOLO los dispositivos de ese cliente; con '' mantiene
+ *    el broadcast legado (modo oficial/demo). Ante cualquier fallo (tabla o
+ *    columna inexistente, driver ausente, etc.) devuelve [] y deja rastro en
+ *    el log: la notificacion se omite, pero la transaccion sigue su curso.
  * --------------------------------------------------------------------------
  */
-function midff_fcm_dispositivos_activos(): array
+function midff_fcm_dispositivos_activos(string $idCliente = ''): array
 {
     $driver = midff_db_driver_disponible();
     if ($driver === '') {
@@ -260,14 +262,26 @@ function midff_fcm_dispositivos_activos(): array
         return [];
     }
 
-    $sql = 'SELECT token_fcm FROM DISPOSITIVO_MOVIL WHERE activo = 1 ORDER BY id_dispositivo';
+    $filtrar = $idCliente !== '';
+    $sql     = $filtrar
+        ? 'SELECT token_fcm FROM DISPOSITIVO_MOVIL WHERE activo = 1 AND id_cliente = :cliente ORDER BY id_dispositivo'
+        : 'SELECT token_fcm FROM DISPOSITIVO_MOVIL WHERE activo = 1 ORDER BY id_dispositivo';
 
     if ($driver === 'pdo_oci') {
         try {
             $cnx = midff_db_conectar();
+            if ($filtrar) {
+                $sent = $cnx->prepare($sql);
+                $sent->execute([':cliente' => $idCliente]);
+                return $sent->fetchAll(PDO::FETCH_COLUMN) ?: [];
+            }
             return $cnx->query($sql)->fetchAll(PDO::FETCH_COLUMN) ?: [];
         } catch (PDOException $e) {
-            error_log('[MIDFF-FCM] error al consultar DISPOSITIVO_MOVIL: ' . trim($e->getMessage()));
+            $detalle = trim($e->getMessage());
+            if (stripos($detalle, 'ORA-00904') !== false) {
+                $detalle .= ' (falta la columna ID_CLIENTE: ejecute database/dispositivo_movil_id_cliente.sql)';
+            }
+            error_log('[MIDFF-FCM] error al consultar DISPOSITIVO_MOVIL: ' . $detalle);
             return [];
         }
     }
@@ -282,7 +296,8 @@ function midff_fcm_dispositivos_activos(): array
 
     $tokens = [];
     $sent   = oci_parse($cnx, $sql);
-    if ($sent !== false && oci_execute($sent)) {
+    if ($sent !== false && (!$filtrar || oci_bind_by_name($sent, ':cliente', $idCliente))
+            && oci_execute($sent)) {
         while (($fila = oci_fetch_array($sent, OCI_ASSOC + OCI_RETURN_NULLS)) !== false) {
             $tokens[] = (string) reset($fila);
         }
@@ -351,11 +366,14 @@ function midff_fcm_desactivar_dispositivo(string $token): bool
 }
 
 /* -----------------------------------------------------------------------------
- * 5. PAYLOAD DE LA ALERTA (protocolo HTTP v1: message.notification + message.data)
- *    - data SIEMPRE con cadenas (requisito de FCM) e incluye monto, score y
+ * 5. PAYLOAD DE LA ALERTA (HTTP v1: DATA-ONLY, decisión D-46)
+ *    - Sin message.notification: con ese bloque, Android muestra la
+ *      notificación él mismo cuando la app está en 2º plano y NO invoca
+ *      NotificacionFcmService, por lo que la alerta nunca llegaba a la
+ *      bandeja. Con data-only el servicio siempre corre y construye la
+ *      notificación local (canal midff_alertas) que abre el detalle.
+ *    - data SIEMPRE con cadenas (requisito de FCM) e incluye monto, score,
  *      clasificacion (RF-10) mas la trazabilidad a Oracle.
- *    - notification deja titulo/cuerpo visibles; channel_id, sound y tag van
- *      bajo message.android para Android 8+ (canal midff_alertas).
  * --------------------------------------------------------------------------
  */
 function midff_fcm_payload_alerta(array $alerta): array
@@ -369,23 +387,10 @@ function midff_fcm_payload_alerta(array $alerta): array
 
     return [
         'message' => [
-            'token'        => (string) ($alerta['token'] ?? ''),
-            'notification' => [
-                'title' => $titulo,
-                'body'  => sprintf('Monto %s %s | Score %s | Cliente %s',
-                                    number_format((float) ($alerta['monto'] ?? 0), 2, '.', ''),
-                                    (string) ($alerta['moneda'] ?? 'MXN'),
-                                    number_format((float) ($alerta['score'] ?? 0), 4, '.', ''),
-                                    (string) ($alerta['id_cliente'] ?? '-')),
-            ],
+            'token'  => (string) ($alerta['token'] ?? ''),
             'android' => [
                 'priority'     => 'high',
                 'collapse_key' => 'midff_alerta',
-                'notification' => [
-                    'channel_id' => MIDFF_FCM_CANAL,
-                    'sound'      => 'default',
-                    'tag'        => 'midff_alerta',
-                ],
             ],
             'data' => [
                 'id_alerta'        => (string) ($alerta['id_alerta'] ?? ''),
@@ -501,23 +506,10 @@ function midff_fcm_payload_sana(array $datos): array
 {
     return [
         'message' => [
-            'token'        => (string) ($datos['token'] ?? ''),
-            'notification' => [
-                'title' => 'MIDFF: transaccion aprobada (riesgo BAJO)',
-                'body'  => sprintf('Monto %s %s | Score %s | Cliente %s',
-                                    number_format((float) ($datos['monto'] ?? 0), 2, '.', ''),
-                                    (string) ($datos['moneda'] ?? 'MXN'),
-                                    number_format((float) ($datos['score'] ?? 0), 4, '.', ''),
-                                    (string) ($datos['id_cliente'] ?? '-')),
-            ],
+            'token'  => (string) ($datos['token'] ?? ''),
             'android' => [
                 'priority'     => 'normal',
                 'collapse_key' => 'midff_sana',
-                'notification' => [
-                    'channel_id' => MIDFF_FCM_CANAL,
-                    'sound'      => 'default',
-                    'tag'        => 'midff_sana',
-                ],
             ],
             'data' => [
                 'id_alerta'        => '',
@@ -539,17 +531,18 @@ function midff_fcm_payload_sana(array $datos): array
 /* -----------------------------------------------------------------------------
  * 7. ORQUESTADOR DEL ENVIO (RF-09 / HU-MVP-05)
  *
- *    midff_fcm_enviar_a_todos() concentra la politica BEST-EFFORT: consulta los
- *    dispositivos activos de DISPOSITIVO_MOVIL, construye el payload de cada
- *    token con el constructor recibido y resume exitosos/fallidos. NUNCA lanza
- *    excepciones: cada fallo se registra con error_log y se resume en el arreglo
- *    de retorno.
+ *    midff_fcm_enviar_a_dispositivos() concentra la politica BEST-EFFORT:
+ *    consulta los dispositivos activos de DISPOSITIVO_MOVIL (solo los del
+ *    cliente indicado cuando $idCliente no es vacio, BIT-017), construye el
+ *    payload de cada token con el constructor recibido y resume
+ *    exitosos/fallidos. NUNCA lanza excepciones: cada fallo se registra con
+ *    error_log y se resume en el arreglo de retorno.
  *
  * @return array{aplica: bool, configurada: bool, dispositivos: int,
  *               exitosos: int, fallidos: int, mensaje: string}
  * --------------------------------------------------------------------------
  */
-function midff_fcm_enviar_a_todos(callable $constructor): array
+function midff_fcm_enviar_a_dispositivos(callable $constructor, string $idCliente = ''): array
 {
     if (!midff_fcm_configurada()) {
         return ['aplica' => true, 'configurada' => false, 'dispositivos' => 0,
@@ -558,12 +551,15 @@ function midff_fcm_enviar_a_todos(callable $constructor): array
                             . '(coloque config/firebase.credentials.json o defina MIDFF_FCM_CUENTA_SERVICIO)'];
     }
 
-    $tokens = midff_fcm_dispositivos_activos();
+    $tokens = midff_fcm_dispositivos_activos($idCliente);
     if ($tokens === []) {
         return ['aplica' => true, 'configurada' => true, 'dispositivos' => 0,
                 'exitosos' => 0, 'fallidos' => 0,
-                'mensaje'  => 'FCM omitido: sin dispositivos activos en DISPOSITIVO_MOVIL'
-                            . ' (ejecute database/dispositivo_movil.sql y registre la app Android)'];
+                'mensaje'  => $idCliente !== ''
+                            ? 'FCM omitido: sin dispositivos activos para el cliente ' . $idCliente
+                              . ' en DISPOSITIVO_MOVIL (registre la app con ese id_cliente)'
+                            : 'FCM omitido: sin dispositivos activos en DISPOSITIVO_MOVIL'
+                              . ' (ejecute database/dispositivo_movil.sql y registre la app Android)'];
     }
 
     $exitosos = 0;
@@ -597,26 +593,31 @@ function midff_fcm_enviar_a_todos(callable $constructor): array
 
 /**
  * Orquestador de la alerta (score >= 0.4): push preventivo o de fraude.
+ * Entrega SOLO a los dispositivos registrados con el id_cliente de la
+ * transaccion (BIT-017; sin id_cliente mantiene el broadcast legado).
  */
 function midff_fcm_notificar_alerta(array $alerta): array
 {
-    return midff_fcm_enviar_a_todos(static function (string $token) use ($alerta): array {
+    $idCliente = trim((string) ($alerta['id_cliente'] ?? ''));
+    return midff_fcm_enviar_a_dispositivos(static function (string $token) use ($alerta): array {
         $payload          = $alerta;
         $payload['token'] = $token;
         return midff_fcm_payload_alerta($payload);
-    });
+    }, $idCliente);
 }
 
 /**
  * Orquestador de la transaccion sana (score < 0.4): push informativo.
+ * Mismo filtro por cliente que la alerta (BIT-017).
  */
 function midff_fcm_notificar_sana(array $datos): array
 {
-    return midff_fcm_enviar_a_todos(static function (string $token) use ($datos): array {
+    $idCliente = trim((string) ($datos['id_cliente'] ?? ''));
+    return midff_fcm_enviar_a_dispositivos(static function (string $token) use ($datos): array {
         $payload          = $datos;
         $payload['token'] = $token;
         return midff_fcm_payload_sana($payload);
-    });
+    }, $idCliente);
 }
 
 /* Fin del archivo config/firebase.php - MIDFF Sprint 3 (24/09/2026) · HTTP v1 */

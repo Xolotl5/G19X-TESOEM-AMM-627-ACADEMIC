@@ -14,9 +14,14 @@
 <manifest xmlns:android="http://schemas.android.com/apk/res/android">
 
     <!-- La API del MVP corre en HTTP local (10.0.2.2 desde el emulador);
-         usesCleartextTraffic es SOLO para desarrollo: produccion exige HTTPS. -->
+         usesCleartextTraffic es SOLO para desarrollo: produccion exige HTTPS.
+         ACCESS_NETWORK_STATE/ACCESS_WIFI_STATE: deteccion automatica de la IP
+         de la API (DescubrimientoApi). -->
     <uses-permission android:name="android.permission.INTERNET" />
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
+    <uses-permission android:name="android.permission.ACCESS_WIFI_STATE" />
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
+    <uses-permission android:name="android.permission.USE_BIOMETRIC" />
 
     <application
         android:allowBackup="true"
@@ -38,6 +43,11 @@
             android:name=".DetalleAlertaActivity"
             android:exported="false"
             android:parentActivityName=".MainActivity" />
+
+        <!-- BIT-015: acceso de clientes (Firebase Auth + biometría) -->
+        <activity
+            android:name=".LoginActivity"
+            android:exported="false" />
 
         <!-- Servicio de FCM: captura el token (onNewToken) y procesa las
              alertas (onMessageReceived) mostrando la notificacion local. -->

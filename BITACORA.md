@@ -8,14 +8,14 @@
 | **Título del proyecto** | Desarrollo de un Motor Inteligente de Detección de Fraude Financiero con Arquitectura Híbrida (Android, C, PHP, Oracle DB y Firebase) |
 | **Tipo de proyecto** | Residencias Profesionales — Ingeniería en Sistemas Computacionales |
 | **Documentos base** | `MVP_MIDFF.md` v1.0 (alcance del MVP) y `PRD_MIDFF.md` v1.0 |
-| **Versión de la bitácora** | 1.10 |
+| **Versión de la bitácora** | 1.21 |
 | **Fecha de apertura** | 23/09/2026 |
-| **Última actualización** | 01/10/2026 |
+| **Última actualización** | 06/10/2026 |
 | **Metodología** | Scrum — 4 sprints de 2 semanas (8 semanas) |
 | **Control de versiones** | Git (rama principal `master`) |
 | **Stack** | C · PHP 8+ · Oracle Database XE · Android (Java) · Firebase FCM · PowerShell |
 | **Responsable** | Residente del proyecto |
-| **Estado** | Post-MVP (BIT-011): rediseño glass/neón y usabilidad de la app Android entregados con validación estática completa; pendientes: compilar el APK y validar en pantalla, recepción física del push (R-03) y demo ante el asesor |
+| **Estado** | Post-MVP (BIT-020): flujo completo de ambos lados — app del cliente **limpia** (sin Panel ni "Bloquear"; abre en su bandeja, registro automático del token) con **"No fui yo / Sí fui yo"** (`POST /api/v1/reportar` → ALERTA+AUDITORIA) visible como bandera en la consola `MIDFF.html`. Verificado end-to-end (404 ajeno, 409 doble, badge en consola, APK) |
 
 ---
 
@@ -448,6 +448,17 @@ El MVP se considera **terminado** cuando se cumple el 100 % de estos puntos
 | **BIT-009** | 28/09/2026 | Sprint 3 | Sesión de trabajo | Migración del envío FCM a HTTP v1 (OAuth2), credencial de servicio en `config/firebase.credentials.json` (no versionada) y validación en vivo con access token real; regularización documental | Cerrada |
 | **BIT-010** | 28/09/2026 | Sprint 4 | Cierre de sprint | Bloqueo preventivo HU-MVP-06 (`POST /api/v1/bloquear` + `SP_BLOQUEAR_ALERTA` + botón en la app), `README.md` completo y cierre del MVP con DoD y métricas finales | Cerrada |
 | **BIT-011** | 01/10/2026 | Post-MVP | Sesión de trabajo | Rediseño glass/neón de la app Android según `prompt.txt` (paneles de cristal ahumado, neones cian/magenta, auroras, analítica ponderada 45/30/25 y carrusel de dispositivos) + usabilidad: pestañas instantáneas Panel/Alertas/Registro, ripples y feedback en toda la interfaz, acciones nuevas (copiar token, isla táctil, ver críticas) | Cerrada |
+| **BIT-012** | 01/10/2026 | Post-MVP | Sesión de trabajo | Detección automática de la URL de la API: `GET /api/v1/ping` sin API-Key (`api/v1/ping.php` + ruta en `router.php`) y clase `DescubrimientoApi` (guardada → emulador 10.0.2.2 → adb reverse 127.0.0.1 → gateway WiFi → escaneo de subred /24 con 32 hilos), con persistencia y fijado de `ApiClient.baseUrl` | Cerrada |
+| **BIT-013** | 01/10/2026 | Post-MVP | Corrección | Primer build real (errores.txt): ternario `String`/`int` inválido en `setText` de la isla dinámica corregido con `getString()`; `sourceCompatibility`/`targetCompatibility` elevados de Java 8 a **17** (D-44) y `@SuppressWarnings` sobre `WifiManager.getDhcpInfo()` | Cerrada |
+| **BIT-014** | 01/10/2026 | Post-MVP | Corrección | Push FCM migrado a **data-only** (D-46): con bloque `notification`, Android en 2º plano mostraba el aviso sin ejecutar `NotificacionFcmService` y la alerta nunca llegaba a la bandeja. Puerto del MVP mudado de 8090 a **8091** (D-45: Wondershare NativePush ocupa el 8090); `banco.html` con URL configurable persistente y docs/`smoke-test.ps1` actualizados | Cerrada |
+| **BIT-015** | 01/10/2026 | Post-MVP | Sesión de trabajo | Pivote a **enfoque cliente** decidido (D-47): `LoginActivity` con Firebase Auth correo/contraseña, sesión persistente (`SesionCliente`), candado biométrico en cada entrada (`BiometricPrompt`: huella/rostro/PIN, permiso `USE_BIOMETRIC`), botón Cerrar sesión y README con el paso de Firebase Console | Cerrada |
+| **BIT-016** | 06/10/2026 | Post-MVP | Corrección | `PromptInfo.Builder.setAuthenticators()` no existe en `androidx.biometric:1.1.0` (2 errores de compilación en `MainActivity.lanzarPromptBiometrico()`); sustituido por `setDeviceCredentialAllowed(true)` (API clásica de 1.1.0, acepta huella/rostro/PIN/patrón del dispositivo). `assembleDebug` verificado: BUILD SUCCESSFUL y APK generado | Cerrada |
+| **BIT-017** | 06/10/2026 | Post-MVP | Sesión de trabajo | Push **filtrado por cliente** (2ª parte del pivote, D-47): columna `ID_CLIENTE` en `DISPOSITIVO_MOVIL` (migración `dispositivo_movil_id_cliente.sql` ejecutada en XEPDB1) + rol `CLIENTE` + `midff_fcm_enviar_a_dispositivos()` filtra por `id_cliente` en `firebase.php` + la app registra su token con el campo "ID de cliente" (`SesionCliente`); sin `id_cliente` se conserva el broadcast legado | Cerrada |
+| **BIT-018** | 06/10/2026 | Post-MVP | Sesión de trabajo | ID de cliente **auto-generado** al crear la cuenta (D-50: `CLI-` + 6 caracteres del uid de Firebase, determinista ante reinstalación; visible en pestaña Registro) y **vista del banco**: `GET /api/v1/dispositivos` (con API-Key) + panel "Clientes registrados" en `banco.html` con botón "Usar" que copia el ID al formulario de transacciones | Cerrada |
+| **BIT-019** | 06/10/2026 | Post-MVP | Sesión de trabajo | **Consola del banco `MIDFF.html`** (D-52/D-53): tabla `ADMIN_USUARIO` (bcrypt + clave temporal, script `admin_usuario.sql` ejecutado; admin/MIDFFadmin2026), API `/api/v1/admin/{sesion,clave,resumen,alertas,clientes}` con token Bearer HMAC-SHA256 de 8 h (rutas en `router.php`) y UI enterprise dark: KPIs, serie 24 h por banda, top clientes, bandeja global filtrable con **Bloquear** (reusa `POST /api/v1/bloquear` + auditoría) y clientes con dispositivos | Cerrada |
+| **BIT-020** | 06/10/2026 | Post-MVP | Sesión de trabajo | **Flujo completo de ambos lados**: app del cliente limpia (tab Panel oculto, abre en su bandeja, "Registro"→"Perfil", registro automático silencioso del token en cada apertura) y **"No fui yo / Sí fui yo"** en el detalle (`POST /api/v1/reportar`: verifica dueño con FOR UPDATE, guarda en ALERTA.respuesta/atendida_por/fecha_atencion + AUDITORIA ATENCION `CLIENTE:<id>`, 404 ajeno, 409 doble); la consola `MIDFF.html` muestra la columna **"Reporte cliente"** con bandera ⚑ NO FUI YO / ✓ SÍ FUI YO | Cerrada |
+| **BIT-021** | 07/10/2026 | Post-MVP | Corrección | Limpieza de pruebas: tablas de negocio vaciadas y secuencias reiniciadas, pero `SEQ_AUDITORIA` quedó en 1 con 103 filas inmutables aún en la tabla → `ORA-00001 PK_AUDITORIA` al insertar (`errores.txt`). Secuencia realineada a `MAX(id)+1` y verificada con transacción sana real (`TRX-2026-60F56107`). Además: tokens de `DISPOSITIVO_MOVIL` borrados a petición (re-registro) y string `api_no_detectada` corregida al 8091 | Cerrada |
+| **BIT-022** | 07/10/2026 | Post-MVP | Sesión de trabajo | **Transacciones sanas visibles en ambos historiales**: la app guarda TODAS las transacciones en la bandeja (sanAs bajo el filtro "Aprobadas", `NotificacionFcmService` ya no las descarta) y `GET /api/v1/admin/alertas` pasa a historial completo (`EVALUACION LEFT JOIN ALERTA`: las sanas sin id de alerta se muestran con badge SANA y sin botón Bloquear; filtro por banda BAJO las aísla). Además: limpieza de pruebas con `SEQ_AUDITORIA` realineada a `MAX(id)+1` (lección de BIT-021), `banco.html` precarga el cliente registrado y plantillas/aleatoria no pisan un ID real. Verificado: sana `TRX-2026-C8808AD2` visible para ambos lados | Cerrada |
 
 ---
 
@@ -1386,6 +1397,618 @@ Usabilidad (segunda pasada):
 1. Compilar el APK en Android Studio y validar visualmente en emulador/dispositivo (cierra el riesgo menor de esta entrada).
 2. Continuar con el plan acordado: **ajustes de flujo** de la app a partir del resumen funcional y sesiones de **prueba de funcionamiento** end-to-end (transacción → push → bandeja → bloqueo).
 
+### 9.13 BIT-012 — 01/10/2026 — Post-MVP: detección automática de la URL de la API (sin cambiar IP por modo de ejecución)
+
+| Campo | Valor |
+|---|---|
+| **ID** | BIT-012 |
+| **Fecha** | 01/10/2026 |
+| **Sprint** | Post-MVP (mejora continua) |
+| **Tipo** | Sesión de trabajo |
+| **Responsable** | Residente del proyecto |
+| **Estado** | Cerrada |
+| **Documentos de referencia** | `README.md` (app) §Notas del entorno · `MVP_MIDFF.md` §6 (RF-09) · `api/v1/ping.php` · `router.php` |
+
+#### Contexto
+
+Cada vez que cambiaba la forma de iniciar la app (emulador, celular por USB con
+`adb reverse`, o APK instalado por WiFi) había que editar a mano
+`ApiClient.baseUrl` (`127.0.0.1` ↔ `10.0.2.2` ↔ IP LAN de la PC). El residente
+pidió que la app resolviera la URL sola para eliminar ese paso.
+
+#### Actividades realizadas
+
+1. **Faro de salud**: `api/v1/ping.php` (nuevo) responde `200` con
+   `{"servicio":"midff","estado":"ok","timestamp":...}` **sin X-API-Key ni
+   conexión a Oracle**; ruta agregada en `router.php` para `/api/v1/ping` y
+   `/api/v1/ping.php` (D-43).
+2. **`DescubrimientoApi` (clase nueva en la app)**: descubre la URL base en
+   segundo plano probando en orden: última URL que funcionó
+   (SharedPreferences) → `10.0.2.2:8090` si es emulador → `127.0.0.1:8090`
+   (adb reverse) → gateway DHCP de la WiFi → **escaneo de la subred
+   `x.x.x.1-254`** con 32 hilos y timeout de 350 ms. La URL ganadora se
+   persiste y se fija en `ApiClient.baseUrl`; el callback llega al hilo
+   principal.
+3. **Permisos**: `ACCESS_NETWORK_STATE` y `ACCESS_WIFI_STATE` (normales,
+   otorgadas en instalación) en el `AndroidManifest.xml` para leer la IP
+   local (wlan0) y el gateway DHCP.
+4. **Integración en la app**: `MainActivity` ejecuta el descubrimiento al
+   arrancar y la isla dinámica informa `Motor C · Buscando API…` /
+   `Motor C · API <host:puerto>` (tocarla re-intenta); el botón "Registrar
+   token" garantiza el enlace antes del POST (si no hay API muestra
+   `api_no_detectada` en magenta); la tarjeta de dispositivo del Panel
+   muestra `API detectada: <url>`; `NotificacionFcmService.onNewToken`
+   también asegura el enlace antes del autoregistro.
+5. **README de la app** (§Notas del entorno): modo WiFi documentado
+   (`php -S 0.0.0.0:8090 router.php` + regla de firewall
+   `netsh advfirewall ... localport=8090`), tiempos esperados del escaneo
+   (~2-4 s solo la primera vez) y re-escaneo automático ante cambio DHCP.
+
+#### Decisiones tomadas
+
+| # | Decisión | Justificación |
+|---|---|---|
+| D-43 | Detección automática de la URL por **sondeo de `GET /api/v1/ping`** (endpoint nuevo sin API-Key ni Oracle) con orden fijo de candidatos (guardada → emulador → adb reverse → gateway) y **escaneo de subred /24** (32 hilos, timeout 350 ms, tope 4 s) solo como último recurso; la URL se persiste y fija `ApiClient.baseUrl` en runtime | Elimina el paso manual por modo de ejecución sin tocar el contrato de negocio: el ping no expone datos y su costo es despreciable; el escaneo se limita a la subred local del teléfono, se ejecuta únicamente cuando ningún candidato directo responde y su resultado se recuerda (reconexión instantánea, re-escaneo solo si la PC cambió de IP por DHCP). |
+
+#### Evidencia
+
+- `php -l` → "No syntax errors detected" en `api/v1/ping.php` y `router.php`
+  (PHP 8.1.10 de Laragon).
+- **Prueba en vivo del faro**: `php -S 127.0.0.1:8099 router.php` +
+  `GET /api/v1/ping` → `HTTP 200` con
+  `{"servicio":"midff","componente":"api","estado":"ok","timestamp":"2026-10-02T00:33:55+00:00"}`;
+  servidor detenido tras la prueba.
+- Validación estática de la app tras los cambios: 42 XML del módulo parsean
+  sin errores; llaves balanceadas en los 9 `.java` (falso positivo conocido
+  en `ApiClient.java` por `{@code}` y el literal `"{"`).
+- README de la app: sección "Conexión automática (D-43)" con los comandos de
+  WiFi (`php -S 0.0.0.0:8090` + regla `netsh`).
+
+#### Bloqueos y riesgos
+
+- **R-03: sin cambios** (recepción física del push pendiente de la demo).
+- Riesgo menor (abierto): el escaneo de subred depende de que la PC acepte
+  conexiones entrantes en 8090 (bind `0.0.0.0` + firewall); documentado en el
+  README. En redes con aislamiento de clientes (AP isolation) no aplicará y la
+  isla quedará en "Sin enlace FCM" hasta usar USB/emulador.
+
+#### Siguiente paso
+
+1. Compilar el APK y **probar los tres modos** (emulador, USB con
+   `adb reverse`, WiFi instalado) verificando que la isla resuelve la URL
+   correcta en cada uno.
+2. Continuar con los ajustes de flujo y las sesiones de prueba de
+   funcionamiento end-to-end acordadas.
+
+### 9.14 BIT-013 — 01/10/2026 — Corrección: error de compilación en la isla dinámica y compatibilidad Java 17
+
+| Campo | Valor |
+|---|---|
+| **ID** | BIT-013 |
+| **Fecha** | 01/10/2026 |
+| **Sprint** | Post-MVP (mejora continua) |
+| **Tipo** | Corrección |
+| **Responsable** | Residente del proyecto |
+| **Estado** | Cerrada |
+| **Documentos de referencia** | `errores.txt` (salida del primer `compileDebugJavaWithJavac`) · `app/build.gradle` · `MainActivity.java` |
+
+#### Contexto
+
+La primera compilación real del proyecto rediseñado (Android Studio, JDK 21)
+arrojó **1 error y 3 warnings**, volcados por el residente en `errores.txt`:
+(1) `MainActivity.java:256` — `setText(ok ? getString(...) : R.string....)`
+mezcla `String` con `int` (id de recurso) y Java no encuentra sobrecarga
+aplicable; (2) source/target Java 8 deprecados por el JDK 21; (3) nota de API
+deprecada en `DescubrimientoApi` (`WifiManager.getDhcpInfo()`).
+
+#### Actividades realizadas
+
+1. **`MainActivity.java` (error bloqueante)**: el ramo falso del ternario pasa
+   a `getString(R.string.isla_sin_enlace)` → ambas ramas son `String` y
+   `setText(CharSequence)` aplica.
+2. **`app/build.gradle` (D-44)**: `sourceCompatibility`/`targetCompatibility`
+   elevados de `VERSION_1_8` a **`VERSION_17`**; README de la app actualizado
+   (fila "Lenguaje"). AGP 8.5 desugarea el bytecode a DEX para minSdk 24, por
+   lo que el cambio no afecta dispositivos soportados.
+3. **`DescubrimientoApi.gatewayWifi()`**: `@SuppressWarnings("deprecation")`
+   documentando que `getDhcpInfo()` está deprecado desde API 31 pero sigue
+   funcional y solo se usa como candidato barato de descubrimiento.
+
+#### Decisiones tomadas
+
+| # | Decisión | Justificación |
+|---|---|---|
+| D-44 | Elevar la compatibilidad de compilación de Java 8 a **Java 17** | El JDK 21 (JBR de Android Studio) deprecó compilar con source/target 8; 17 es el nivel recomendado por el propio diagnóstico, elimina los warnings de arranque y AGP 8.5 + Gradle 8.9 lo soportan de forma nativa. |
+
+#### Evidencia
+
+- Corrección aplicada en `MainActivity.java` (línea 256 → `getString(...)`).
+- Revisión de patrones similares: los únicos ternarios con `R.*` restantes
+  (`setBackgroundResource` y `setTextColor` en `MainActivity`) son `int:int`,
+  válidos.
+- `errores.txt` corresponde a la compilación previa a estas correcciones.
+
+#### Bloqueos y riesgos
+
+- Sin cambios en R-03; sin nuevos riesgos.
+
+#### Siguiente paso
+
+1. Recompilar (*Build → Make Project*) y ejecutar la app en los tres modos
+   (emulador, USB con `adb reverse`, WiFi instalado).
+
+### 9.15 BIT-014 — 01/10/2026 — Corrección: push que no llenaba la bandeja y mudanza al puerto 8091
+
+| Campo | Valor |
+|---|---|
+| **ID** | BIT-014 |
+| **Fecha** | 01/10/2026 |
+| **Sprint** | Post-MVP (mejora continua) |
+| **Tipo** | Corrección |
+| **Responsable** | Residente del proyecto |
+| **Estado** | Cerrada |
+| **Documentos de referencia** | `config/firebase.php` §5 · `banco.html` · `DescubrimientoApi.java` · README raíz/app |
+
+#### Contexto
+
+Prueba real de la sesión: una transacción ALTO generó el push y la notificación
+llegó al teléfono, **pero la alerta no aparecía en la bandeja de la app**, y el
+residente no podía usar `banco.html` para enviar transacciones.
+
+#### Actividades realizadas
+
+1. **Diagnóstico del push**: el payload HTTP v1 incluía `message.notification`
+   (título/cuerpo). En 2º plano Android muestra esa notificación él mismo y **no
+   invoca `NotificacionFcmService`**, por lo que la alerta jamás se guardaba en
+   la bandeja (RF-10) ni el toque abría el detalle.
+2. **`config/firebase.php` (D-46)**: payloads de alerta y de transacción sana
+   convertidos a **data-only** (`message.data` + `android.priority/collapse_key`,
+   sin `notification` ni `android.notification`); el servicio siempre ejecuta,
+   persiste en la bandeja y construye la notificación local del canal
+   `midff_alertas` con apertura del detalle. `php -l` sin errores.
+3. **Conflicto de puerto (D-45)**: `WsToastNotification.exe` (Wondershare)
+   ocupa el 8090 de la máquina de demo → puerto del MVP mudado a **8091**:
+   `DescubrimientoApi.PUERTO`, `ApiClient.baseUrl`, README raíz (9 menciones),
+   README de la app (12) y `smoke-test.ps1` (default `-UrlApi`).
+4. **`banco.html`**: nota de apertura actualizada a
+   `http://127.0.0.1:8091/banco.html`, URL del endpoint con valor por defecto
+   inteligente (relativa si se sirve por HTTP; absoluta a 8091 si se abre como
+   archivo) y **persistencia en `localStorage`** de la última URL usada.
+
+#### Decisiones tomadas
+
+| # | Decisión | Justificación |
+|---|---|---|
+| D-45 | Puerto oficial del MVP: **8091** en lugar de 8090 | Wondershare NativePush escucha el 8090 y se re-lanza con el sistema: liberarlo hoy no garantiza nada mañana. La mudanza es un reemplazo de literal en 5 archivos y queda documentada; `adb reverse`/firewall/smoke-test pasan a 8091. |
+| D-46 | Payload FCM **data-only** (sin `message.notification`) | Es el único modo en que `onMessageReceived` corre con la app en 2º plano/killed: garantiza bandeja (RF-10), notificación local con monto/score/clasificación y apertura del detalle (HU-MVP-05). El título/cuerpo ya los construye la app con los datos. |
+
+#### Evidencia
+
+- `php -l` → "No syntax errors detected" en `config/firebase.php`.
+- Transacción post-fix por HTTP contra `127.0.0.1:8091`:
+  `TRX-2026-08FDA5D2 / score 0.95 / ALTO / BLOQUEADA / ALR-2026-000019`
+  (push data-only enviado a los dispositivos registrados).
+- Verificación de reemplazos: 0 menciones operativas de 8090 fuera de los
+  comentarios explicativos de `banco.html`/`DescubrimientoApi` y BITACORA.
+
+#### Bloqueos y riesgos
+
+- **R-03 (parcial)**: el push se entrega; falta la verificación física del
+  reflejo en bandeja (esta transacción sirve de prueba).
+- La app instalada aún busca el 8090: reinstalar el APK compilado con D-45
+  para registro/bloqueo por WiFi o `adb reverse tcp:8091 tcp:8091`.
+
+#### Siguiente paso
+
+1. Confirmar en el teléfono que `ALR-2026-000019` aparece en la bandeja al
+   abrir la app (cierra el circuito RF-09/RF-10).
+2. Recompilar/reinstalar el APK (puerto 8091) y usar `banco.html` desde
+   `http://127.0.0.1:8091/banco.html` para las pruebas de flujo.
+
+### 9.16 BIT-015 — 01/10/2026 — Pivote a enfoque cliente: login Firebase Auth y candado biométrico
+
+| Campo | Valor |
+|---|---|
+| **ID** | BIT-015 |
+| **Fecha** | 01/10/2026 |
+| **Sprint** | Post-MVP (mejora continua) |
+| **Tipo** | Sesión de trabajo |
+| **Responsable** | Residente del proyecto |
+| **Estado** | Cerrada |
+| **Documentos de referencia** | `prompt.txt` (propuesta: alertas tempranas, sin destinatario fijo) · `android/MidffAlertas/README.md` §Acceso de clientes |
+
+#### Contexto
+
+El residente aclaró que siempre imaginó la app como **herrencia del cliente
+del banco** (cada usuario ve las notificaciones de SUS transacciones con
+riesgo nulo/medio/alto), no como bandeja de oficiales. El análisis de la
+sesión demostró que el motor (C + Oracle + API) es agnóstico del
+destinatario y que el pivote toca solo la "última milla". Primera parte:
+identidad y acceso.
+
+#### Actividades realizadas
+
+1. **`LoginActivity` + `activity_login.xml` (nuevos)**: pantalla glass/neón
+   con correo y contraseña; botones **Entrar** y **Crear cuenta** contra
+   **Firebase Authentication** (`firebase-auth:22.3.1`), validación local
+   (correo con `@`, contraseña ≥ 6) y estado inline magenta ante fallos.
+2. **`SesionCliente` (nueva)**: sesión persistente en SharedPreferences
+   (activa/correo/uid); `MainActivity` manda al login si no hay sesión.
+3. **Candado biométrico en cada entrada**: `pantalla_bloqueo.xml` (Dialog
+   fullscreen con candado y "Reintentar") + `BiometricPrompt`
+   (`androidx.biometric:1.1.0`, permiso `USE_BIOMETRIC`) aceptando
+   **huella/rostro (BIOMETRIC_WEAK) o PIN/patrón del dispositivo
+   (DEVICE_CREDENTIAL)** en Android 10+; en 9- solo biometría con botón
+   negativo. `onStop` vuelve a bloquear; sin biometría configurada
+   (emulador) no se bloquea y la isla informa "Biometría no configurada".
+4. **Registro**: pestaña Registro precarga el correo de la sesión como
+   usuario del dispositivo y gana botón **Cerrar sesión** (confirmación →
+   `signOut()` + limpieza → login).
+5. **README de la app**: sección "Acceso de clientes" con el paso obligatorio
+   en **Firebase Console → Authentication → Sign-in method →
+   Correo/contraseña** (sin él el login responde CONFIGURATION_ERROR).
+
+#### Decisiones tomadas
+
+| # | Decisión | Justificación |
+|---|---|---|
+| D-47 | El producto se re-enfoca al **cliente** del banco; identidad con Firebase Auth (correo/contraseña) y desbloqueo con las credenciales **del dispositivo** (BiometricPrompt) | Es la visión del residente (dueño del producto), escala mejor (1 push al dueño vs broadcast) y Firebase Auth evita construir backend de identidad en el MVP; la biometría no se implementa propietariamente: se usan las credenciales ya registradas en Android (huella/rostro/PIN), que es lo que el usuario pidió y lo que exige la banca real. El modo "oficial/broadcast" queda como caso demo hasta completar el filtrado por cliente. |
+
+#### Evidencia
+
+- Validación estática automatizada: XML de la app parsean sin errores;
+  referencias `@string/@drawable/@color` y `R.*` completas; llaves
+  balanceadas en los nuevos `.java`.
+- `app/build.gradle`: `firebase-auth:22.3.1` + `androidx.biometric:1.1.0`;
+  `AndroidManifest.xml`: permiso `USE_BIOMETRIC` y `LoginActivity`.
+
+#### Bloqueos y riesgos
+
+- **Requiere acción en Firebase Console** (habilitar Correo/contraseña);
+  documentado en el README.
+- Pendiente de lógica (siguiente sesión): **filtrar el push por cliente**
+  (`firebase.php` + `id_cliente` en `DISPOSITIVO_MOVIL`) y renombrar la
+  acción "Bloquear" a "No fui yo / Reportar".
+- R-03 sin cambios.
+
+#### Siguiente paso
+
+1. Habilitar Email/Password en Firebase Console, compilar y probar
+   login → biometría → bandeja.
+2. Ejecutar el filtrado de push por cliente (2ª parte del pivote).
+
+---
+
+### 9.17 BIT-016 — 06/10/2026 — Corrección: el candado biométrico no compilaba (API inexistente en biometric 1.1.0)
+
+| Campo | Valor |
+|---|---|
+| **ID** | BIT-016 |
+| **Fecha** | 06/10/2026 |
+| **Sprint** | Post-MVP (mejora continua) |
+| **Tipo** | Corrección |
+| **Responsable** | Residente del proyecto |
+| **Estado** | Cerrada |
+| **Documentos de referencia** | `errores.txt` (build de BIT-013) · `android/MidffAlertas/app/build.gradle` |
+
+#### Contexto
+
+La verificación del flujo cliente (login → biometría → bandeja) intentó
+compilar la app con Gradle 8.9 y el build falló en
+`:app:compileDebugJavaWithJavac` con 2 errores `cannot find symbol`:
+`PromptInfo.Builder.setAuthenticators(int)` no existe en
+`androidx.biometric:biometric:1.1.0` (esa API se agregó en versiones
+posteriores de la biblioteca). El resto del código de BIT-015 compilaba.
+
+#### Actividades realizadas
+
+1. `MainActivity.lanzarPromptBiometrico()`: se elimina la bifurcación
+   `setAuthenticators(BIOMETRIC_WEAK | DEVICE_CREDENTIAL)` (API 30+) /
+   `setAuthenticators(BIOMETRIC_WEAK) + setNegativeButtonText(...)` y se
+   sustituye por `.setDeviceCredentialAllowed(true)`, que es la forma
+   soportada en 1.1.0 para aceptar **huella/rostro o el PIN/patrón/contraseña
+   del dispositivo** en todas las versiones (minSdk 24). Nota: con la
+   credencial habilitada no puede fijarse `setNegativeButtonText()`
+   (lanzaría `IllegalArgumentException`).
+2. Verificación real: `gradle assembleDebug` → **BUILD SUCCESSFUL in 12s**,
+   `app-debug.apk` generado (queda el aviso known de API deprecada por
+   `WifiManager.getDhcpInfo()` en `DescubrimientoApi`, solo warning).
+3. `canAuthenticate(BIOMETRIC_WEAK | DEVICE_CREDENTIAL)` se mantiene: sí
+   existe en 1.1.0 y era aceptado por el compilador.
+
+#### Bloqueos y riesgos
+
+- Ninguno nuevo; los pendientes de BIT-015 siguen: filtrar el push por
+  cliente y reinstalar el APK en el dispositivo.
+
+#### Siguiente paso
+
+1. Reinstalar el APK y probar login → biometría → bandeja en dispositivo.
+2. Filtrado del push por cliente (2ª parte del pivote).
+
+---
+
+### 9.18 BIT-017 — 06/10/2026 — Push filtrado por cliente: cada usuario recibe solo SUS transacciones
+
+| Campo | Valor |
+|---|---|
+| **ID** | BIT-017 |
+| **Fecha** | 06/10/2026 |
+| **Sprint** | Post-MVP (mejora continua) |
+| **Tipo** | Sesión de trabajo |
+| **Responsable** | Residente del proyecto |
+| **Estado** | Cerrada |
+| **Documentos de referencia** | BIT-015/BIT-016 (pivote a cliente) · `database/dispositivo_movil_id_cliente.sql` · `config/firebase.php` §3 y §7 |
+
+#### Contexto
+
+Con el login y el candado biométrico listos (BIT-015/016) el push seguía en
+modo **broadcast**: `midff_fcm_enviar_a_todos()` entregaba cada alerta a TODOS
+los dispositivos activos, así que cualquier cliente veía las transacciones de
+todos. Falta la "última milla" del pivote: vincular cada dispositivo a su
+`id_cliente` y filtrar el envío.
+
+#### Actividades realizadas
+
+1. **Oracle**: columna `ID_CLIENTE VARCHAR2(40) NULL` en `DISPOSITIVO_MOVIL`
+   (en `dispositivo_movil.sql` para instalaciones nuevas y en la migración
+   re-ejecutable `database/dispositivo_movil_id_cliente.sql` para la BD
+   existente, **sin perder tokens**), CHECK de rol ampliado con `CLIENTE` e
+   índice `IX_DISPOSITIVO_MOVIL_CLI (id_cliente, activo)`. Migración ejecutada
+   en XEPDB1: los 2 dispositivos previos quedan con `id_cliente` NULL
+   (broadcast legado) hasta que se re-registren desde la app.
+2. **API** (`api/v1/dispositivos.php`): el contrato acepta `id_cliente`
+   opcional (≤ 40, mismo tamaño que `transacciones.php`) y el rol `CLIENTE`;
+   el UPSERT persiste el vínculo y el log registra
+   `cliente=CLI-XXX | (broadcast)`.
+3. **Filtro del push** (`config/firebase.php`):
+   `midff_fcm_dispositivos_activos($idCliente)` consulta solo los dispositivos
+   activos de ese cliente (PDO_OCI y OCI8) y
+   `midff_fcm_enviar_a_dispositivos($constructor, $idCliente)` sustituye a
+   `enviar_a_todos`; `midff_fcm_notificar_alerta()/notificar_sana()` extraen el
+   `id_cliente` de la transacción. **Sin id_cliente → broadcast legado** (modo
+   oficial/demo intacto). Si falta la columna en Oracle, el log sugiere
+   ejecutar la migración (ORA-00904).
+4. **App**: pestaña Registro gana el campo **"ID de cliente"** (persistido en
+   `SesionCliente`, BIT-017); el registro envía `usuario` (correo de la
+   sesión), `rol=CLIENTE` e `id_cliente`, y `NotificacionFcmService.onNewToken`
+   auto-registra con los mismos datos. El contrato del Anexo A de
+   `POST /api/v1/transacciones` NO cambia (el filtro es interno).
+
+#### Decisiones tomadas
+
+| # | Decisión | Justificación |
+|---|---|---|
+| D-48 | El vínculo dispositivo↔cliente se hace por `id_cliente` explícito (campo en la pestaña Registro), no derivando el correo | Las transacciones llegan con `id_cliente` (CLI-XXX) desde el orquestador; derivarlo del correo exigiría un convencio frágil de creación de cuentas. El campo se escribe una vez y queda persistido |
+| D-49 | `id_cliente` vacío/NULL conserva el broadcast legado | El modo oficial/demo y las pruebas con `banco.html`/curl siguen funcionando sin re-registro; la migración no rompe nada |
+
+#### Evidencia
+
+- `sqlplus ... @database/dispositivo_movil_id_cliente.sql` → `[1/3] Columna
+  ID_CLIENTE agregada`, `[2/3] CHECK de rol ampliado`, `[3/3] Índice creado`
+  y consulta de control con los 2 dispositivos previos (id_cliente vacío).
+- `git grep midff_fcm_enviar_a_todos` → sin resultados (migración completa).
+- `gradle assembleDebug` → BUILD SUCCESSFUL (APK con el campo "ID de cliente").
+
+#### Bloqueos y riesgos
+
+- Ninguno bloqueante. R-03 sin cambios. Pendiente de demo en dispositivo
+  físico (registrar CLI-XXX en la app y disparar transacciones de ese y de
+  otro cliente para verificar el aislamiento).
+
+#### Siguiente paso
+
+1. Reinstalar el APK, registrar un `id_cliente` real y probar el aislamiento
+   del push (transacción del propio cliente llega; de otro cliente no).
+2. Lógica para el banco (administración): mover/rediseñar el módulo oficial.
+
+---
+
+### 9.19 BIT-018 — 06/10/2026 — ID de cliente auto-generado y vista del banco
+
+| Campo | Valor |
+|---|---|
+| **ID** | BIT-018 |
+| **Fecha** | 06/10/2026 |
+| **Sprint** | Post-MVP (mejora continua) |
+| **Tipo** | Sesión de trabajo |
+| **Responsable** | Residente del proyecto |
+| **Estado** | Cerrada |
+| **Documentos de referencia** | BIT-017 (filtro por cliente) · `banco.html` · `api/v1/dispositivos.php` |
+
+#### Contexto
+
+En BIT-017 el usuario debía escribir su `id_cliente` a mano, pero ese ID lo
+asigna el producto, no el cliente: al crear la cuenta debe quedar registrado
+con un ID predeterminado que el usuario pueda ver en la app y que el
+banco/administrador solo le requiera para vincular sus transacciones.
+
+#### Actividades realizadas
+
+1. **`SesionCliente`**: `abrir()` asigna el ID la primera vez
+   (`asegurarIdCliente`): `CLI-` + 6 caracteres alfanuméricos del uid de
+   Firebase en mayúsculas. Determinista (la misma cuenta recupera el mismo ID
+   tras reinstalar) y no sobreescribe uno ya guardado (la captura manual queda
+   como válvula de escape para la demo). Visible en la pestaña Registro
+   (campo precargado) y usado por el registro del token y `onNewToken`.
+2. **`GET /api/v1/dispositivos`** (misma X-API-Key): lista los dispositivos
+   con `id_dispositivo, usuario, rol, id_cliente, activo, registrado,
+   token_final` (token enmascarado); `midff_listar_dispositivos()` en
+   `api/v1/dispositivos.php`. El 405 ahora anuncia `Allow: GET, POST`.
+3. **`banco.html`**: tarjeta "Clientes registrados en la app (vista del
+   banco)" con botón **Actualizar lista** (fetch al GET) y **Usar** por fila,
+   que copia el `id_cliente` al formulario de transacciones.
+
+#### Decisiones tomadas
+
+| # | Decisión | Justificación |
+|---|---|---|
+| D-50 | El ID se deriva del uid de Firebase (`CLI-XXXXXX`), sin registro en servidor ni contador | Determinista ante reinstalación, sin nueva tabla ni carrera de IDs; el vínculo real dispositivo↔cliente ya vive en `DISPOSITIVO_MOVIL.id_cliente` |
+| D-51 | La vista del banco consume el mismo endpoint con API-Key, sin UI nueva de servidor | `banco.html` ya es la consola del banco en el MVP; suficiente para que el administrador "solo requiera el ID" |
+
+#### Evidencia
+
+- `gradle assembleDebug` → BUILD SUCCESSFUL (APK con ID auto-generado).
+- `GET /api/v1/dispositivos` devuelve los 2 dispositivos existentes con
+  `id_cliente` vacío (broadcast legado) hasta re-registrarse.
+
+#### Bloqueos y riesgos
+
+- Ninguno bloqueante. La Colisión teórica de prefijos de uid (6 caracteres)
+  es despreciable para el alcance del proyecto.
+
+#### Siguiente paso
+
+1. Demo completa: crear cuenta → ver ID → registrar token → el banco usa el
+   ID desde `banco.html` → el push llega solo a ese cliente.
+2. Siguiente lógica del banco: administración de alertas (bandeja del
+   oficial, bloqueos, reportes).
+
+---
+
+### 9.20 BIT-019 — 06/10/2026 — Consola del banco MIDFF.html (administración)
+
+| Campo | Valor |
+|---|---|
+| **ID** | BIT-019 |
+| **Fecha** | 06/10/2026 |
+| **Sprint** | Post-MVP (mejora continua) |
+| **Tipo** | Sesión de trabajo |
+| **Responsable** | Residente del proyecto |
+| **Estado** | Cerrada |
+| **Documentos de referencia** | BIT-015..018 (pivote a cliente) · `api/v1/admin.php` · `database/admin_usuario.sql` |
+
+#### Contexto
+
+El usuario pidió separar la lógica del banco de la app del cliente y llevarla
+a un programa independiente "casi a nivel empresarial". Se decidió web (D-52)
+con nombre de archivo **`MIDFF.html`**: mismo servidor PHP, cero instalación.
+
+#### Actividades realizadas
+
+1. **Identidad de administradores** (`database/admin_usuario.sql`, ejecutado):
+   tabla `ADMIN_USUARIO` con `password_hash` (bcrypt de PHP) y
+   `clave_temporal` de arranque; semilla `admin / MIDFFadmin2026` (TEMPORAL:
+   la consola exige cambiarla al primer inicio y queda como hash).
+2. **API protegida** (`api/v1/admin.php` + rutas en `router.php`):
+   `POST /api/v1/admin/sesion` (login → token Bearer HMAC-SHA256 de 8 h firmado
+   con `MIDFF_ADMIN_SECRETO`), `POST /api/v1/admin/clave` (cambio con
+   verificación de la actual), y con token obligatorio:
+   `GET /api/v1/admin/resumen` (transacciones/monto de hoy, bandas 24 h,
+   alertas y pendientes, score/latencia promedio del motor, top 5 clientes por
+   riesgo y serie por hora), `GET /api/v1/admin/alertas`
+   (JOIN ALERTA→EVALUACION→TRANSACCION con filtros cliente/banda/estado y
+   `ALERTA_ID` en formato ALR-AAAA-NNNNNN) y `GET /api/v1/admin/clientes`
+   (agregado por cliente + dispositivos activos). 401 expira la sesión en la
+   UI; todo queda en `error_log` con etiqueta `[MIDFF-ADMIN]`.
+3. **`MIDFF.html`** (UI enterprise dark, sin dependencias): login con Enter,
+   chip "En vivo · 20 s" (auto-refresco del tab activo), pestañas
+   **Resumen** (KPIs + gráfica de barras apiladas 24 h + top clientes),
+   **Alertas** (filtros + tabla + **Bloquear** con comentario → reusa
+   `POST /api/v1/bloquear`/`SP_BLOQUEAR_ALERTA` + auditoría; estados
+   PENDIENTE/BLOQUEADA/ATENDIDA descubiertos contra datos reales) y
+   **Clientes** (búsqueda, score promedio, dispositivos, "Ver alertas"
+   que precarga el filtro). Modal obligatorio de cambio de contraseña.
+
+#### Decisiones tomadas
+
+| # | Decisión | Justificación |
+|---|---|---|
+| D-52 | Consola web `MIDFF.html` en el mismo servidor PHP, con login propio | Cero instalación/distribución, reusa API y Oracle; "programa de computadora" queda como port posterior consumiendo la misma API |
+| D-53 | Sesión estatal-less HMAC (Bearer 8 h) + bcrypt en `ADMIN_USUARIO` | Sin tabla de sesiones ni dependencias; separa identidad del banco (Oracle) de la del cliente (Firebase Auth) |
+| D-54 | El bloqueo sigue por `POST /api/v1/bloquear` con X-API-Key | Reusa el SP y la auditoría del Sprint 4 sin duplicar lógica ni romper el contrato |
+
+#### Evidencia
+
+- `sqlplus @database/admin_usuario.sql` → tabla/seq/triggers OK y semilla
+  `admin` con clave TEMPORAL (el INSERT se repitió manual con COMMIT tras un
+  corte de tubería del primer run).
+- Las 5 consultas del resumen/alertas/clientes ejecutadas contra XEPDB1 real
+  (top: CLI-003 · 10 tx · score .95; alertas FRAUDE/ALTO/BLOQUEADA;
+  6 clientes) — de ahí salió el estado BLOQUEADA agregado al filtro.
+- PHP sin lint local (sin php.exe en la terminal): código revisado contra los
+  patrones de los endpoints existentes.
+
+#### Bloqueos y riesgos
+
+- Sin bloqueo. En producción: HTTPS obligatorio (el Bearer viaja en
+  encabezado) y `MIDFF_ADMIN_SECRETO` definido por entorno.
+
+#### Siguiente paso
+
+1. Limpiar la app del cliente: quitar pestaña Panel y botón "Bloquear",
+   registro invisible/automático.
+2. Agregar "No fui yo / Sí fui yo" en la app (visible en la consola).
+
+---
+
+### 9.21 BIT-020 — 06/10/2026 — Flujo completo: app del cliente limpia + "No fui yo" visible en el banco
+
+| Campo | Valor |
+|---|---|
+| **ID** | BIT-020 |
+| **Fecha** | 06/10/2026 |
+| **Sprint** | Post-MVP (mejora continua) |
+| **Tipo** | Sesión de trabajo |
+| **Responsable** | Residente del proyecto |
+| **Estado** | Cerrada |
+| **Documentos de referencia** | BIT-017..019 · `api/v1/reportar.php` · `DetalleAlertaActivity` |
+
+#### Contexto
+
+Cierre del pivote: dejar funcionando el flujo de ambos lados "tal cual se
+use". Faltaba limpiar la app (lógica de banco heredada del MVP de oficiales)
+y el canal de respuesta del cliente hacia el banco.
+
+#### Actividades realizadas
+
+1. **`POST /api/v1/reportar`** (`api/v1/reportar.php` + ruta): el cliente
+   responde `NO_FUI_YO`/`SI_FUI_YO` (+ comentario ≤ 180) a una alerta
+   `ALR-…`. Transacción atómica: verifica con `FOR UPDATE` que la alerta sea
+   **de ese cliente** (JOIN hasta TRANSACCION), 404 si ajena, 409 si ya
+   reportada; guarda en `ALERTA.respuesta/atendida_por/fecha_atencion` (el
+   `estado` lo decide el banco; el CHECK del schema no se toca) y en
+   `AUDITORIA` (`ATENCION`, `CLIENTE:<id>`). Log `[MIDFF-REPORTE]`.
+2. **App del cliente**: `DetalleAlertaActivity` sustituye "Bloquear" por
+   **"⛔ No fui yo" / "✓ Sí fui yo"** (`ApiClient.reportarAlerta`); tras
+   responder ambos botones se bloquean con "Ya respondiste".
+3. **Limpieza de MainActivity**: tab **Panel oculto** (la app abre directo en
+   la bandeja), "Registro" renombrado a **"Perfil"**, y
+   **registro automático silencioso** del token con el `id_cliente` de la
+   sesión en cada apertura (el botón manual queda de respaldo).
+4. **Consola `MIDFF.html`**: `GET /api/v1/admin/alertas` ahora incluye
+   `a.respuesta` y la tabla muestra la columna **"Reporte cliente"** con
+   bandera ⚑ NO FUI YO (roja, con comentario si lo hay) o ✓ SÍ FUI YO.
+
+#### Decisiones tomadas
+
+| # | Decisión | Justificación |
+|---|---|---|
+| D-55 | El reporte del cliente NO cambia `ALERTA.estado` (solo respuesta/atendida_por/fecha_atencion) | El CHECK del schema solo permite PENDIENTE/ATENDIDA/BLOQUEADA y la decisión de bloquear es del banco; el reporte es insumo, no veredicto |
+| D-56 | El Panel de métricas se oculta en vez de borrarse | La estadística interna alimenta la isla dinámica; quitarla toda arriesgaba romper referencias por un cambio cosmético reversible |
+
+#### Evidencia
+
+- `php -l` sin errores (`reportar.php`, `admin.php`, `router.php`) y
+  `node --check` OK para `MIDFF.html`.
+- E2E con servidor real: reporte de `ALR-2026-000024` por `CLI-003` con
+  comentario → `{ok, id_auditoria: 100}`; la consola mostró
+  `respuesta=[NO_FUI_YO :: No reconozco este cargo], atendida_por=CLI-003,
+  estado=PENDIENTE`; cliente ajeno → **404**; doble reporte → **409**.
+  Datos de prueba restaurados (la AUDITORIA queda como evidencia inmutable).
+- `gradle assembleDebug` → **BUILD SUCCESSFUL** (APK con el flujo nuevo).
+
+#### Bloqueos y riesgos
+
+- Ninguno. La AUDITORIA de la prueba quedó a propósito (registro inmutable).
+
+#### Siguiente paso
+
+1. Demo completa en dispositivo: push → "No fui yo" → bandera en MIDFF.html
+   → el oficial Bloquea desde la consola.
+2. Extras opcionales: notificar al cliente cuando el banco bloquea, filtro
+   "solo reportadas" en la consola, exportar CSV.
+
 ---
 
 ## 10. Plantilla para nuevas entradas
@@ -1450,6 +2073,17 @@ fila correspondiente en el índice 9.1 y actualizar la tabla de metadatos de la 
 | 1.8 | 28/09/2026 | Residente del proyecto | Se agrega la entrada **BIT-009** (Sprint 3, regularización): el envío FCM quedó migrado al protocolo HTTP v1 con OAuth2 (JWT RS256 → access token; decisión D-33, sustituye D-23) y la cuenta de servicio real instalada en `config/firebase.credentials.json` (excluida de Git; decisión D-34); credencial validada en vivo el 28/09 (access token `ya29.` emitido por Google). Métrica §7 (entrega de push) y riesgo R-03 actualizados. |
 | 1.9 | 28/09/2026 | Residente del proyecto | Se agrega la entrada **BIT-010** (Sprint 4, cierre del MVP): `SP_BLOQUEAR_ALERTA` (`database/sp_bloquear_alerta.sql`, D-35), `midff_db_bloquear_alerta()` en `config/db.php`, endpoint `POST /api/v1/bloquear` con su ruta en `router.php` v1.2 (D-36), botón "Bloquear" en la app Android con estado local `BLOQUEADA` (D-37) y `README.md` reescrito (instalación, credenciales Oracle/Firebase, guion de demo y consultas de control). E2E verificado en vivo (`ALR-2026-000010`, auditoría 39, 409/404 controlados). DoD §6 y métricas §7 finales; riesgo R-05 cerrado. |
 | 1.10 | 01/10/2026 | Residente del proyecto | Se agrega la entrada **BIT-011** (post-MVP): rediseño UI "glassmorphism de cristal ahumado con neón de contraste profundo" de la app Android según `prompt.txt` (20 drawables nuevos: paneles de cristal, auroras, cápsulas neón, iconos con degradado `aapt:attr`; tema `NoActionBar`; bandas de riesgo cian/púrpura/magenta; clase `UtilidadesUi`; analítica ponderada 45/30/25 y carrusel de dispositivos en el detalle) y segunda pasada de usabilidad (pestañas instantáneas Panel/Alertas/Registro que sustituyen el scroll de cabecera, ripples y feedback en toda la interfaz, estado inline del registro, confirmación de vaciado, copia de token al portapapeles, isla táctil y conteos en vivo en los filtros). Decisiones D-38 a D-42; validación estática automatizada (42 XML, 76 `R.id`, referencias completas). |
+| 1.11 | 01/10/2026 | Residente del proyecto | Se agrega la entrada **BIT-012** (post-MVP): detección automática de la URL de la API para eliminar el cambio manual de IP por modo de ejecución. Faro `GET /api/v1/ping` sin API-Key (`api/v1/ping.php` + rutas en `router.php`), clase `DescubrimientoApi` (candidatos: guardada → `10.0.2.2` emulador → `127.0.0.1` adb reverse → gateway DHCP → escaneo de subred /24 con 32 hilos y timeout 350 ms), persistencia y fijado de `ApiClient.baseUrl`; isla dinámica informa el enlace y el registro lo garantiza antes del POST; permisos `ACCESS_NETWORK_STATE`/`ACCESS_WIFI_STATE`; README con modo WiFi (`php -S 0.0.0.0:8090` + regla de firewall). Decisión D-43; faro verificado en vivo (HTTP 200 con `servicio: midff`). |
+| 1.12 | 01/10/2026 | Residente del proyecto | Se agrega la entrada **BIT-013** (corrección): primer build real corregido a partir de `errores.txt` — ternario `String`/`int` inválido en el `setText` de la isla dinámica (`MainActivity.java:256`, resuelto con `getString()`), compatibilidad de compilación elevada de Java 8 a **17** (D-44) y `@SuppressWarnings("deprecation")` sobre `WifiManager.getDhcpInfo()` en `DescubrimientoApi`. README de la app actualizado (fila "Lenguaje"). |
+| 1.13 | 01/10/2026 | Residente del proyecto | Se agrega la entrada **BIT-014** (corrección): push FCM migrado a **data-only** (D-46: el bloque `notification` hacía que Android en 2º plano mostrara el aviso sin ejecutar `NotificacionFcmService`, por lo que la alerta nunca llegaba a la bandeja) y puerto del MVP mudado de 8090 a **8091** (D-45: Wondershare NativePush ocupa el 8090) en `DescubrimientoApi`/`ApiClient`/READMEs/`smoke-test.ps1`; `banco.html` con URL por defecto inteligente y persistente. Transacción post-fix verificada (`ALR-2026-000019`). |
+| 1.14 | 01/10/2026 | Residente del proyecto | Se agrega la entrada **BIT-015** (pivote a enfoque cliente, D-47): `LoginActivity` con **Firebase Authentication** (correo/contraseña, `firebase-auth:22.3.1`), sesión persistente (`SesionCliente`), **candado biométrico en cada entrada** (`BiometricPrompt` huella/rostro/PIN del dispositivo, `androidx.biometric:1.1.0`, permiso `USE_BIOMETRIC`, pantalla de bloqueo con Reintentar), botón Cerrar sesión con confirmación y README con el paso de Firebase Console (habilitar Correo/contraseña). Pendiente: filtrado del push por cliente. |
+| 1.15 | 06/10/2026 | Residente del proyecto | Se agrega la entrada **BIT-016** (corrección): build de verificación del flujo cliente fallaba porque `PromptInfo.Builder.setAuthenticators()` no existe en `androidx.biometric:1.1.0`; sustituido por `setDeviceCredentialAllowed(true)` en `MainActivity.lanzarPromptBiometrico()`. `assembleDebug` verificado: **BUILD SUCCESSFUL**, APK generado. |
+| 1.16 | 06/10/2026 | Residente del proyecto | Se agrega la entrada **BIT-017** (2ª parte del pivote a cliente): push filtrado por `id_cliente` de punta a punta — columna `ID_CLIENTE` + rol `CLIENTE` + índice en `DISPOSITIVO_MOVIL` (migración ejecutada en XEPDB1 sin perder tokens), `midff_fcm_enviar_a_dispositivos()` con filtro en `config/firebase.php`, `POST /api/v1/dispositivos` acepta `id_cliente`, y la app registra su token con el campo "ID de cliente" persistido en `SesionCliente`. Broadcast legado conservado cuando falta el dato. |
+| 1.17 | 06/10/2026 | Residente del proyecto | Se agrega la entrada **BIT-018**: ID de cliente auto-generado al crear la cuenta (determinista desde el uid de Firebase, D-50; visible en la pestaña Registro), `GET /api/v1/dispositivos` para el banco/administrador y panel "Clientes registrados" con botón "Usar" en `banco.html`. |
+| 1.18 | 06/10/2026 | Residente del proyecto | Se agrega la entrada **BIT-019**: consola del banco **`MIDFF.html`** — tabla `ADMIN_USUARIO` (bcrypt + clave temporal, D-52/D-53/D-54), API `/api/v1/admin/{sesion,clave,resumen,alertas,clientes}` con Bearer HMAC 8 h, y UI dark con KPIs, serie 24 h, bandeja global con Bloquear y clientes con dispositivos. Consultas validadas contra XEPDB1 real. |
+| 1.19 | 06/10/2026 | Residente del proyecto | Se agrega la entrada **BIT-020**: flujo completo de ambos lados — app limpia (sin Panel/Bloquear, registro automático, "Perfil") + **"No fui yo / Sí fui yo"** vía `POST /api/v1/reportar` (dueño verificado, 404/409, ALERTA+AUDITORIA) y columna "Reporte cliente" con bandera en `MIDFF.html`. E2E verificado y APK compilado. |
+| 1.20 | 07/10/2026 | Residente del proyecto | Se agrega la entrada **BIT-021** (corrección): limpieza de pruebas dejó `SEQ_AUDITORIA` en 1 con 103 filas inmutables → `ORA-00001 PK_AUDITORIA`; secuencia realineada a `MAX(id)+1` y verificada con transacción real. |
+| 1.21 | 07/10/2026 | Residente del proyecto | Se agrega la entrada **BIT-022**: transacciones sanas visibles en la bandeja de la app (filtro "Aprobadas") y en `MIDFF.html` (query `EVALUACION LEFT JOIN ALERTA`, badge SANA sin botón Bloquear); limpieza de pruebas con `SEQ_AUDITORIA` realineada; `banco.html` siempre apunta a un cliente registrado. |
 
 ---
 

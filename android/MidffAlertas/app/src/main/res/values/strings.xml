@@ -8,14 +8,16 @@
     <string name="token_pendiente">Obteniendo token FCM…</string>
     <string name="token_no_disponible">Token FCM no disponible (revise Google Play services)</string>
     <string name="token_actual">Token FCM: %1$s</string>
-    <string name="hint_usuario">Usuario del oficial (p. ej. OFICIAL-01)</string>
+    <string name="hint_usuario">Correo de tu cuenta (p. ej. cliente@correo.com)</string>
+    <string name="hint_id_cliente">ID de cliente (se genera con tu cuenta)</string>
     <string name="btn_registrar">Registrar token</string>
     <string name="btn_actualizar">Actualizar</string>
     <string name="btn_limpiar">Limpiar</string>
     <string name="registrando">Registrando dispositivo en la API…</string>
     <string name="registro_ok">Dispositivo registrado en la API (DISPOSITIVO_MOVIL)</string>
     <string name="registro_fallo">No fue posible registrar el dispositivo\n%1$s</string>
-    <string name="usuario_vacio">Escriba el usuario del oficial</string>
+    <string name="usuario_vacio">Escriba su correo de cuenta</string>
+    <string name="cliente_vacio">Escriba su ID de cliente: así recibirá solo sus alertas</string>
     <string name="token_ausente">El token FCM aun no esta disponible</string>
 
     <!-- Bandeja de alertas -->
@@ -40,7 +42,7 @@
     <string name="titulo_tarjeta_registro">Dispositivo · DISPOSITIVO_MOVIL</string>
     <string name="nav_panel">Panel</string>
     <string name="nav_alertas">Alertas</string>
-    <string name="nav_ajustes">Registro</string>
+    <string name="nav_ajustes">Perfil</string>
 
     <!-- Rediseño glass/neón: detalle de la alerta -->
     <string name="detalle_regresar">Volver</string>
@@ -71,6 +73,10 @@
     <string name="estado_registro_ok">Dispositivo registrado en DISPOSITIVO_MOVIL</string>
     <string name="estado_registro_fallo">Sin enlace con la API: %1$s</string>
     <string name="estado_dispositivo_listo">Token FCM listo · usuario guardado</string>
+    <string name="isla_buscando">Motor C · Buscando API…</string>
+    <string name="isla_enlace">Motor C · API %1$s</string>
+    <string name="api_resuelta">API detectada: %1$s</string>
+    <string name="api_no_detectada">API no detectada en la red. Levante el servidor (php -S 0.0.0.0:8091 router.php), verifique el firewall y reintente.</string>
     <string name="panel_criticas_titulo">Alertas críticas</string>
     <string name="panel_criticas_detalle">%1$d transacciones con riesgo ALTO requieren atención</string>
     <string name="btn_ver_criticas">Ver alertas críticas</string>
@@ -79,6 +85,28 @@
     <string name="confirmar_limpiar_mensaje">Se borrarán las alertas guardadas en este dispositivo. Oracle no se ve afectado.</string>
     <string name="accion_cancelar">Cancelar</string>
     <string name="accion_vaciar">Vaciar</string>
+
+    <!-- Acceso de clientes: Firebase Auth + biometría (BIT-015, D-47) -->
+    <string name="login_titulo">MIDFF</string>
+    <string name="login_subtitulo">Tu escudo contra el fraude · inicia sesión</string>
+    <string name="hint_correo">Correo electrónico</string>
+    <string name="hint_contrasena">Contraseña (mínimo 6 caracteres)</string>
+    <string name="btn_entrar">Entrar</string>
+    <string name="btn_crear_cuenta">Crear cuenta</string>
+    <string name="login_en_progreso">Verificando credenciales…</string>
+    <string name="login_correo_invalido">Escriba un correo electrónico válido.</string>
+    <string name="login_contrasena_invalido">La contraseña debe tener al menos 6 caracteres.</string>
+    <string name="login_error">No fue posible iniciar sesión:\n%1$s</string>
+    <string name="login_error_creacion">No fue posible crear la cuenta:\n%1$s</string>
+    <string name="bloqueo_mensaje">Sesión bloqueada por seguridad</string>
+    <string name="bloqueo_titulo">Desbloquear MIDFF</string>
+    <string name="bloqueo_subtitulo">Use su huella digital, rostro o PIN del dispositivo</string>
+    <string name="btn_reintentar">Reintentar</string>
+    <string name="btn_cerrar_sesion">Cerrar sesión</string>
+    <string name="confirmar_salir_titulo">Cerrar sesión</string>
+    <string name="confirmar_salir_mensaje">¿Salir de su cuenta MIDFF en este dispositivo?</string>
+    <string name="accion_si">Sí, salir</string>
+    <string name="isla_sin_biometria">Motor C · Biometría no configurada</string>
 
     <!-- Canal de notificaciones -->
     <string name="canal_alertas_nombre">Alertas de fraude MIDFF</string>
@@ -103,4 +131,12 @@
     <string name="bloqueo_ok">Alerta bloqueada y registrada en auditoría</string>
     <string name="bloqueo_fallo">No fue posible bloquear\n%1$s</string>
     <string name="bloqueo_ya">Alerta ya bloqueada</string>
+
+    <!-- BIT-020: reporte del cliente sobre sus alertas -->
+    <string name="btn_no_fui_yo">⛔ No fui yo</string>
+    <string name="btn_si_fui_yo">✓ Sí fui yo</string>
+    <string name="reportando">Enviando tu respuesta…</string>
+    <string name="reporte_ok">Respuesta enviada: el banco la revisará</string>
+    <string name="reporte_fallo">No fue posible enviar tu respuesta\n%1$s</string>
+    <string name="reporte_ya">Ya respondiste a esta alerta</string>
 </resources>

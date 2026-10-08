@@ -34,14 +34,14 @@ public final class ApiClient {
      * URL base de la API.
      *
      * <p>Dispositivo fisico (USB/adb): se usa el localhost del telefono con el
-     * puente {@code adb reverse tcp:8090 tcp:8090}, que redirige el
-     * 127.0.0.1:8090 del telefono al 127.0.0.1:8090 del HOST (donde corre la
+     * puente {@code adb reverse tcp:8091 tcp:8091}, que redirige el
+     * 127.0.0.1:8091 del telefono al 127.0.0.1:8091 del HOST (donde corre la
      * API MIDFF). No requiere abrir el firewall ni conocer la IP LAN.</p>
      *
-     * <p>Emulador Android: cambiar a {@code http://10.0.2.2:8090} (loopback del
+     * <p>Emulador Android: cambiar a {@code http://10.0.2.2:8091} (loopback del
      * host visto desde el emulador).</p>
      */
-    public static String baseUrl = "http://127.0.0.1:8090";
+    public static String baseUrl = "http://127.0.0.1:8091";
 
     /** Clave de desarrollo; en produccion se inyecta la real (RNF-03). */
     public static String apiKey = "MIDFF-API-KEY-2026-SPRINT2";
@@ -54,18 +54,46 @@ public final class ApiClient {
     private ApiClient() {
     }
 
-    /** POST /api/v1/dispositivos: registra/actualiza el token FCM (UPSERT). */
+    /** POST /api/v1/dispositivos: registra/actualiza el token FCM (UPSERT).
+     *  El idCliente (BIT-017) vincula el dispositivo al dueño de las
+     *  transacciones: vacío mantiene el broadcast legado (modo oficial/demo). */
     public static void registrarDispositivo(final String usuario, final String rol,
-                                            final String token, final Callback callback) {
+                                            final String idCliente, final String token,
+                                            final Callback callback) {
         try {
             JSONObject cuerpo = new JSONObject();
             cuerpo.put("usuario", usuario);
             cuerpo.put("rol", rol);
+            if (idCliente != null && !idCliente.trim().isEmpty()) {
+                cuerpo.put("id_cliente", idCliente.trim());
+            }
             cuerpo.put("token_fcm", token);
             cuerpo.put("activo", true);
             post("/api/v1/dispositivos", cuerpo.toString().getBytes(StandardCharsets.UTF_8), callback);
         } catch (Exception e) {
             Log.e(ETIQUETA, "no fue posible armar el cuerpo del registro", e);
+            if (callback != null) {
+                callback.terminado(false, mensajeDeExcepcion(e));
+            }
+        }
+    }
+
+    /** POST /api/v1/reportar: el cliente responde "No fui yo" o "Sí fui yo"
+     *  a una de SUS alertas (BIT-020); el banco lo ve en MIDFF.html. */
+    public static void reportarAlerta(final String alertaId, final String idCliente,
+                                      final String respuesta, final String comentario,
+                                      final Callback callback) {
+        try {
+            JSONObject cuerpo = new JSONObject();
+            cuerpo.put("alerta_id", alertaId);
+            cuerpo.put("id_cliente", idCliente);
+            cuerpo.put("respuesta", respuesta);
+            if (comentario != null && !comentario.trim().isEmpty()) {
+                cuerpo.put("comentario", comentario.trim());
+            }
+            post("/api/v1/reportar", cuerpo.toString().getBytes(StandardCharsets.UTF_8), callback);
+        } catch (Exception e) {
+            Log.e(ETIQUETA, "no fue posible armar el cuerpo del reporte", e);
             if (callback != null) {
                 callback.terminado(false, mensajeDeExcepcion(e));
             }
@@ -185,7 +213,7 @@ public final class ApiClient {
                 || e instanceof SocketTimeoutException) {
             // En una sola linea: en Android 12+ los Toast del sistema recortan
             // el texto a ~2 lineas, asi el motivo nunca queda oculto.
-            base += " | verifique la API MIDFF (en USB: adb reverse tcp:8090 tcp:8090)";
+            base += " | verifique la API MIDFF (en USB: adb reverse tcp:8091 tcp:8091)";
         }
         return base;
     }

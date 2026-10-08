@@ -88,7 +88,9 @@ C:\todoMIDFF
 ├── docs\contratos\            # contrato_scoring.md
 ├── build.ps1                  # Compila el motor C y corre sus 167 verificaciones
 ├── smoke-test.ps1             # Flujo API -> motor C -> Oracle + métricas
-├── BITACORA.md                # Memoria auditable del proyecto (BIT-001..BIT-010)
+├── MIDFF.html                 # Consola del banco (login admin, KPIs, alertas, clientes)
+├── banco.html                 # Simulador de transacciones del banco
+├── BITACORA.md                # Memoria auditable del proyecto (BIT-001..BIT-019)
 ├── PRD_MIDFF.md / MVP_MIDFF.md# Requisitos y alcance del MVP
 └── router.php                 # Router del servidor embebido php -S
 ```
@@ -165,10 +167,10 @@ PHP necesita las DLLs del cliente Oracle en el `PATH` (`smoke-test.ps1` lo hace 
 3. Conecte el teléfono por USB y redirija el puerto de la API:
 
    ```
-   adb reverse tcp:8090 tcp:8090
+   adb reverse tcp:8091 tcp:8091
    ```
 
-   (En emulador cambie `ApiClient.baseUrl` a `http://10.0.2.2:8090`.)
+   (En emulador cambie `ApiClient.baseUrl` a `http://10.0.2.2:8091`.)
 4. En la app escriba el usuario del oficial (p. ej. `OFICIAL-01`) y pulse **Registrar token**: el token FCM queda en `DISPOSITIVO_MOVIL` (Oracle) con `UPSERT`.
 
 ### 5.5 Levantar la API
@@ -176,10 +178,10 @@ PHP necesita las DLLs del cliente Oracle en el `PATH` (`smoke-test.ps1` lo hace 
 Desde la raíz del repositorio:
 
 ```
-php -S 127.0.0.1:8090 router.php
+php -S 127.0.0.1:8091 router.php
 ```
 
-La raíz `http://127.0.0.1:8090/` responde el JSON informativo v1.2 con los tres endpoints.
+La raíz `http://127.0.0.1:8091/` responde el JSON informativo v1.2 con los tres endpoints.
 
 ---
 
@@ -201,20 +203,41 @@ Desde `C:\todoMIDFF` en PowerShell:
                    #     cobertura de auditoria 100 %
 ```
 
+### 3.1 Consola del banco (MIDFF.html, BIT-019)
+
+Panel web del administrador (abrir `http://127.0.0.1:8091/MIDFF.html` con el
+servidor PHP arriba). Requisito una sola vez:
+
+```powershell
+sqlplus MIDFFuser/midffadmin@localhost:1521/XEPDB1 @database/admin_usuario.sql
+```
+
+- **Acceso semilla**: `admin` / `MIDFFadmin2026` (temporal: la propia consola
+  exige cambiarla al primer inicio y queda guardada como bcrypt en Oracle).
+- **Funciones**: KPIs del día + gráfica por hora (24 h) + top clientes por
+  riesgo, bandeja global de alertas con filtros (cliente/banda/estado) y
+  **Bloquear** (reusa `POST /api/v1/bloquear` + `SP_BLOQUEAR_ALERTA` +
+  auditoría), y clientes con sus dispositivos registrados.
+- **API propia**: `/api/v1/admin/{sesion,clave,resumen,alertas,clientes}`
+  con token Bearer HMAC-SHA256 de 8 h (`MIDFF_ADMIN_SECRETO` en entorno para
+  producción; HTTPS obligatorio fuera de desarrollo).
+- `banco.html` sigue siendo el **simulador** de transacciones; `MIDFF.html`
+  es la consola de administración.
+
 Parámetros útiles del smoke test: `-RutaPhp <ruta a php.exe>` si PHP no está en el `PATH`, `-SinOracle` para omitir la verificación en base de datos. Resultado esperado: **`RESULTADO: SMOKE TEST OK`** con código de salida 0.
 
 ---
 
 ## 7. Ejecución de la Demo End-to-End
 
-Guion de ~5 minutos (cumple el criterio 10 del DoD). Requiere: Oracle XE activo con los 3 scripts instalados, la API corriendo (`php -S 127.0.0.1:8090 router.php`), `config\firebase.credentials.json` presente y la app instalada con su token registrado.
+Guion de ~5 minutos (cumple el criterio 10 del DoD). Requiere: Oracle XE activo con los 3 scripts instalados, la API corriendo (`php -S 127.0.0.1:8091 router.php`), `config\firebase.credentials.json` presente y la app instalada con su token registrado.
 
 1. **(Opcional) Limpieza:** re-ejecute `database\schema.sql` + `database\dispositivo_movil.sql` + `database\sp_bloquear_alerta.sql` y vuelva a registrar el token en la app.
 
 2. **Transacción BAJO (sin alerta):**
 
    ```
-   curl -X POST http://127.0.0.1:8090/api/v1/transacciones -H "X-API-Key: MIDFF-API-KEY-2026-SPRINT2" -H "Content-Type: application/json" -d "{\"id_cliente\":\"CLI-001\",\"monto\":850.00,\"contexto\":{\"monto_promedio_historial\":1200.00,\"transacciones_ultima_hora\":1,\"ubicacion_habitual\":\"GDL\",\"ip_habitual\":\"189.203.4.7\"}}"
+   curl -X POST http://127.0.0.1:8091/api/v1/transacciones -H "X-API-Key: MIDFF-API-KEY-2026-SPRINT2" -H "Content-Type: application/json" -d "{\"id_cliente\":\"CLI-001\",\"monto\":850.00,\"contexto\":{\"monto_promedio_historial\":1200.00,\"transacciones_ultima_hora\":1,\"ubicacion_habitual\":\"GDL\",\"ip_habitual\":\"189.203.4.7\"}}"
    ```
 
    → `score 0.0 · BAJO · APROBADA`, **sin** `alerta_id` y **sin** push.
@@ -283,7 +306,7 @@ SELECT id_dispositivo, usuario, rol, activo FROM DISPOSITIVO_MOVIL;
 | `ORA-12154` / no conecta a Oracle. | DLLs del cliente Oracle fuera del `PATH` o servicio caído. | Inicie el servicio OracleXTSID y deje que `smoke-test.ps1` agregue el `bin` de Oracle al `PATH`. |
 | `HTTP 500 ... SP_BLOQUEAR_ALERTA: identificador debe declararse`. | Falta instalar el SP del Sprint 4. | `sqlplus ... @database\sp_bloquear_alerta.sql`. |
 | El push no llega al teléfono. | `google-services.json` de otro proyecto o falta `config\firebase.credentials.json`. | Ambos archivos deben salir del **mismo** proyecto `midff-57e6b` (ver `firebase\README-fcm.md`). |
-| La app no reacha la API. | Puerto sin redirigir. | `adb reverse tcp:8090 tcp:8090` (o `10.0.2.2` en emulador). |
+| La app no reacha la API. | Puerto sin redirigir. | `adb reverse tcp:8091 tcp:8091` (o `10.0.2.2` en emulador). |
 | Gradle no sincroniza en Android Studio. | JDK 21 con Gradle viejo. | Wrapper 8.9 + AGP 8.5.2 ya configurados; haga *Sync* y borre `%USERPROFILE%\.gradle\caches\8.0`. |
 | Error de parse de XML al compilar la app. | Comentario XML con `--`. | Nunca use `--` dentro de comentarios XML (D-32); use `=`. |
 

@@ -7,6 +7,7 @@ import android.content.Context;
 import android.content.Intent;
 import android.content.pm.PackageManager;
 import android.graphics.Color;
+import android.app.Dialog;
 import android.os.Build;
 import android.os.Bundle;
 import android.view.View;
@@ -17,11 +18,15 @@ import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
 
+import androidx.annotation.NonNull;
 import androidx.appcompat.app.AlertDialog;
 import androidx.appcompat.app.AppCompatActivity;
+import androidx.biometric.BiometricManager;
+import androidx.biometric.BiometricPrompt;
 import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
+import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.ArrayList;
@@ -70,6 +75,7 @@ public class MainActivity extends AppCompatActivity {
     private TextView txtEstadoDispositivo;
     private TextView txtEstadoRegistro;
     private EditText edtUsuario;
+    private EditText edtIdCliente;
     private ListView listaAlertas;
     private View pestanaPanel;
     private View pestanaAlertas;
@@ -78,14 +84,25 @@ public class MainActivity extends AppCompatActivity {
     private Button btnRegistrar;
     private AlertasRepositorio repositorio;
     private AdaptadorAlertas adaptador;
-    private Pestana pestanaActual = Pestana.PANEL;
+    private Pestana pestanaActual = Pestana.ALERTAS;
     private Filtro filtroActual = Filtro.TODAS;
     private List<ModeloAlerta> alertas = new ArrayList<>();
     private boolean registroEnCurso;
+    private String urlBaseActual;
+    private boolean desbloqueado;
+    private Dialog dialogoBloqueo;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
         super.onCreate(savedInstanceState);
+
+        // BIT-015: sin sesión iniciada se manda al login (Firebase Auth).
+        if (!SesionCliente.estaActiva(this)) {
+            startActivity(new Intent(this, LoginActivity.class));
+            finish();
+            return;
+        }
+
         setContentView(R.layout.activity_main);
 
         repositorio = new AlertasRepositorio(this);
@@ -104,10 +121,14 @@ public class MainActivity extends AppCompatActivity {
         vincularNavegacion();
         vincularFiltros();
         vincularRegistro();
-        seleccionarPestana(Pestana.PANEL);
+        // BIT-020: la app del cliente abre directo en SU bandeja; el panel de
+        // métricas del banco vive ahora en la consola MIDFF.html.
+        seleccionarPestana(Pestana.ALERTAS);
 
         solicitarPermisoNotificaciones();
         mostrarToken();
+        ejecutarDescubrimiento(true);
+        registroAutomatico();
         recargarBandeja();
     }
 
@@ -115,6 +136,18 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         recargarBandeja();   // el push puede llegar con la app cerrada
+        if (!desbloqueado) {
+            pedirBiometria();   // cada entrada exige huella/rostro/PIN
+        }
+    }
+
+    @Override
+    protected void onStop() {
+        super.onStop();
+        desbloqueado = false;   // al volver a entrar se vuelve a bloquear
+        if (dialogoBloqueo != null && dialogoBloqueo.isShowing()) {
+            dialogoBloqueo.dismiss();
+        }
     }
 
     /** Solicita el permiso de notificaciones requerido desde Android 13. */
@@ -148,6 +181,7 @@ public class MainActivity extends AppCompatActivity {
         islaDinamica.setOnClickListener(v -> {
             rebote(islaDinamica);
             actualizarBandeja();
+            ejecutarDescubrimiento(false);
         });
 
         txtRiesgoGlobal = findViewById(R.id.txtRiesgoGlobal);
@@ -164,10 +198,11 @@ public class MainActivity extends AppCompatActivity {
                 seleccionarPestana(Pestana.REGISTRO));
     }
 
-    /** Navegación inferior: cambio de pestaña instantáneo (sin scroll). */
+    /** Navegación inferior: cambio de pestaña instantáneo (sin scroll).
+     *  BIT-020: el tab del Panel (métricas del banco) se oculta; esa lógica
+     *  vive ahora en la consola MIDFF.html y la app queda solo cliente. */
     private void vincularNavegacion() {
-        findViewById(R.id.navPanel).setOnClickListener(v ->
-                seleccionarPestana(Pestana.PANEL));
+        findViewById(R.id.navPanel).setVisibility(View.GONE);
         findViewById(R.id.navAlertas).setOnClickListener(v -> {
             if (pestanaActual == Pestana.ALERTAS) {
                 listaAlertas.setSelection(0);   // 2.º toque: al inicio, al instante
@@ -239,6 +274,121 @@ public class MainActivity extends AppCompatActivity {
                         .scaleX(1f).scaleY(1f).setDuration(90L).start())
                 .start();
     }
+
+    /**
+     * Detección automática de la API (D-43): emulador, adb reverse o red WiFi
+     * local; la isla dinámica informa el enlace encontrado.
+     */
+    private void ejecutarDescubrimiento(boolean mostrarBusqueda) {
+        if (mostrarBusqueda) {
+            txtIslaEstado.setText(R.string.isla_buscando);
+        }
+        DescubrimientoApi.asegurar(this, (ok, url, motivo) -> {
+            urlBaseActual = ok ? url : null;
+            txtIslaEstado.setText(ok
+                    ? getString(R.string.isla_enlace, hostPuerto(url))
+                    : getString(R.string.isla_sin_enlace));
+            actualizarEstadisticas();
+        });
+    }
+
+    /** "http://192.168.1.10:8091" -> "192.168.1.10:8091" (texto de la isla). */
+    private static String hostPuerto(String url) {
+        if (url == null) {
+            return "";
+        }
+        return url.startsWith("http://") ? url.substring("http://".length()) : url;
+    }
+
+    // -----------------------------------------------------------------------
+    // BIT-015: candado biométrico en cada entrada (huella, rostro o PIN)
+    // -----------------------------------------------------------------------
+
+    /** Muestra la pantalla de bloqueo y lanza el BiometricPrompt del sistema. */
+    private void pedirBiometria() {
+        desbloqueado = false;
+        if (dialogoBloqueo == null) {
+            dialogoBloqueo = new Dialog(this,
+                    android.R.style.Theme_Black_NoTitleBar_Fullscreen);
+            dialogoBloqueo.setContentView(R.layout.pantalla_bloqueo);
+            dialogoBloqueo.setCancelable(false);
+            dialogoBloqueo.findViewById(R.id.btnReintentarBloqueo)
+                    .setOnClickListener(v -> lanzarPromptBiometrico());
+        }
+        if (!dialogoBloqueo.isShowing()) {
+            dialogoBloqueo.show();
+        }
+        lanzarPromptBiometrico();
+    }
+
+    /**
+     * Autenticadores permitidos: huella/rostro (BIOMETRIC_WEAK) y credenciales
+     * del dispositivo (PIN/patrón, DEVICE_CREDENTIAL). En Android 9 o menor la
+     * combinación no está soportada y se ofrece solo el biométrico con botón
+     * negativo. Sin biometría configurada (p. ej. emulador limpio) no se
+     * bloquea la demo: se informa en la isla dinámica.
+     */
+    private void lanzarPromptBiometrico() {
+        BiometricManager gestor = BiometricManager.from(this);
+        int puede = gestor.canAuthenticate(BiometricManager.Authenticators.BIOMETRIC_WEAK
+                | BiometricManager.Authenticators.DEVICE_CREDENTIAL);
+        if (puede != BiometricManager.BIOMETRIC_SUCCESS) {
+            desbloquear();
+            txtIslaEstado.setText(R.string.isla_sin_biometria);
+            return;
+        }
+
+        // API de androidx.biometric 1.1.0: PromptInfo.Builder aun no expone
+        // setAuthenticators(); la credencial del dispositivo (PIN/patron/
+        // contrasena) se habilita con el flag clasico. Nota: con la credencial
+        // habilitada NO puede fijarse setNegativeButtonText (excepcion).
+        BiometricPrompt.PromptInfo.Builder info = new BiometricPrompt.PromptInfo.Builder()
+                .setTitle(getString(R.string.bloqueo_titulo))
+                .setSubtitle(getString(R.string.bloqueo_subtitulo))
+                .setConfirmationRequired(false)
+                .setDeviceCredentialAllowed(true);
+
+        BiometricPrompt prompt = new BiometricPrompt(this,
+                ContextCompat.getMainExecutor(this),
+                new BiometricPrompt.AuthenticationCallback() {
+                    @Override
+                    public void onAuthenticationSucceeded(
+                            @NonNull BiometricPrompt.AuthenticationResult resultado) {
+                        desbloquear();
+                    }
+
+                    @Override
+                    public void onAuthenticationError(int codigo, @NonNull CharSequence mensaje) {
+                        // Queda bloqueado: el botón "Reintentar" vuelve a lanzar el prompt.
+                    }
+                });
+        prompt.authenticate(info.build());
+    }
+
+    private void desbloquear() {
+        desbloqueado = true;
+        if (dialogoBloqueo != null && dialogoBloqueo.isShowing()) {
+            dialogoBloqueo.dismiss();
+        }
+        actualizarIsla();
+    }
+
+    /** Cierra la sesión de Firebase y vuelve al login. */
+    private void confirmarCerrarSesion() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.confirmar_salir_titulo)
+                .setMessage(R.string.confirmar_salir_mensaje)
+                .setPositiveButton(R.string.accion_si, (dialogo, cual) -> {
+                    FirebaseAuth.getInstance().signOut();
+                    SesionCliente.cerrar(this);
+                    startActivity(new Intent(this, LoginActivity.class)
+                            .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK
+                                    | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+                    finish();
+                })
+                .setNegativeButton(R.string.accion_cancelar, null)
+                .show();
+    }
     /** Filtros de primer nivel de la bandeja (chips de cristal). */
     private void vincularFiltros() {
         findViewById(R.id.chipTodas)
@@ -286,26 +436,68 @@ public class MainActivity extends AppCompatActivity {
         txtToken = findViewById(R.id.txtToken);
         txtEstadoRegistro = findViewById(R.id.txtEstadoRegistro);
         edtUsuario = findViewById(R.id.edtUsuario);
-        edtUsuario.setText(AlertasRepositorio.leerUsuario(this));
+        String correoSesion = SesionCliente.leerCorreo(this);
+        edtUsuario.setText(correoSesion.isEmpty()
+                ? AlertasRepositorio.leerUsuario(this)
+                : correoSesion);
+
+        // BIT-017: id_cliente que vincula el dispositivo al dueño de las
+        // transacciones (se recuerda entre sesiones para no reescribirlo).
+        edtIdCliente = findViewById(R.id.edtIdCliente);
+        edtIdCliente.setText(SesionCliente.leerIdCliente(this));
 
         btnRegistrar = findViewById(R.id.btnRegistrar);
         btnRegistrar.setOnClickListener(v -> registrarDispositivo());
         findViewById(R.id.btnActualizar).setOnClickListener(v -> actualizarBandeja());
         findViewById(R.id.btnLimpiar).setOnClickListener(v -> confirmarLimpiar());
         findViewById(R.id.btnCopiarToken).setOnClickListener(v -> copiarToken());
+        findViewById(R.id.btnCerrarSesion).setOnClickListener(v -> confirmarCerrarSesion());
     }
 
-    /** POST /api/v1/dispositivos: registra el token con usuario y rol. */
+    /** BIT-020: registro silencioso del token con el id_cliente de la sesión
+     *  en cada apertura (mantiene DISPOSITIVO_MOVIL al día sin intervención;
+     *  el botón manual de la pestaña Perfil queda como respaldo). */
+    private void registroAutomatico() {
+        String token = AlertasRepositorio.leerToken(this);
+        String idCliente = SesionCliente.leerIdCliente(this);
+        String correo = SesionCliente.leerCorreo(this);
+        if (token == null || idCliente.isEmpty()) {
+            return;   // sin token o sesión incompleta: seguirá el registro manual
+        }
+        String usuario = !correo.isEmpty() ? correo : AlertasRepositorio.leerUsuario(this);
+        DescubrimientoApi.asegurar(this, (apiOk, url, motivo) -> {
+            if (apiOk) {
+                urlBaseActual = url;
+            }
+            ApiClient.registrarDispositivo(usuario, "CLIENTE", idCliente, token, (ok, mensaje) ->
+                    runOnUiThread(() -> {
+                        if (ok) {
+                            txtToken.setText(getString(R.string.token_actual, token)
+                                    + " (registrado)");
+                            txtEstadoRegistro.setText(R.string.estado_registro_ok);
+                            txtEstadoRegistro.setTextColor(getColor(R.color.neon_cian));
+                        }
+                    }));
+        });
+    }
+
+    /** POST /api/v1/dispositivos: registra el token con usuario, cliente y rol. */
     private void registrarDispositivo() {
         if (registroEnCurso) {
             return;   // ya hay una llamada en vuelo: se ignora el doble toque
         }
         String usuario = edtUsuario.getText().toString().trim();
+        String idCliente = edtIdCliente.getText().toString().trim();
         String token = AlertasRepositorio.leerToken(this);
 
         if (usuario.isEmpty()) {
             Toast.makeText(this, R.string.usuario_vacio, Toast.LENGTH_SHORT).show();
             edtUsuario.requestFocus();
+            return;
+        }
+        if (idCliente.isEmpty()) {
+            Toast.makeText(this, R.string.cliente_vacio, Toast.LENGTH_SHORT).show();
+            edtIdCliente.requestFocus();
             return;
         }
         if (token == null) {
@@ -315,28 +507,46 @@ public class MainActivity extends AppCompatActivity {
 
         registroEnCurso = true;
         AlertasRepositorio.guardarUsuario(this, usuario);
+        SesionCliente.guardarIdCliente(this, idCliente);
         btnRegistrar.setEnabled(false);
         btnRegistrar.setText(R.string.registrando);
         txtEstadoRegistro.setTextColor(getColor(R.color.texto_secundario));
         txtEstadoRegistro.setText(R.string.registrando);
 
-        ApiClient.registrarDispositivo(usuario, "OFICIAL", token, (ok, mensaje) ->
+        // Se garantiza el enlace con la API antes del POST: si el modo de
+        // ejecución cambió (emulador/USB/WiFi) el descubrimiento lo resuelve.
+        DescubrimientoApi.asegurar(this, (apiOk, url, motivo) -> {
+            if (!apiOk) {
                 runOnUiThread(() -> {
                     registroEnCurso = false;
                     btnRegistrar.setEnabled(true);
                     btnRegistrar.setText(R.string.btn_registrar);
-                    txtToken.setText(getString(R.string.token_actual, token)
-                            + (ok ? " (registrado)" : " (sin registrar)"));
-                    txtEstadoRegistro.setText(ok
-                            ? getString(R.string.estado_registro_ok)
-                            : getString(R.string.estado_registro_fallo, mensaje));
-                    txtEstadoRegistro.setTextColor(getColor(ok
-                            ? R.color.neon_cian
-                            : R.color.neon_magenta));
-                    if (ok) {
-                        txtIslaEstado.setText(R.string.isla_verificado);
-                    }
-                }));
+                    txtEstadoRegistro.setText(R.string.api_no_detectada);
+                    txtEstadoRegistro.setTextColor(getColor(R.color.neon_magenta));
+                });
+                return;
+            }
+            urlBaseActual = url;
+            ApiClient.registrarDispositivo(usuario, "CLIENTE", idCliente, token, (ok, mensaje) ->
+                    runOnUiThread(() -> {
+                        registroEnCurso = false;
+                        btnRegistrar.setEnabled(true);
+                        btnRegistrar.setText(R.string.btn_registrar);
+                        txtToken.setText(getString(R.string.token_actual, token)
+                                + (ok ? " (registrado)" : " (sin registrar)"));
+                        txtEstadoRegistro.setText(ok
+                                ? getString(R.string.estado_registro_ok)
+                                : getString(R.string.estado_registro_fallo, mensaje));
+                        txtEstadoRegistro.setTextColor(getColor(ok
+                                ? R.color.neon_cian
+                                : R.color.neon_magenta));
+                        if (ok) {
+                            txtIslaEstado.setText(getString(
+                                    R.string.isla_enlace, hostPuerto(url)));
+                            actualizarEstadisticas();
+                        }
+                    }));
+        });
     }
 
     /** Refresca la bandeja con acuse visible (isla + parpadeo de la lista). */
@@ -463,9 +673,9 @@ public class MainActivity extends AppCompatActivity {
         badgeCriticas.setText(String.valueOf(criticas));
         badgeCriticas.setVisibility(criticas > 0 ? View.VISIBLE : View.GONE);
         txtCriticasDetalle.setText(getString(R.string.panel_criticas_detalle, criticas));
-        txtEstadoDispositivo.setText(AlertasRepositorio.leerToken(this) == null
-                ? R.string.isla_sin_enlace
-                : R.string.estado_dispositivo_listo);
+        txtEstadoDispositivo.setText(urlBaseActual != null
+                ? getString(R.string.api_resuelta, urlBaseActual)
+                : getText(R.string.isla_buscando));
 
         ((TextView) findViewById(R.id.etiquetaTodas))
                 .setText(getString(R.string.filtro_todas) + " · " + alertas.size());

@@ -11,8 +11,9 @@ declare(strict_types=1);
   -- Proposito: registrar (UPSERT) el token FCM que entrega la app Android
   --   (NotificacionFcmService.onNewToken / boton "Registrar token") en la
   --   tabla DISPOSITIVO_MOVIL, para que la API pueda enviar el push cuando
-  --   el score sea >= 0.4 (RF-09 / HU-MVP-05). El usuario + rol identifican
-  --   al oficial de seguridad (mitigacion del riesgo R-05 del MVP).
+  --   el score sea >= 0.4 (RF-09 / HU-MVP-05). Con el pivote a CLIENTE
+  --   (BIT-017) el cuerpo incluye id_cliente: el push de una transaccion
+  --   se entrega SOLO a los dispositivos de su dueno.
   --
   -- Requisitos: RF-09 (notificacion push), RF-10 (app Android de alertas),
   --             RF-02 (validacion de entrada y API Key, misma que
@@ -20,8 +21,11 @@ declare(strict_types=1);
   --
   -- CONTRATO DE ENTRADA (JSON):
   --   Obligatorios : token_fcm (string 64-255, el que entrega Firebase)
-  --                  usuario   (string <= 60, oficial de seguridad)
-  --   Opcionales   : rol     (OFICIAL | SUPERVISOR | ADMIN; default OFICIAL)
+  --                  usuario   (string <= 60, correo del cliente o usuario)
+  --   Opcionales   : id_cliente (string <= 40, cliente dueno del dispositivo;
+  --                              vacio = broadcast legado, modo oficial/demo)
+  --                  rol     (CLIENTE | OFICIAL | SUPERVISOR | ADMIN;
+  --                           default OFICIAL)
   --                  activo  (boolean; default true)
   --
   -- CONTRATO DE SALIDA (200):
@@ -64,9 +68,11 @@ function fallaInterna(string $mensaje): void
 /* -----------------------------------------------------------------------------
  * UPSERT del dispositivo en DISPOSITIVO_MOVIL (database/dispositivo_movil.sql)
  *
+ * @param string $idCliente cliente dueno del dispositivo ('' = broadcast legado)
+ *
  * @return array{ok: bool, mensaje: string, id: int|null, accion: string}
  * -------------------------------------------------------------------------- */
-function midff_registrar_dispositivo(string $usuario, string $rol, string $token, bool $activo): array
+function midff_registrar_dispositivo(string $usuario, string $rol, string $token, bool $activo, string $idCliente = ''): array
 {
     $driver = midff_db_driver_disponible();
     if ($driver === '') {
@@ -78,6 +84,7 @@ function midff_registrar_dispositivo(string $usuario, string $rol, string $token
         try {
             $cnx = midff_db_conectar();
             $cnx->beginTransaction();
+            $cliente = $idCliente === '' ? null : $idCliente;
 
             $buscar = $cnx->prepare('SELECT id_dispositivo FROM DISPOSITIVO_MOVIL WHERE token_fcm = :token');
             $buscar->execute([':token' => $token]);
@@ -86,10 +93,10 @@ function midff_registrar_dispositivo(string $usuario, string $rol, string $token
 
             if ($id !== false) {
                 $sent = $cnx->prepare('UPDATE DISPOSITIVO_MOVIL'
-                                    . ' SET usuario = :usuario, rol = :rol, activo = :activo,'
+                                    . ' SET usuario = :usuario, rol = :rol, id_cliente = :cliente, activo = :activo,'
                                     . ' fecha_actualizacion = SYSTIMESTAMP'
                                     . ' WHERE token_fcm = :token');
-                $sent->execute([':usuario' => $usuario, ':rol' => $rol,
+                $sent->execute([':usuario' => $usuario, ':rol' => $rol, ':cliente' => $cliente,
                                 ':activo' => $activo ? '1' : '0', ':token' => $token]);
                 $cnx->commit();
                 return ['ok' => true, 'mensaje' => 'dispositivo actualizado',
@@ -97,9 +104,9 @@ function midff_registrar_dispositivo(string $usuario, string $rol, string $token
             }
 
             // INSERT + relectura del id (PDO_OCI no soporta RETURNING INTO).
-            $sent = $cnx->prepare('INSERT INTO DISPOSITIVO_MOVIL (usuario, rol, token_fcm, activo)'
-                                . ' VALUES (:usuario, :rol, :token, :activo)');
-            $sent->execute([':usuario' => $usuario, ':rol' => $rol,
+            $sent = $cnx->prepare('INSERT INTO DISPOSITIVO_MOVIL (usuario, rol, id_cliente, token_fcm, activo)'
+                                . ' VALUES (:usuario, :rol, :cliente, :token, :activo)');
+            $sent->execute([':usuario' => $usuario, ':rol' => $rol, ':cliente' => $cliente,
                             ':activo' => $activo ? '1' : '0', ':token' => $token]);
             $sent = null;
 
@@ -123,11 +130,37 @@ function midff_registrar_dispositivo(string $usuario, string $rol, string $token
 }
 
 /* -----------------------------------------------------------------------------
- * 1. METODO: solo POST (405 + encabezado Allow, RFC 7231)
+ * LISTA de dispositivos registrados (BIT-018: el banco/administrador ve los
+ * ID de cliente dados de alta en la app para pedirlos al usuario).
+ *
+ * @return array{ok: bool, mensaje: string, dispositivos: array<int, array>}
  * -------------------------------------------------------------------------- */
-if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
-    header('Allow: POST');
-    responder(405, ['error' => 'metodo no permitido: use POST /api/v1/dispositivos']);
+function midff_listar_dispositivos(): array
+{
+    if (midff_db_driver_disponible() !== 'pdo_oci') {
+        return ['ok' => false, 'mensaje' => 'sin driver pdo_oci: revise php.ini', 'dispositivos' => []];
+    }
+
+    try {
+        $cnx  = midff_db_conectar();
+        $sent = $cnx->query('SELECT id_dispositivo, usuario, rol, id_cliente, activo,'
+                          . " TO_CHAR(fecha_registro, 'YYYY-MM-DD HH24:MI') AS registrado,"
+                          . ' SUBSTR(token_fcm, -6) AS token_final'
+                          . ' FROM DISPOSITIVO_MOVIL ORDER BY id_dispositivo');
+        return ['ok' => true, 'mensaje' => '', 'dispositivos' => $sent->fetchAll(PDO::FETCH_ASSOC) ?: []];
+    } catch (PDOException $e) {
+        return ['ok' => false, 'mensaje' => trim($e->getMessage()), 'dispositivos' => []];
+    }
+}
+
+/* -----------------------------------------------------------------------------
+ * 1. METODO: POST registra el token; GET lista los dispositivos (BIT-018,
+ *    vista del banco/administrador). Otros metodos: 405 + Allow (RFC 7231).
+ * -------------------------------------------------------------------------- */
+$metodo = $_SERVER['REQUEST_METHOD'] ?? '';
+if ($metodo !== 'POST' && $metodo !== 'GET') {
+    header('Allow: GET, POST');
+    responder(405, ['error' => 'metodo no permitido: use POST (registrar) o GET (listar) /api/v1/dispositivos']);
 }
 
 /* -----------------------------------------------------------------------------
@@ -136,6 +169,24 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
 $claveRecibida = $_SERVER['HTTP_X_API_KEY'] ?? '';
 if ($claveRecibida === '' || !hash_equals(MIDFF_API_KEY, (string) $claveRecibida)) {
     responder(401, ['error' => 'encabezado X-API-Key ausente o invalido']);
+}
+
+/* -----------------------------------------------------------------------------
+ * 2b. GET: lista de dispositivos con su id_cliente (BIT-018, banco/admin).
+ *      Salida: { ok, total, dispositivos: [{ id_dispositivo, usuario, rol,
+ *               id_cliente, activo, registrado, token_final }] }
+ * -------------------------------------------------------------------------- */
+if ($metodo === 'GET') {
+    $listado = midff_listar_dispositivos();
+    if (!$listado['ok']) {
+        fallaInterna('fallo el listado de dispositivos en Oracle: ' . $listado['mensaje']);
+    }
+    error_log(sprintf('[MIDFF-FCM] listado de dispositivos (GET): %d registro(s)', count($listado['dispositivos'])));
+    responder(200, [
+        'ok'           => true,
+        'total'        => count($listado['dispositivos']),
+        'dispositivos' => $listado['dispositivos'],
+    ]);
 }
 
 /* -----------------------------------------------------------------------------
@@ -160,10 +211,23 @@ if (mb_strlen($usuario) > 60) {
     rechazar('usuario excede 60 caracteres');
 }
 
-// rol: OFICIAL | SUPERVISOR | ADMIN (CHECK en DISPOSITIVO_MOVIL.rol); default OFICIAL.
+// rol: CLIENTE | OFICIAL | SUPERVISOR | ADMIN (CHECK en DISPOSITIVO_MOVIL.rol);
+// default OFICIAL para no romper llamadas existentes (banco.html/curl).
 $rol = strtoupper((string) ($cuerpo['rol'] ?? 'OFICIAL'));
-if (!in_array($rol, ['OFICIAL', 'SUPERVISOR', 'ADMIN'], true)) {
-    rechazar('rol invalido: se espera OFICIAL, SUPERVISOR o ADMIN');
+if (!in_array($rol, ['CLIENTE', 'OFICIAL', 'SUPERVISOR', 'ADMIN'], true)) {
+    rechazar('rol invalido: se espera CLIENTE, OFICIAL, SUPERVISOR o ADMIN');
+}
+
+// id_cliente (BIT-017): opcional, string <= 40 (mismo tamanio que en
+// transacciones.php); vincula el dispositivo al dueno de las transacciones.
+// Vacio = broadcast legado (modo oficial/demo).
+$idClienteCrudo = $cuerpo['id_cliente'] ?? null;
+if ($idClienteCrudo !== null && !is_string($idClienteCrudo)) {
+    rechazar('id_cliente invalido: se espera una cadena de hasta 40 caracteres');
+}
+$idCliente = $idClienteCrudo === null ? '' : trim($idClienteCrudo);
+if (mb_strlen($idCliente) > 40) {
+    rechazar('id_cliente excede 40 caracteres');
 }
 
 // token_fcm: obligatorio, 64-255 caracteres (CHECK + VARCHAR2(255) en Oracle).
@@ -181,18 +245,19 @@ $activo = array_key_exists('activo', $cuerpo) ? (bool) $cuerpo['activo'] : true;
 /* -----------------------------------------------------------------------------
  * 4. UPSERT EN ORACLE XE (DISPOSITIVO_MOVIL, Sprint 3)
  * -------------------------------------------------------------------------- */
-$resultado = midff_registrar_dispositivo($usuario, $rol, $token, $activo);
+$resultado = midff_registrar_dispositivo($usuario, $rol, $token, $activo, $idCliente);
 
 if (!$resultado['ok']) {
     fallaInterna('fallo el registro del dispositivo en Oracle: ' . $resultado['mensaje']);
 }
 
 error_log(sprintf(
-    '[MIDFF-FCM] registro de dispositivo accion=%s id=%d usuario=%s rol=%s token=...%s',
+    '[MIDFF-FCM] registro de dispositivo accion=%s id=%d usuario=%s rol=%s cliente=%s token=...%s',
     $resultado['accion'],
     (int) $resultado['id'],
     $usuario,
     $rol,
+    $idCliente === '' ? '(broadcast)' : $idCliente,
     substr($token, -6)
 ));
 

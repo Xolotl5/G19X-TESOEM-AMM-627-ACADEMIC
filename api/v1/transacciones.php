@@ -23,8 +23,10 @@ declare(strict_types=1);
  --   4. Invoca src/motor/bin/midff-scoring.exe por stdin/stdout (RF-03)
  --   5. Traduce codigos de salida del motor: 0 -> 200, 2 -> 400, 3 -> 500
  --   6. Persiste con SP_REGISTRAR_TRANSACCION (config/db.php) y hace COMMIT
- --   7. Si el score >= 0.4 (alerta creada): envia el push FCM a los
- --      dispositivos activos de DISPOSITIVO_MOVIL via config/firebase.php
+ --   7. Si el score >= 0.4 (alerta creada): envia el push FCM SOLO a los
+ --      dispositivos activos de DISPOSITIVO_MOVIL cuyo id_cliente coincida
+ --      con el de la transaccion (BIT-017; sin registro del cliente se
+ --      mantiene el broadcast legado) via config/firebase.php
  --      (Sprint 3; best-effort: nunca altera la respuesta del contrato)
  --   8. Responde el contrato JSON del MVP (Anexo A):
  --        { id_transaccion, score, clasificacion, decision,

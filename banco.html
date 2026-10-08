@@ -1,0 +1,291 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Banco Ficticio — MIDFF</title>
+<style>
+:root{--bg:#0f172a;--panel:#1e293b;--text:#e2e8f0;--muted:#94a3b8;--ok:#22c55e;--warn:#f59e0b;--alto:#ef4444;--border:#334155;--input:#0b1220}
+*{box-sizing:border-box}
+body{margin:0;font-family:system-ui,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
+.contenedor{max-width:860px;margin:0 auto;padding:24px}
+h1{font-size:22px;margin:0 0 4px}
+.sub{color:var(--muted);font-size:13px;margin-bottom:20px}
+.tarjeta{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px}
+.tarjeta h2{font-size:15px;margin:0 0 12px;color:#cbd5e1}
+.campo{margin-bottom:12px}
+.campo label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
+.campo input,.campo select{width:100%;padding:9px 10px;background:var(--input);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px}
+.rejilla{display:grid;grid-template-columns:1fr 1fr;gap:12px}
+@media(max-width:600px){.rejilla{grid-template-columns:1fr}}
+.botones{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
+button{border:0;border-radius:8px;padding:10px 14px;font-size:13px;cursor:pointer;font-weight:600;color:#fff}
+.btn-sana{background:#15803d}
+.btn-media{background:#b45309}
+.btn-alta{background:#b91c1c}
+.btn-aleatoria{background:#334155}
+.btn-enviar{background:#2563eb;width:100%;font-size:15px}
+.btn-enviar:disabled{opacity:.5;cursor:not-allowed}
+.respuesta{background:#0b1220;border:1px solid var(--border);border-radius:8px;padding:14px;font-family:ui-monospace,Consolas,monospace;font-size:13px;white-space:pre-wrap;word-break:break-word;min-height:60px}
+.bajo{border-left:4px solid var(--ok)}
+.medio{border-left:4px solid var(--warn)}
+.alto{border-left:4px solid var(--alto)}
+.historial{list-style:none;margin:0;padding:0}
+.historial li{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;display:flex;justify-content:space-between;gap:10px;align-items:center}
+.historial li:last-child{border-bottom:0}
+.estado-bajo{color:var(--ok)}.estado-medio{color:var(--warn)}.estado-alto{color:var(--alto)}
+.config{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
+.config .campo{flex:1;min-width:180px;margin-bottom:0}
+.nota{font-size:12px;color:var(--muted);margin-top:10px}
+code{background:#0b1220;padding:1px 5px;border-radius:4px}
+</style>
+</head>
+<body>
+<div class="contenedor">
+  <h1>🏦 Banco Ficticio MIDFF</h1>
+  <div class="sub">Simulador de transacciones para probar el motor de scoring y las notificaciones push (FCM).</div>
+
+  <div class="tarjeta">
+    <h2>Conexión a la API</h2>
+    <div class="config">
+      <div class="campo"><label>URL del endpoint</label><input id="apiUrl" placeholder="/api/v1/transacciones"></div>
+      <div class="campo"><label>X-API-Key</label><input id="apiKey" value="MIDFF-API-KEY-2026-SPRINT2"></div>
+    </div>
+    <div class="nota">Abre esta página vía <code>http://127.0.0.1:8091/banco.html</code> (servidor: <code>php -S 0.0.0.0:8091 router.php</code>) para evitar problemas de CORS. La URL se recuerda entre sesiones (puerto 8091: el 8090 suele estar ocupado por Wondershare).</div>
+  </div>
+
+  <div class="tarjeta">
+    <h2>Clientes registrados en la app (vista del banco)</h2>
+    <div class="botones">
+      <button class="btn-aleatoria" onclick="cargarClientes()">Actualizar lista</button>
+    </div>
+    <ul class="historial" id="listaClientes"><li>Pulse «Actualizar lista» (GET /api/v1/dispositivos) para ver los clientes dados de alta en la app.</li></ul>
+    <div class="nota">Cada cliente ve en su app un <b>ID de cliente</b> generado al crear su cuenta. Para enviarle transacciones, use ese ID en el campo <code>id_cliente</code> (el botón «Usar» de cada fila lo copia al formulario).</div>
+  </div>
+
+  <div class="tarjeta">
+    <h2>Plantillas rápidas</h2>
+    <div class="botones">
+      <button class="btn-sana" onclick="plantilla('sana')">Transacción sana (BAJO)</button>
+      <button class="btn-media" onclick="plantilla('media')">Alerta preventiva (MEDIO)</button>
+      <button class="btn-alta" onclick="plantilla('alta')">Fraude (ALTO)</button>
+      <button class="btn-aleatoria" onclick="aleatoria()">🎲 Aleatoria</button>
+    </div>
+  </div>
+
+  <div class="tarjeta">
+    <h2>Transacción</h2>
+    <div class="rejilla">
+      <div class="campo"><label>id_cliente</label><input id="id_cliente" value="CLI-001"></div>
+      <div class="campo"><label>monto</label><input id="monto" type="number" step="0.01" value="850.00"></div>
+      <div class="campo"><label>moneda</label><input id="moneda" value="MXN" maxlength="3"></div>
+      <div class="campo"><label>origen</label><select id="origen"><option>ERP</option><option>BANCA</option><option>PASARELA</option><option>OTRO</option></select></div>
+      <div class="campo"><label>ubicacion</label><input id="ubicacion" value="CDMX"></div>
+      <div class="campo"><label>ip_origen</label><input id="ip_origen" value="189.203.4.7"></div>
+      <div class="campo"><label>canal</label><input id="canal" value="WEB"></div>
+      <div class="campo"><label>fecha_hora (ISO 8601, vacío = ahora)</label><input id="fecha_hora" placeholder="2026-09-23T09:05:00-06:00"></div>
+    </div>
+
+    <h2>Contexto (historial del cliente)</h2>
+    <div class="rejilla">
+      <div class="campo"><label>monto_promedio_historial</label><input id="ctx_monto" type="number" step="0.01" value="1200.00"></div>
+      <div class="campo"><label>transacciones_ultima_hora</label><input id="ctx_freq" type="number" step="1" value="1"></div>
+      <div class="campo"><label>ubicacion_habitual</label><input id="ctx_ubicacion" value="CDMX"></div>
+      <div class="campo"><label>ip_habitual</label><input id="ctx_ip" value="189.203.4.7"></div>
+    </div>
+
+    <button class="btn-enviar" id="btnEnviar" onclick="enviar()">Enviar transacción</button>
+  </div>
+
+  <div class="tarjeta">
+    <h2>Respuesta</h2>
+    <div class="respuesta" id="respuesta">—</div>
+  </div>
+
+  <div class="tarjeta">
+    <h2>Historial</h2>
+    <ul class="historial" id="historial"></ul>
+  </div>
+</div>
+
+<script>
+const $ = id => document.getElementById(id);
+const URL_DEFECTO = location.protocol.startsWith('http')
+  ? '/api/v1/transacciones'
+  : 'http://127.0.0.1:8091/api/v1/transacciones';
+$('apiUrl').value = localStorage.getItem('midff.apiUrl') || URL_DEFECTO;
+const EJEMPLOS = {
+  sana:  {c:'CLI-001', m:850.00,   o:'ERP',      u:'CDMX', ip:'189.203.4.7', ch:'WEB',   cm:1200, f:1, cu:'CDMX', ci:'189.203.4.7'},
+  media: {c:'CLI-002', m:3600.00,  o:'BANCA',    u:'GDL',  ip:'189.203.4.7', ch:'MOVIL', cm:1200, f:5, cu:'CDMX', ci:'189.203.4.7'},
+  alta:  {c:'CLI-003', m:15499.00, o:'PASARELA', u:'CDMX', ip:'203.0.113.45', ch:'POS',  cm:1200, f:7, cu:'GDL',  ci:'189.203.4.7'}
+};
+
+function leerFormulario() {
+  const cuerpo = {
+    id_cliente: $('id_cliente').value.trim(),
+    monto: parseFloat($('monto').value),
+    moneda: $('moneda').value.trim().toUpperCase(),
+    origen: $('origen').value
+  };
+  const ubicacion = $('ubicacion').value.trim();
+  const ipOrigen = $('ip_origen').value.trim();
+  const canal = $('canal').value.trim();
+  if (ubicacion) cuerpo.ubicacion = ubicacion;
+  if (ipOrigen) cuerpo.ip_origen = ipOrigen;
+  if (canal) cuerpo.canal = canal;
+  const fh = $('fecha_hora').value.trim();
+  if (fh) cuerpo.fecha_hora = fh;
+
+  const cm = parseFloat($('ctx_monto').value);
+  const cf = parseInt($('ctx_freq').value, 10);
+  const cu = $('ctx_ubicacion').value.trim();
+  const ci = $('ctx_ip').value.trim();
+  if (!isNaN(cm) || !isNaN(cf) || cu || ci) {
+    const contexto = {};
+    if (!isNaN(cm) && cm > 0) contexto.monto_promedio_historial = cm;
+    if (!isNaN(cf) && cf > 0) contexto.transacciones_ultima_hora = cf;
+    if (cu) contexto.ubicacion_habitual = cu;
+    if (ci) contexto.ip_habitual = ci;
+    cuerpo.contexto = contexto;
+  }
+  return cuerpo;
+}
+
+function plantilla(tipo) {
+  const p = EJEMPLOS[tipo];
+  // No se pisa el id_cliente si ya es uno registrado (que el push llegue
+  // siempre al telefono real); solo se usa el del ejemplo si no hay otro.
+  if (!clientesRegistrados.includes($('id_cliente').value.trim())) {
+    $('id_cliente').value = p.c;
+  }
+  $('monto').value = p.m;
+  $('origen').value = p.o;
+  $('ubicacion').value = p.u;
+  $('ip_origen').value = p.ip;
+  $('canal').value = p.ch;
+  $('fecha_hora').value = '';
+  $('ctx_monto').value = p.cm;
+  $('ctx_freq').value = p.f;
+  $('ctx_ubicacion').value = p.cu;
+  $('ctx_ip').value = p.ci;
+}
+
+function aleatoria() {
+  // Con telefonos registrados se usa uno real para que el push siempre llegue.
+  const clientes = clientesRegistrados.length ? clientesRegistrados : ['CLI-101','CLI-202','CLI-303','CLI-404','CLI-505'];
+  const ubicaciones = ['CDMX','GDL','MTY','TIJ'];
+  const ips = ['189.203.4.7','203.0.113.45','198.51.100.7'];
+  $('id_cliente').value = clientes[Math.floor(Math.random() * clientes.length)];
+  $('monto').value = Math.round((Math.random() * 20000 + 50) * 100) / 100;
+  $('origen').value = 'BANCA';
+  $('ubicacion').value = ubicaciones[Math.floor(Math.random() * ubicaciones.length)];
+  $('ip_origen').value = ips[Math.floor(Math.random() * ips.length)];
+  $('canal').value = 'WEB';
+  $('fecha_hora').value = '';
+  $('ctx_monto').value = 1200;
+  $('ctx_freq').value = 1 + Math.floor(Math.random() * 9);
+  $('ctx_ubicacion').value = 'CDMX';
+  $('ctx_ip').value = '189.203.4.7';
+}
+
+/* BIT-018: clientes registrados en la app (GET /api/v1/dispositivos). */
+let clientesRegistrados = [];
+
+async function cargarClientes() {
+  const ul = $('listaClientes');
+  ul.innerHTML = '<li>Cargando…</li>';
+  try {
+    const base = $('apiUrl').value.trim().replace(/\/transacciones$/, '');
+    const res = await fetch(base + '/dispositivos', {headers: {'X-API-Key': $('apiKey').value.trim()}});
+    const json = await res.json().catch(() => ({error: 'respuesta no JSON (HTTP ' + res.status + ')'}));
+    if (json.error) { ul.innerHTML = '<li>' + json.error + '</li>'; return; }
+    const filas = json.dispositivos || [];
+    if (!filas.length) { ul.innerHTML = '<li>Sin dispositivos registrados todavía (registre el token desde la app).</li>'; return; }
+    ul.innerHTML = '';
+    clientesRegistrados = [];
+    for (const d of filas) {
+      const idCli = d.ID_CLIENTE || d.id_cliente || '';
+      const usuario = d.USUARIO || d.usuario || '';
+      const rol = d.ROL || d.rol || '';
+      const activo = String(d.ACTIVO ?? d.activo) === '1';
+      if (idCli && activo) { clientesRegistrados.push(idCli); }
+      const li = document.createElement('li');
+      li.innerHTML = '<span><b>' + (idCli || '(sin vincular)') + '</b> · ' + usuario + ' · ' + rol + (activo ? '' : ' · <i>inactivo</i>') + '</span>'
+        + (idCli === '(sin vincular)' || !idCli ? '' :
+           '<button class="btn-aleatoria" style="padding:4px 10px" onclick="usarCliente(\'' + idCli + '\')">Usar</button>');
+      ul.appendChild(li);
+    }
+    // UX: si el id_cliente actual no es uno registrado, se usa el primero
+    // activo para que las pruebas lleguen SIEMPRE a un telefono real.
+    if (clientesRegistrados.length && !clientesRegistrados.includes($('id_cliente').value.trim())) {
+      $('id_cliente').value = clientesRegistrados[0];
+    }
+  } catch (e) {
+    ul.innerHTML = '<li>ERROR de red: ' + e.message + '</li>';
+  }
+}
+
+function usarCliente(id) {
+  $('id_cliente').value = id;
+  window.scrollTo({top: 0, behavior: 'smooth'});
+}
+
+function pintarRespuesta(json) {
+  const r = $('respuesta');
+  if (json.error) {
+    r.className = 'respuesta alto';
+    r.textContent = 'ERROR: ' + json.error;
+    return;
+  }
+  const clase = json.clasificacion === 'ALTO' ? 'alto' : (json.clasificacion === 'MEDIO' ? 'medio' : 'bajo');
+  r.className = 'respuesta ' + clase;
+  r.textContent = JSON.stringify(json, null, 2);
+}
+
+function agregarHistorial(json) {
+  const li = document.createElement('li');
+  let etiqueta, clase;
+  if (json.error) {
+    etiqueta = 'ERROR'; clase = 'estado-alto';
+  } else {
+    etiqueta = json.clasificacion + ' / ' + json.decision;
+    clase = json.clasificacion === 'ALTO' ? 'estado-alto' : (json.clasificacion === 'MEDIO' ? 'estado-medio' : 'estado-bajo');
+  }
+  const id = json.id_transaccion || json.error || '';
+  li.innerHTML = '<span>' + new Date().toLocaleTimeString() + ' — ' + id + '</span><span class="' + clase + '">' + etiqueta + '</span>';
+  $('historial').prepend(li);
+}
+
+async function enviar() {
+  const btn = $('btnEnviar');
+  btn.disabled = true;
+  btn.textContent = 'Enviando...';
+  try {
+    const url = $('apiUrl').value.trim();
+    localStorage.setItem('midff.apiUrl', url);
+    const res = await fetch(url, {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json', 'X-API-Key': $('apiKey').value.trim()},
+      body: JSON.stringify(leerFormulario())
+    });
+    const json = await res.json().catch(() => ({error: 'respuesta no JSON (HTTP ' + res.status + ')'}));
+    pintarRespuesta(json);
+    agregarHistorial(json);
+  } catch (e) {
+    const r = $('respuesta');
+    r.className = 'respuesta alto';
+    r.textContent = 'ERROR de red: ' + e.message;
+  } finally {
+    btn.disabled = false;
+    btn.textContent = 'Enviar transacción';
+  }
+}
+
+/* Arranque: se cargan los clientes registrados para que el id_cliente del
+   formulario apunte a un telefono real desde el primer envio. */
+if (location.protocol.startsWith('http')) {
+  cargarClientes();
+}
+</script>
+</body>
+</html>

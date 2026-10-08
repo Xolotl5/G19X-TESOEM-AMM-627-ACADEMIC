@@ -35,8 +35,10 @@ android {
     }
 
     compileOptions {
-        sourceCompatibility JavaVersion.VERSION_1_8
-        targetCompatibility JavaVersion.VERSION_1_8
+        // Java 17 (D-44): el JDK 21 del entorno deprecó source/target 8;
+        // AGP 8.5 desugarea el bytecode a DEX para minSdk 24 sin cambios.
+        sourceCompatibility JavaVersion.VERSION_17
+        targetCompatibility JavaVersion.VERSION_17
     }
 }
 
@@ -47,4 +49,8 @@ dependencies {
 
     // Sprint 3: Firebase Cloud Messaging (RF-09 / RF-10 / HU-MVP-05)
     implementation 'com.google.firebase:firebase-messaging:23.4.1'
+
+    // BIT-015: acceso de clientes (Firebase Auth) + biometría del dispositivo
+    implementation 'com.google.firebase:firebase-auth:22.3.1'
+    implementation 'androidx.biometric:biometric:1.1.0'
 }

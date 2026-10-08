@@ -7,7 +7,7 @@ declare(strict_types=1);
  -- Archivo: router.php
  --
  -- Uso (desde la raiz del repositorio):
- --     php -S 127.0.0.1:8090 router.php
+ --     php -S 0.0.0.0:8091 router.php
  --
  -- Expone el endpoint SIN extension, tal como lo define el contrato del MVP:
  --     POST /api/v1/transacciones  ->  api/v1/transacciones.php
@@ -54,6 +54,50 @@ if ($ruta === '/api/v1/bloquear') {
 if ($ruta === '/api/v1/bloquear.php') {
     require __DIR__ . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'v1'
           . DIRECTORY_SEPARATOR . 'bloquear.php';
+    return true;
+}
+
+if ($ruta === '/api/v1/reportar' || $ruta === '/api/v1/reportar.php') {
+    require __DIR__ . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'v1'
+          . DIRECTORY_SEPARATOR . 'reportar.php';
+    return true;
+}
+
+if ($ruta === '/api/v1/admin/sesion' || $ruta === '/api/v1/admin/sesion.php') {
+    require __DIR__ . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'v1'
+          . DIRECTORY_SEPARATOR . 'admin.php';
+    return true;
+}
+
+if ($ruta === '/api/v1/admin/clave' || $ruta === '/api/v1/admin/clave.php') {
+    require __DIR__ . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'v1'
+          . DIRECTORY_SEPARATOR . 'admin.php';
+    return true;
+}
+
+if ($ruta === '/api/v1/admin/resumen' || $ruta === '/api/v1/admin/resumen.php') {
+    require __DIR__ . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'v1'
+          . DIRECTORY_SEPARATOR . 'admin.php';
+    return true;
+}
+
+if ($ruta === '/api/v1/admin/alertas' || $ruta === '/api/v1/admin/alertas.php') {
+    require __DIR__ . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'v1'
+          . DIRECTORY_SEPARATOR . 'admin.php';
+    return true;
+}
+
+if ($ruta === '/api/v1/admin/clientes' || $ruta === '/api/v1/admin/clientes.php') {
+    require __DIR__ . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'v1'
+          . DIRECTORY_SEPARATOR . 'admin.php';
+    return true;
+}
+
+// Sondeo de salud (sin API-Key) para el descubrimiento automatico de la IP
+// por parte de la app Android: emulador, adb reverse o red WiFi local.
+if ($ruta === '/api/v1/ping' || $ruta === '/api/v1/ping.php') {
+    require __DIR__ . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'v1'
+          . DIRECTORY_SEPARATOR . 'ping.php';
     return true;
 }
 

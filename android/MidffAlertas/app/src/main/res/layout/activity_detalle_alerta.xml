@@ -482,18 +482,40 @@
                 android:paddingBottom="4dp" />
         </HorizontalScrollView>
 
-        <!-- HU-MVP-06 (Sprint 4): bloqueo preventivo contra POST /api/v1/bloquear -->
-        <androidx.appcompat.widget.AppCompatButton
-            android:id="@+id/btnBloquear"
+        <!-- BIT-020: respuesta del cliente a SU alerta (POST /api/v1/reportar).
+             El bloqueo preventivo es decision del banco desde MIDFF.html. -->
+        <LinearLayout
             android:layout_width="match_parent"
-            android:layout_height="56dp"
+            android:layout_height="wrap_content"
             android:layout_marginTop="20dp"
-            android:background="@drawable/btn_neon_magenta_ripple"
-            android:letterSpacing="0.06"
-            android:text="@string/btn_bloquear"
-            android:textColor="@color/texto_titulo"
-            android:textSize="14sp"
-            android:textStyle="bold" />
+            android:orientation="horizontal">
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnNoFuiYo"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_marginEnd="6dp"
+                android:layout_weight="1"
+                android:background="@drawable/btn_neon_magenta_ripple"
+                android:letterSpacing="0.04"
+                android:text="@string/btn_no_fui_yo"
+                android:textColor="@color/texto_titulo"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+
+            <androidx.appcompat.widget.AppCompatButton
+                android:id="@+id/btnSiFuiYo"
+                android:layout_width="0dp"
+                android:layout_height="56dp"
+                android:layout_marginStart="6dp"
+                android:layout_weight="1"
+                android:background="@drawable/btn_neon_cian_ripple"
+                android:letterSpacing="0.04"
+                android:text="@string/btn_si_fui_yo"
+                android:textColor="@color/texto_titulo"
+                android:textSize="13sp"
+                android:textStyle="bold" />
+        </LinearLayout>
     </LinearLayout>
 </ScrollView>
 
