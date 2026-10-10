@@ -57,6 +57,12 @@ if ($ruta === '/api/v1/bloquear.php') {
     return true;
 }
 
+if ($ruta === '/api/v1/desbloquear' || $ruta === '/api/v1/desbloquear.php') {
+    require __DIR__ . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'v1'
+          . DIRECTORY_SEPARATOR . 'desbloquear.php';
+    return true;
+}
+
 if ($ruta === '/api/v1/reportar' || $ruta === '/api/v1/reportar.php') {
     require __DIR__ . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'v1'
           . DIRECTORY_SEPARATOR . 'reportar.php';

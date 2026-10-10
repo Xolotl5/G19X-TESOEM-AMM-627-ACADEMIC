@@ -43,3 +43,8 @@ El núcleo del sistema combina tres pilares principales:
 - Notificación: Envío push a la App Android vía Firebase en caso de riesgo medio/alto.
 - Auditoría: Registro completo de cada evaluación y decisión en Oracle DB.
 ====================================================================
+
+
+
+/////+ IDEAS /////
+hacer uso de tiempo limite en las decisiones sobre las transferencias

@@ -90,15 +90,19 @@ try {
     $cnx->beginTransaction();
 
     // Solo el dueno de la transaccion puede reportar su alerta (RF-02/R-05).
-    $ver = $cnx->prepare('SELECT a.respuesta'
+    // BIT-024: se trae tambien e.decision porque la aprobacion automatica con
+    // "SI FUI YO" solo aplica a nivel MEDIO (EN_REVISION); en ALTO la alerta
+    // queda PENDIENTE hasta que el banco la desbloquee o bloquee.
+    $ver = $cnx->prepare('SELECT a.respuesta, e.decision'
                        . ' FROM ALERTA a'
                        . ' JOIN EVALUACION e ON e.id_evaluacion = a.id_evaluacion'
                        . ' JOIN TRANSACCION t ON t.id_transaccion = e.id_transaccion'
                        . ' WHERE a.id_alerta = :id AND t.id_cliente = :cliente'
                        . ' FOR UPDATE');
     $ver->execute([':id' => $idNumerico, ':cliente' => $idCliente]);
-    $previa = $ver->fetchColumn();
-    if ($previa === false) {
+    $fila = $ver->fetch(PDO::FETCH_ASSOC);
+    $previa = $fila === false ? false : $fila['RESPUESTA'];
+    if ($fila === false) {
         $cnx->rollBack();
         responder(404, ['error' => 'alerta inexistente o no pertenece al cliente ' . $idCliente]);
     }
@@ -107,16 +111,27 @@ try {
         responder(409, ['error' => 'la alerta ya fue reportada por el cliente']);
     }
 
+    // Nivel MEDIO (EN_REVISION): "SI FUI YO" aprueba la alerta en el acto.
+    // Nivel ALTO (BLOQUEADA): queda PENDIENTE para que el banco decida
+    // (desbloqueo habilitado en MIDFF.html tras esta confirmacion).
+    $aprueba = ($respuesta === 'SI_FUI_YO' && strtoupper((string) $fila['DECISION']) === 'EN_REVISION') ? 1 : 0;
+
     $upd = $cnx->prepare('UPDATE ALERTA'
                        . ' SET respuesta = :respuesta, atendida_por = :cliente,'
-                       . ' fecha_atencion = SYSTIMESTAMP'
+                       . ' fecha_atencion = SYSTIMESTAMP,'
+                       . " estado = CASE WHEN :aprobada = 1 THEN 'ATENDIDA' ELSE estado END"
                        . ' WHERE id_alerta = :id');
-    $upd->execute([':respuesta' => $respuestaCompleta, ':cliente' => $idCliente, ':id' => $idNumerico]);
+    $upd->execute([':respuesta' => $respuestaCompleta, ':cliente' => $idCliente,
+                   ':aprobada' => $aprueba, ':id' => $idNumerico]);
+
+    $detalleAud = $respuesta === 'SI_FUI_YO'
+        ? 'Confirmacion del cliente sobre ' . $alertaId . ': SI_FUI_YO (alerta aprobada'
+          . ($respuestaCompleta !== $respuesta ? ', con comentario' : '') . ')'
+        : 'Reporte del cliente sobre ' . $alertaId . ': ' . $respuestaCompleta;
 
     $aud = $cnx->prepare('INSERT INTO AUDITORIA (id_auditoria, entidad, accion, usuario_o_sistema, detalle)'
                        . ' VALUES (SEQ_AUDITORIA.NEXTVAL, \'ALERTA\', \'ATENCION\', :usuario, :detalle)');
-    $aud->execute([':usuario' => 'CLIENTE:' . $idCliente,
-                   ':detalle' => 'Reporte del cliente sobre ' . $alertaId . ': ' . $respuestaCompleta]);
+    $aud->execute([':usuario' => 'CLIENTE:' . $idCliente, ':detalle' => $detalleAud]);
 
     $cnx->commit();
 

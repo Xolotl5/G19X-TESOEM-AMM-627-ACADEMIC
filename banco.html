@@ -5,7 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Banco Ficticio — MIDFF</title>
 <style>
-:root{--bg:#0f172a;--panel:#1e293b;--text:#e2e8f0;--muted:#94a3b8;--ok:#22c55e;--warn:#f59e0b;--alto:#ef4444;--border:#334155;--input:#0b1220}
+:root{--bg:#0a0b0d;--panel:#141519;--text:#e9ebee;--muted:#9aa0a8;--ok:#c9ced5;--warn:#9ba1aa;--alto:#ffffff;--border:#26292f;--input:#0d0e11}
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
 .contenedor{max-width:860px;margin:0 auto;padding:24px}
@@ -20,11 +20,11 @@ h1{font-size:22px;margin:0 0 4px}
 @media(max-width:600px){.rejilla{grid-template-columns:1fr}}
 .botones{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
 button{border:0;border-radius:8px;padding:10px 14px;font-size:13px;cursor:pointer;font-weight:600;color:#fff}
-.btn-sana{background:#15803d}
-.btn-media{background:#b45309}
-.btn-alta{background:#b91c1c}
-.btn-aleatoria{background:#334155}
-.btn-enviar{background:#2563eb;width:100%;font-size:15px}
+.btn-sana{background:#23262c}
+.btn-media{background:#33373d}
+.btn-alta{background:#ffffff;color:#0a0b0d}
+.btn-aleatoria{background:#2a2d33}
+.btn-enviar{background:#d7dbe1;color:#0a0b0d;width:100%;font-size:15px}
 .btn-enviar:disabled{opacity:.5;cursor:not-allowed}
 .respuesta{background:#0b1220;border:1px solid var(--border);border-radius:8px;padding:14px;font-family:ui-monospace,Consolas,monospace;font-size:13px;white-space:pre-wrap;word-break:break-word;min-height:60px}
 .bajo{border-left:4px solid var(--ok)}
@@ -33,7 +33,7 @@ button{border:0;border-radius:8px;padding:10px 14px;font-size:13px;cursor:pointe
 .historial{list-style:none;margin:0;padding:0}
 .historial li{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;display:flex;justify-content:space-between;gap:10px;align-items:center}
 .historial li:last-child{border-bottom:0}
-.estado-bajo{color:var(--ok)}.estado-medio{color:var(--warn)}.estado-alto{color:var(--alto)}
+.estado-bajo{color:#c9ced5}.estado-medio{color:#9ba1aa}.estado-alto{color:#ffffff}
 .config{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
 .config .campo{flex:1;min-width:180px;margin-bottom:0}
 .nota{font-size:12px;color:var(--muted);margin-top:10px}

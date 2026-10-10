@@ -195,6 +195,11 @@ Desde `C:\todoMIDFF` en PowerShell:
                    #   - benchmark de latencia (mediana ~7 us en la ruta completa)
                    #   - validacion del contrato JSON por linea de comandos (6 casos)
 
+.\servidor.ps1      # DEMO: levanta TODO en un paso (Oracle PATH + firewall +
+                    # verificación de secuencias + 0.0.0.0:8091). El teléfono
+                    # se enlaza solo por WiFi (misma red) o USB/emulador;
+                    # imprime las URLs a abrir.
+
 .\smoke-test.ps1   # Flujo API -> motor C -> Oracle XE:
                    #   - autodetecta php.exe (PATH o Laragon) y sqlplus
                    #   - levanta php -S con router.php
@@ -232,7 +237,7 @@ Parámetros útiles del smoke test: `-RutaPhp <ruta a php.exe>` si PHP no está 
 
 Guion de ~5 minutos (cumple el criterio 10 del DoD). Requiere: Oracle XE activo con los 3 scripts instalados, la API corriendo (`php -S 127.0.0.1:8091 router.php`), `config\firebase.credentials.json` presente y la app instalada con su token registrado.
 
-1. **(Opcional) Limpieza:** re-ejecute `database\schema.sql` + `database\dispositivo_movil.sql` + `database\sp_bloquear_alerta.sql` y vuelva a registrar el token en la app.
+1. **(Opcional) Limpieza:** re-ejecute `database\schema.sql` + `database\dispositivo_movil.sql` + `database\sp_bloquear_alerta.sql` y vuelva a registrar el token en la app. Si solo vació tablas de negocio conservando `AUDITORIA` (registro inmutable), ejecute `database\realinear_secuencias.sql` para realinear `SEQ_*` a `MAX(id)+1` y evitar `ORA-00001` (BIT-021/026; `servidor.ps1` lo verifica solo al arrancar).
 
 2. **Transacción BAJO (sin alerta):**
 

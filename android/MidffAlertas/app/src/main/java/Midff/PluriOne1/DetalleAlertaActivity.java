@@ -82,8 +82,9 @@ public class DetalleAlertaActivity extends AppCompatActivity {
         pintarAnalitica();
         poblarCarrusel();
 
-        // BIT-020: el cliente responde a SU alerta; el bloqueo preventivo es
-        // decision del banco desde la consola MIDFF.html.
+        // BIT-020/024: el cliente responde a SU alerta. En nivel ALTO (o ya
+        // bloqueada) solo se ofrece "SI FUI YO": al confirmarlo, la consola
+        // habilita el DESBLOQUEO para el administrador.
         botonNoFui = findViewById(R.id.btnNoFuiYo);
         botonSiFui = findViewById(R.id.btnSiFuiYo);
         if (alerta.estaBloqueada()) {
@@ -91,6 +92,9 @@ public class DetalleAlertaActivity extends AppCompatActivity {
         } else {
             botonNoFui.setOnClickListener(v -> reportar("NO_FUI_YO"));
             botonSiFui.setOnClickListener(v -> reportar("SI_FUI_YO"));
+            if (alerta.esRiesgoAlto()) {
+                botonNoFui.setVisibility(View.GONE);
+            }
         }
     }
 
@@ -169,10 +173,14 @@ public class DetalleAlertaActivity extends AppCompatActivity {
     }
 
     /**
-     * Respuesta del cliente (BIT-020): POST /api/v1/reportar contra la API
-     * MIDFF con su id_cliente de sesion; el banco ve la bandera en la consola.
-     * El callback llega en el hilo de red, por lo que la vista se toca via
-     * runOnUiThread.
+     * Respuesta del cliente (BIT-020/024): POST /api/v1/reportar con su
+     * id_cliente de sesion; el banco ve la bandera en la consola.
+     *
+     * <p>Fix ConnectException (prompt.txt): antes del POST se garantiza el
+     * enlace con la API ({@link DescubrimientoApi#asegurar}); si la app se
+     * abrio desde un push y la URL base no estaba resuelta (adb reverse
+     * caido, cambio de red), el descubrimiento la corrige y solo entonces
+     * se envia el reporte.</p>
      */
     private void reportar(String respuesta) {
         botonNoFui.setEnabled(false);
@@ -183,21 +191,40 @@ public class DetalleAlertaActivity extends AppCompatActivity {
         if (idCliente.isEmpty()) {
             idCliente = alerta.idCliente;
         }
-        ApiClient.reportarAlerta(alerta.idAlerta, idCliente, respuesta, null, (ok, mensaje) ->
+        final String cliente = idCliente;
+
+        DescubrimientoApi.asegurar(this, (apiOk, url, motivo) -> {
+            if (!apiOk) {
                 runOnUiThread(() -> {
-                    if (ok) {
-                        deshabilitarBotones(getString(R.string.reporte_ya));
-                        Toast.makeText(this, R.string.reporte_ok, Toast.LENGTH_LONG).show();
-                    } else {
-                        botonNoFui.setEnabled(true);
-                        botonSiFui.setEnabled(true);
-                        botonNoFui.setText(R.string.btn_no_fui_yo);
-                        botonSiFui.setText(R.string.btn_si_fui_yo);
-                        Toast.makeText(this,
-                                getString(R.string.reporte_fallo, mensaje),
-                                Toast.LENGTH_LONG).show();
-                    }
-                }));
+                    restaurarBotones();
+                    Toast.makeText(this,
+                            getString(R.string.api_no_detectada),
+                            Toast.LENGTH_LONG).show();
+                });
+                return;
+            }
+            ApiClient.reportarAlerta(alerta.idAlerta, cliente, respuesta, null, (ok, mensaje) ->
+                    runOnUiThread(() -> {
+                        if (ok) {
+                            deshabilitarBotones(getString(R.string.reporte_ya));
+                            Toast.makeText(this, R.string.reporte_ok, Toast.LENGTH_LONG).show();
+                        } else {
+                            restaurarBotones();
+                            Toast.makeText(this,
+                                    getString(R.string.reporte_fallo, mensaje),
+                                    Toast.LENGTH_LONG).show();
+                        }
+                    }));
+        });
+    }
+
+    /** Restaura los botones a su estado original tras un fallo de envio. */
+    private void restaurarBotones() {
+        botonNoFui.setEnabled(true);
+        botonSiFui.setEnabled(true);
+        botonNoFui.setText(R.string.btn_no_fui_yo);
+        botonSiFui.setText(R.string.btn_si_fui_yo);
+        botonNoFui.setVisibility(alerta.esRiesgoAlto() ? View.GONE : View.VISIBLE);
     }
 
     private void deshabilitarBotones(String texto) {
