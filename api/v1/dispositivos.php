@@ -72,7 +72,7 @@ function fallaInterna(string $mensaje): void
  *
  * @return array{ok: bool, mensaje: string, id: int|null, accion: string}
  * -------------------------------------------------------------------------- */
-function midff_registrar_dispositivo(string $usuario, string $rol, string $token, bool $activo, string $idCliente = ''): array
+function midff_registrar_dispositivo(string $usuario, string $rol, string $token, bool $activo, string $idCliente = '', string $uidFirebase = ''): array
 {
     $driver = midff_db_driver_disponible();
     if ($driver === '') {
@@ -85,6 +85,9 @@ function midff_registrar_dispositivo(string $usuario, string $rol, string $token
             $cnx = midff_db_conectar();
             $cnx->beginTransaction();
             $cliente = $idCliente === '' ? null : $idCliente;
+            // BIT-031: uid de Firebase (nullable; en UPDATE, NVL conserva el
+            // existente cuando la llamada no lo trae - app con version vieja).
+            $uid = $uidFirebase === '' ? null : $uidFirebase;
 
             $buscar = $cnx->prepare('SELECT id_dispositivo FROM DISPOSITIVO_MOVIL WHERE token_fcm = :token');
             $buscar->execute([':token' => $token]);
@@ -92,22 +95,24 @@ function midff_registrar_dispositivo(string $usuario, string $rol, string $token
             $buscar = null;
 
             if ($id !== false) {
+                // (el bind se llama uidfb: ":uid" es palabra reservada de Oracle, ORA-01745)
                 $sent = $cnx->prepare('UPDATE DISPOSITIVO_MOVIL'
                                     . ' SET usuario = :usuario, rol = :rol, id_cliente = :cliente, activo = :activo,'
+                                    . ' uid_firebase = NVL(:uidfb, uid_firebase),'
                                     . ' fecha_actualizacion = SYSTIMESTAMP'
                                     . ' WHERE token_fcm = :token');
                 $sent->execute([':usuario' => $usuario, ':rol' => $rol, ':cliente' => $cliente,
-                                ':activo' => $activo ? '1' : '0', ':token' => $token]);
+                                ':activo' => $activo ? '1' : '0', ':uidfb' => $uid, ':token' => $token]);
                 $cnx->commit();
                 return ['ok' => true, 'mensaje' => 'dispositivo actualizado',
                         'id' => (int) $id, 'accion' => 'UPDATE'];
             }
 
             // INSERT + relectura del id (PDO_OCI no soporta RETURNING INTO).
-            $sent = $cnx->prepare('INSERT INTO DISPOSITIVO_MOVIL (usuario, rol, id_cliente, token_fcm, activo)'
-                                . ' VALUES (:usuario, :rol, :cliente, :token, :activo)');
+            $sent = $cnx->prepare('INSERT INTO DISPOSITIVO_MOVIL (usuario, rol, id_cliente, token_fcm, activo, uid_firebase)'
+                                . ' VALUES (:usuario, :rol, :cliente, :token, :activo, :uidfb)');
             $sent->execute([':usuario' => $usuario, ':rol' => $rol, ':cliente' => $cliente,
-                            ':activo' => $activo ? '1' : '0', ':token' => $token]);
+                            ':activo' => $activo ? '1' : '0', ':token' => $token, ':uidfb' => $uid]);
             $sent = null;
 
             $buscar = $cnx->prepare('SELECT id_dispositivo FROM DISPOSITIVO_MOVIL WHERE token_fcm = :token');
@@ -230,6 +235,17 @@ if (mb_strlen($idCliente) > 40) {
     rechazar('id_cliente excede 40 caracteres');
 }
 
+// uid_firebase (BIT-031): opcional, string <= 128; permite al banco verificar
+// contra Firebase si la cuenta sigue viva y purgar las borradas sin la app.
+$uidCrudo = $cuerpo['uid_firebase'] ?? null;
+if ($uidCrudo !== null && !is_string($uidCrudo)) {
+    rechazar('uid_firebase invalido: se espera una cadena de hasta 128 caracteres');
+}
+$uidFirebase = $uidCrudo === null ? '' : trim($uidCrudo);
+if (mb_strlen($uidFirebase) > 128) {
+    rechazar('uid_firebase excede 128 caracteres');
+}
+
 // token_fcm: obligatorio, 64-255 caracteres (CHECK + VARCHAR2(255) en Oracle).
 $token = $cuerpo['token_fcm'] ?? null;
 if (!is_string($token) || trim($token) === '') {
@@ -245,7 +261,7 @@ $activo = array_key_exists('activo', $cuerpo) ? (bool) $cuerpo['activo'] : true;
 /* -----------------------------------------------------------------------------
  * 4. UPSERT EN ORACLE XE (DISPOSITIVO_MOVIL, Sprint 3)
  * -------------------------------------------------------------------------- */
-$resultado = midff_registrar_dispositivo($usuario, $rol, $token, $activo, $idCliente);
+$resultado = midff_registrar_dispositivo($usuario, $rol, $token, $activo, $idCliente, $uidFirebase);
 
 if (!$resultado['ok']) {
     fallaInterna('fallo el registro del dispositivo en Oracle: ' . $resultado['mensaje']);

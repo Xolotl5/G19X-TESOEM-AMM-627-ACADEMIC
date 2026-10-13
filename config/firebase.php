@@ -165,10 +165,11 @@ function midff_fcm_endpoint(): string
  *     comportamiento anterior (emitir por peticion, solo mas lento).
  * -------------------------------------------------------------------------- */
 
-/** Ruta del cache: una por cuenta de servicio (hash de client_email|proyecto). */
-function midff_fcm_ruta_cache_token(array $cuenta): string
+/** Ruta del cache: una por cuenta de servicio Y scope (BIT-031). */
+function midff_fcm_ruta_cache_token(array $cuenta, string $scope = MIDFF_FCM_SCOPE): string
 {
-    $semilla = (string) ($cuenta['client_email'] ?? '') . '|' . (string) ($cuenta['project_id'] ?? '');
+    $semilla = (string) ($cuenta['client_email'] ?? '') . '|' . (string) ($cuenta['project_id'] ?? '')
+             . '|' . $scope;
     return sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'midff_fcm_token_'
          . substr(md5($semilla), 0, 12) . '.json';
 }
@@ -200,15 +201,18 @@ function midff_fcm_escribir_cache_token(string $ruta, string $token, int $expira
  * archivo compartido entre peticiones (seccion 2b arriba), que elimina el
  * round-trip a Google en los envios consecutivos.</p>
  *
+ * <p>BIT-031: el scope es parametrizable — FCM usa el de mensajeria y la
+ * verificacion de cuentas (Identity Toolkit accounts:lookup) usa el general
+ * de Firebase; cada scope se cachea por separado.</p>
+ *
  * @return string access_token, o cadena vacia si no se pudo emitir.
  */
-function midff_fcm_access_token(): string
+function midff_fcm_access_token(string $scope = MIDFF_FCM_SCOPE): string
 {
-    static $token = null;
-    static $expira = 0;
+    static $tokens = [];   // cache estatico por scope dentro de la peticion
 
-    if ($token !== null && $expira > time() + 60) {
-        return $token;
+    if (isset($tokens[$scope]) && $tokens[$scope][1] > time() + 60) {
+        return $tokens[$scope][0];
     }
 
     $cuenta = midff_fcm_cargar_cuenta();
@@ -217,12 +221,11 @@ function midff_fcm_access_token(): string
     }
 
     // BIT-027: cache de archivo compartido entre peticiones (php -S).
-    $rutaCache = midff_fcm_ruta_cache_token($cuenta);
+    $rutaCache = midff_fcm_ruta_cache_token($cuenta, $scope);
     $cacheado  = midff_fcm_leer_cache_token($rutaCache);
     if ($cacheado !== null && $cacheado[1] > time() + 60) {
-        $token  = $cacheado[0];
-        $expira = $cacheado[1];
-        return $token;
+        $tokens[$scope] = $cacheado;
+        return $cacheado[0];
     }
 
     $clavePrivada = (string) ($cuenta['private_key'] ?? '');
@@ -240,7 +243,7 @@ function midff_fcm_access_token(): string
     $cabecera = $base64url(json_encode(['alg' => 'RS256', 'typ' => 'JWT'], JSON_UNESCAPED_SLASHES));
     $claims   = $base64url(json_encode([
         'iss'   => $clienteEmail,
-        'scope' => MIDFF_FCM_SCOPE,
+        'scope' => $scope,
         'aud'   => MIDFF_FCM_TOKEN_URI,
         'iat'   => $ahora,
         'exp'   => $ahora + 3600,
@@ -286,7 +289,9 @@ function midff_fcm_access_token(): string
     // y persistencia en el cache de archivo (vea seccion 2b).
     $expira = $ahora + max(300, (int) ($respuesta['expires_in'] ?? 3600) - 300);
     midff_fcm_escribir_cache_token($rutaCache, $token, $expira);
-    error_log(sprintf('[MIDFF-FCM] access_token emitido y cacheado (expira %s)', date('H:i:s', $expira)));
+    $tokens[$scope] = [$token, $expira];
+    error_log(sprintf('[MIDFF-FCM] access_token emitido y cacheado (scope %s, expira %s)',
+                      substr($scope, -24), date('H:i:s', $expira)));
     return $token;
 }
 
@@ -721,6 +726,71 @@ function midff_fcm_notificar_sana(array $datos): array
         $payload['token'] = $token;
         return midff_fcm_payload_sana($payload);
     }, $idCliente);
+}
+
+/* ----------------------------------------------------------------------------- 
+ * 8. VERIFICACION DE CUENTAS FIREBASE (BIT-031)
+ *    Pregunta a Identity Toolkit (Admin API accounts:lookup) que uids siguen
+ *    existiendo, para que el banco purgue las cuentas borradas SIN abrir la
+ *    app. Devuelve el mapa uid => true de los EXISTENTES, [] si no hay nada
+ *    que verificar, o null ante cualquier fallo (el llamador no debe purgar).
+ * -------------------------------------------------------------------------- */
+function midff_fcm_verificar_uids(array $uids): ?array
+{
+    $uids = array_values(array_unique(array_filter(array_map('trim', $uids))));
+    if ($uids === []) {
+        return [];
+    }
+    if (!extension_loaded('curl') || !midff_fcm_configurada()) {
+        error_log('[MIDFF-FCM] accounts:lookup imposible: curl/cuenta de servicio no disponibles');
+        return null;
+    }
+
+    // Scope de Identity Toolkit (el general de firebase da 403
+    // ACCESS_TOKEN_SCOPE_INSUFFICIENT, verificado en vivo).
+    $accessToken = midff_fcm_access_token('https://www.googleapis.com/auth/identitytoolkit');
+    if ($accessToken === '') {
+        error_log('[MIDFF-FCM] accounts:lookup sin access_token (scope identitytoolkit)');
+        return null;
+    }
+
+    $existentes = [];
+    foreach (array_chunk($uids, 100) as $lote) {   // lookup admite hasta 100 localId
+        $canal = curl_init('https://identitytoolkit.googleapis.com/v1/projects/'
+                         . midff_fcm_proyecto() . '/accounts:lookup');
+        curl_setopt_array($canal, [
+            CURLOPT_POST           => true,
+            CURLOPT_RETURNTRANSFER => true,
+            CURLOPT_CONNECTTIMEOUT => 3,
+            CURLOPT_TIMEOUT        => MIDFF_FCM_TIMEOUT_S,
+            CURLOPT_HTTPHEADER     => [
+                'Content-Type: application/json',
+                'Authorization: Bearer ' . $accessToken,
+            ],
+            CURLOPT_POSTFIELDS     => json_encode(['localId' => array_values($lote)]),
+        ]);
+        $crudo  = curl_exec($canal);
+        $err    = curl_error($canal);
+        $codigo = (int) curl_getinfo($canal, CURLINFO_RESPONSE_CODE);
+        curl_close($canal);
+
+        if ($crudo === false) {
+            error_log('[MIDFF-FCM] accounts:lookup fallo de red: ' . $err);
+            return null;
+        }
+        $respuesta = json_decode((string) $crudo, true);
+        if ($codigo !== 200 || !is_array($respuesta)) {
+            error_log('[MIDFF-FCM] accounts:lookup HTTP ' . $codigo . ': '
+                    . substr(trim((string) $crudo), 0, 200));
+            return null;
+        }
+        foreach (($respuesta['users'] ?? []) as $usuario) {
+            if (!empty($usuario['localId'])) {
+                $existentes[(string) $usuario['localId']] = true;
+            }
+        }
+    }
+    return $existentes;
 }
 
 /* Fin del archivo config/firebase.php - MIDFF Sprint 3 (24/09/2026) · HTTP v1 */

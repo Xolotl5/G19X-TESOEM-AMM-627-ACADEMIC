@@ -99,6 +99,14 @@ if ($ruta === '/api/v1/admin/clientes' || $ruta === '/api/v1/admin/clientes.php'
     return true;
 }
 
+// Sincronizacion de bajas con Firebase Auth (BIT-031): purga las cuentas
+// eliminadas en Firebase aunque la app nunca vuelva a abrirse.
+if ($ruta === '/api/v1/admin/sincronizar-bajas' || $ruta === '/api/v1/admin/sincronizar-bajas.php') {
+    require __DIR__ . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'v1'
+          . DIRECTORY_SEPARATOR . 'admin.php';
+    return true;
+}
+
 // Baja de cuenta de cliente: purga dispositivos + historial completo y
 // anonimiza la auditoria (lo llama la app cuando Firebase ya no tiene al
 // usuario, BIT-030).

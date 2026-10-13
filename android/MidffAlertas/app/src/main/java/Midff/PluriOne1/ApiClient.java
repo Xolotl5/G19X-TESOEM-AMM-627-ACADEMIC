@@ -66,18 +66,26 @@ public final class ApiClient {
     private ApiClient() {
     }
 
-    /** POST /api/v1/dispositivos: registra/actualiza el token FCM (UPSERT).
-     *  El idCliente (BIT-017) vincula el dispositivo al dueño de las
-     *  transacciones: vacío mantiene el broadcast legado (modo oficial/demo). */
+    /**
+     * POST /api/v1/dispositivos: registra/actualiza el token FCM de la app
+     * Android (tabla DISPOSITIVO_MOVIL de Oracle XE).
+     *
+     * <p>BIT-031: el cuerpo incluye {@code uid_firebase} cuando la sesión lo
+     * tiene, para que el banco pueda verificar contra Firebase Auth si la
+     * cuenta sigue viva y purgar las eliminadas sin abrir la app.</p>
+     */
     public static void registrarDispositivo(final String usuario, final String rol,
                                             final String idCliente, final String token,
-                                            final Callback callback) {
+                                            final String uidFirebase, final Callback callback) {
         try {
             JSONObject cuerpo = new JSONObject();
             cuerpo.put("usuario", usuario);
             cuerpo.put("rol", rol);
             if (idCliente != null && !idCliente.trim().isEmpty()) {
                 cuerpo.put("id_cliente", idCliente.trim());
+            }
+            if (uidFirebase != null && !uidFirebase.trim().isEmpty()) {
+                cuerpo.put("uid_firebase", uidFirebase.trim());
             }
             cuerpo.put("token_fcm", token);
             cuerpo.put("activo", true);

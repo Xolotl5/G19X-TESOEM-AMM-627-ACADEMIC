@@ -23,6 +23,8 @@ declare(strict_types=1);
  */
 
 require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'db.php';
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'firebase.php';
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'bajas.php';
 
 date_default_timezone_set('America/Mexico_City');
 
@@ -166,6 +168,84 @@ if ($accion === 'clave') {
 
     error_log('[MIDFF-ADMIN] clave actualizada para ' . $sesion);
     responder(200, ['ok' => true, 'mensaje' => 'clave actualizada']);
+}
+
+/* ===== POST /api/v1/admin/sincronizar-bajas (BIT-031) ======================
+ * Verifica contra Firebase Auth (Identity Toolkit accounts:lookup) que las
+ * cuentas con uid registrado en DISPOSITIVO_MOVIL sigan vivas y purga las
+ * borradas (misma logica atomica de POST /api/v1/baja): cubre el caso en que
+ * el usuario borro su cuenta en Firebase y la app nunca vuelve a abrirse. */
+if ($accion === 'sincronizar-bajas') {
+    if ($metodo !== 'POST') {
+        header('Allow: POST');
+        responder(405, ['error' => 'metodo no permitido: use POST /api/v1/admin/sincronizar-bajas']);
+    }
+    $admin = midff_admin_token_validar();
+
+    if (!midff_fcm_configurada()) {
+        responder(503, ['error' => 'FCM sin configurar: coloque config/firebase.credentials.json']);
+    }
+
+    try {
+        $cnx = midff_admin_conectar();
+        // (en Oracle '' es NULL: basta IS NOT NULL; un TRIM(...) <> '' nunca
+        //  seria verdadero y la consulta devolveria siempre 0 filas)
+        $filas = $cnx->query('SELECT id_cliente, uid_firebase FROM DISPOSITIVO_MOVIL'
+                           . ' WHERE uid_firebase IS NOT NULL'
+                           . ' ORDER BY id_dispositivo')->fetchAll(PDO::FETCH_ASSOC);
+        $sinUid = (int) $cnx->query('SELECT COUNT(*) FROM DISPOSITIVO_MOVIL'
+                                  . ' WHERE uid_firebase IS NULL')->fetchColumn();
+    } catch (PDOException $e) {
+        responder(500, ['error' => 'fallo Oracle al listar dispositivos: ' . trim($e->getMessage())]);
+    }
+
+    // uid -> [id_cliente, ...] (un uid puede tener varios dispositivos).
+    $pares = [];
+    foreach ($filas as $fila) {
+        $pares[trim((string) $fila['UID_FIREBASE'])][] = (string) $fila['ID_CLIENTE'];
+    }
+
+    $existentes = midff_fcm_verificar_uids(array_keys($pares));
+    if ($existentes === null) {
+        responder(502, ['error' => 'Firebase no respondio (accounts:lookup): intente de nuevo']);
+    }
+
+    $dadosDeBaja = [];
+    foreach ($pares as $uid => $clientes) {
+        if (isset($existentes[$uid])) {
+            continue;   // la cuenta sigue viva: nada que hacer
+        }
+        foreach ($clientes as $idCliente) {
+            $purga = midff_baja_purgar_cliente($idCliente);
+            if (!$purga['ok']) {
+                $dadosDeBaja[] = ['id_cliente' => $idCliente, 'ok' => false,
+                                  'error' => $purga['error']];
+                error_log('[MIDFF-ADMIN] sincronizar-bajas: fallo purgando ' . $idCliente . ': ' . $purga['error']);
+                continue;
+            }
+            $dadosDeBaja[] = [
+                'id_cliente'    => $idCliente,
+                'ok'            => true,
+                'dispositivos'  => $purga['dispositivos'],
+                'transacciones' => $purga['transacciones'],
+                'evaluaciones'  => $purga['evaluaciones'],
+                'alertas'       => $purga['alertas'],
+                'id_auditoria'  => $purga['id_auditoria'],
+            ];
+        }
+    }
+
+    error_log(sprintf('[MIDFF-ADMIN] sincronizar-bajas por %s: verificados=%d vivos=%d sin_uid=%d purgados=%d',
+        $admin, count($pares), count($existentes), $sinUid, count($dadosDeBaja)));
+
+    responder(200, [
+        'ok'           => true,
+        'verificados'  => count($pares),
+        'vivas'        => count(array_intersect_key($pares, $existentes)),
+        'sin_uid'      => $sinUid,   // registros previos a BIT-031: no verificables
+        'dados_de_baja' => $dadosDeBaja,
+        'mensaje'      => count($dadosDeBaja) . ' cuenta(s) purgada(s); ' . $sinUid . ' dispositivo(s) sin uid no verificables',
+    ]);
 }
 
 /* ---- A partir de aqui toda accion es GET y exige token valido ------------- */

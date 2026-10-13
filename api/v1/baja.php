@@ -43,6 +43,7 @@ declare(strict_types=1);
  */
 
 require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'db.php';
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'bajas.php';
 
 date_default_timezone_set('America/Mexico_City');
 
@@ -78,69 +79,19 @@ if (midff_db_driver_disponible() !== 'pdo_oci') {
 }
 
 /* ----------------------- TRANSACCION ATOMICA (RNF-05) --------------------- */
-try {
-    $cnx = midff_db_conectar();
-    $cnx->beginTransaction();
-
-    // 1. Tokens FCM: el dispositivo deja de recibir push de inmediato.
-    $del = $cnx->prepare('DELETE FROM DISPOSITIVO_MOVIL WHERE id_cliente = :c');
-    $del->execute([':c' => $idCliente]);
-    $dispositivos = $del->rowCount();
-
-    // 2. Alertas de las transacciones del cliente (incluye sus reportes).
-    $del = $cnx->prepare('DELETE FROM ALERTA WHERE id_evaluacion IN ('
-                       . ' SELECT e.id_evaluacion FROM EVALUACION e'
-                       . ' JOIN TRANSACCION t ON t.id_transaccion = e.id_transaccion'
-                       . ' WHERE t.id_cliente = :c)');
-    $del->execute([':c' => $idCliente]);
-    $alertas = $del->rowCount();
-
-    // 3. Evaluaciones del motor.
-    $del = $cnx->prepare('DELETE FROM EVALUACION WHERE id_transaccion IN ('
-                       . ' SELECT id_transaccion FROM TRANSACCION WHERE id_cliente = :c)');
-    $del->execute([':c' => $idCliente]);
-    $evaluaciones = $del->rowCount();
-
-    // 4. Historial completo de transacciones.
-    $del = $cnx->prepare('DELETE FROM TRANSACCION WHERE id_cliente = :c');
-    $del->execute([':c' => $idCliente]);
-    $transacciones = $del->rowCount();
-
-    // 5. AUDITORIA (inmutable, RF-08): NO se toca. El trigger del schema
-    //    TRG_AUDITORIA_INMUTABLE (RNF-04) rechaza cualquier UPDATE con
-    //    ORA-20010 (verificado en vivo), y la desvinculacion de la persona
-    //    ya es efectiva: el seudonimo CLIENTE:<id> dejara de resolver a nadie
-    //    en cuanto la cuenta de Firebase (uid -> correo) fue eliminada (D-57).
-
-    // 6. Registro del evento de baja. El schema congelado solo permite
-    //    entidad IN (TRANSACCION|EVALUACION|ALERTA) y accion IN (INSERT|
-    //    BLOQUEO|ATENCION|CONSULTA) (CK_AUDITORIA_*): la baja se registra como
-    //    ATENCION del banco sobre el ciclo de vida, misma convencion que
-    //    reportar/desbloquear (D-55/D-58); el detalle lleva los contadores.
-    $huboBaja = ($dispositivos + $alertas + $evaluaciones + $transacciones) > 0;
-    if ($huboBaja) {
-        $cnx->prepare('INSERT INTO AUDITORIA (id_auditoria, entidad, accion, usuario_o_sistema, detalle)'
-                    . " VALUES (SEQ_AUDITORIA.NEXTVAL, 'ALERTA', 'ATENCION', 'BANCO:BAJA', :detalle)")
-            ->execute([':detalle' => sprintf(
-                'Baja de cuenta (eliminada de Firebase): %d dispositivo(s), %d transaccion(es),'
-                . ' %d evaluacion(es) y %d alerta(s) purgadas; auditoria historica conservada (inmutable)',
-                $dispositivos, $transacciones, $evaluaciones, $alertas
-            )]);
-    }
-
-    $cnx->commit();
-
-    $idAuditoria = null;
-    if ($huboBaja) {
-        $idAuditoria = (int) $cnx->query('SELECT SEQ_AUDITORIA.CURRVAL FROM DUAL')->fetchColumn();
-    }
-} catch (PDOException $e) {
-    if (isset($cnx) && $cnx->inTransaction()) {
-        $cnx->rollBack();
-    }
-    error_log('[MIDFF-BAJA] fallo Oracle: ' . trim($e->getMessage()));
-    responder(500, ['error' => 'fallo Oracle al dar de baja la cuenta: ' . trim($e->getMessage())]);
+$purga = midff_baja_purgar_cliente($idCliente);
+if (!$purga['ok']) {
+    error_log('[MIDFF-BAJA] fallo Oracle: ' . $purga['error']);
+    responder(500, ['error' => 'fallo Oracle al dar de baja la cuenta: ' . $purga['error']]);
 }
+
+// La logica vive en config/bajas.php (compartida con la sincronizacion del
+// banco, BIT-031): purga dispositivos + historial y deja el evento BANCO:BAJA.
+$dispositivos  = $purga['dispositivos'];
+$alertas       = $purga['alertas'];
+$evaluaciones  = $purga['evaluaciones'];
+$transacciones = $purga['transacciones'];
+$idAuditoria   = $purga['id_auditoria'];
 
 error_log(sprintf(
     '[MIDFF-BAJA] %s purgada: dispositivos=%d transacciones=%d evaluaciones=%d alertas=%d (auditoria conservada)',

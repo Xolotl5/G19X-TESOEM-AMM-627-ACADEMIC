@@ -520,11 +520,13 @@ public class MainActivity extends AppCompatActivity {
             return;   // sin token o sesión incompleta: seguirá el registro manual
         }
         String usuario = !correo.isEmpty() ? correo : AlertasRepositorio.leerUsuario(this);
+        // BIT-031: uid de Firebase en el registro (verificacion de bajas).
+        String uid = SesionCliente.leerUid(this);
         DescubrimientoApi.asegurar(this, (apiOk, url, motivo) -> {
             if (apiOk) {
                 urlBaseActual = url;
             }
-            ApiClient.registrarDispositivo(usuario, "CLIENTE", idCliente, token, (ok, mensaje) ->
+            ApiClient.registrarDispositivo(usuario, "CLIENTE", idCliente, token, uid, (ok, mensaje) ->
                     runOnUiThread(() -> {
                         if (ok) {
                             txtToken.setText(getString(R.string.token_actual, token)
@@ -582,7 +584,9 @@ public class MainActivity extends AppCompatActivity {
                 return;
             }
             urlBaseActual = url;
-            ApiClient.registrarDispositivo(usuario, "CLIENTE", idCliente, token, (ok, mensaje) ->
+            // BIT-031: el registro manual tambien viaja con el uid de la sesion.
+            ApiClient.registrarDispositivo(usuario, "CLIENTE", idCliente, token,
+                    SesionCliente.leerUid(this), (ok, mensaje) ->
                     runOnUiThread(() -> {
                         registroEnCurso = false;
                         btnRegistrar.setEnabled(true);

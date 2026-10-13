@@ -51,11 +51,14 @@ public class NotificacionFcmService extends FirebaseMessagingService {
 
         // BIT-017: la sesion define usuario (correo) e id_cliente para que el
         // push llegue SOLO a este cliente; sin sesion queda el modo legado.
+        // BIT-031: tambien viaja el uid de Firebase para que el banco pueda
+        // purgar la cuenta si se elimina en Firebase y la app no se abre mas.
         String correo    = SesionCliente.leerCorreo(this);
         String usuario   = !correo.isEmpty() ? correo : AlertasRepositorio.leerUsuario(this);
         String idCliente = SesionCliente.leerIdCliente(this);
+        String uid       = SesionCliente.leerUid(this);
         DescubrimientoApi.asegurar(this, (apiOk, urlBase, motivo) ->
-                ApiClient.registrarDispositivo(usuario, "CLIENTE", idCliente, token, (ok, mensaje) ->
+                ApiClient.registrarDispositivo(usuario, "CLIENTE", idCliente, token, uid, (ok, mensaje) ->
                         Log.i(ETIQUETA, "autoregistro del dispositivo "
                                 + (ok ? "OK" : "FALLO") + ": " + mensaje)));
     }

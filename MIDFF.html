@@ -145,9 +145,10 @@ tr:last-child td{border-bottom:0}
   <section id="secClientes" class="oculto">
     <div class="tarjeta">
       <h2>Clientes monitoreados</h2>
-      <div class="filtros" style="grid-template-columns:1.4fr auto">
+      <div class="filtros" style="grid-template-columns:1.4fr auto auto">
         <div><label>Buscar cliente</label><input id="fBuscarCliente" placeholder="CLI-…"></div>
         <button onclick="pintarClientes()">Buscar</button>
+        <button class="secundario" onclick="sincronizarBajas()">Sincronizar bajas con Firebase</button>
       </div>
     </div>
     <div class="tarjeta">
@@ -155,7 +156,7 @@ tr:last-child td{border-bottom:0}
         <thead><tr><th>Cliente</th><th>Transacciones</th><th>Monto total</th><th>Score prom.</th><th>Alertas</th><th>Dispositivos</th><th>Última actividad</th><th></th></tr></thead>
         <tbody id="tablaClientes"><tr><td colspan="8">Sin datos.</td></tr></tbody>
       </table>
-      <div class="nota">Los dispositivos activos son teléfonos con la app registrada (DISPOSITIVO_MOVIL). «Ver alertas» abre la bandeja filtrada por ese cliente.</div>
+      <div class="nota">Los dispositivos activos son teléfonos con la app registrada (DISPOSITIVO_MOVIL). «Ver alertas» abre la bandeja filtrada por ese cliente. «Sincronizar bajas con Firebase» verifica contra Firebase Auth qué cuentas siguen vivas y purga las eliminadas (dispositivos + historial; BIT-031).</div>
     </div>
   </section>
 </div>
@@ -426,6 +427,22 @@ function pintarClientes() {
 function verAlertasDe(cliente) {
   $('fCliente').value = cliente;
   elegirTab('alertas');
+}
+
+/* BIT-031: purga desde el banco las cuentas eliminadas de Firebase Auth,
+ * sin depender de que la app se abra (accounts:lookup contra Firebase). */
+async function sincronizarBajas() {
+  if (!confirm('Se verificará contra Firebase Auth qué cuentas siguen vivas y se purgarán las eliminadas (dispositivos + historial completo). ¿Continuar?')) return;
+  try {
+    const r = await llamar('/api/v1/admin/sincronizar-bajas', {method: 'POST', headers: encabezados(true), body: '{}'});
+    const purgadas = (r.dados_de_baja || []).filter(x => x.ok);
+    let detalle = purgadas.map(x => x.id_cliente).join(', ');
+    alert('✔ Sincronización lista: ' + r.verificados + ' cuenta(s) verificada(s), '
+      + r.vivas + ' viva(s), ' + purgadas.length + ' purgada(s)'
+      + (detalle ? '\nPurgadas: ' + detalle : '')
+      + (r.sin_uid ? '\n' + r.sin_uid + ' dispositivo(s) sin uid (previos a BIT-031): no verificables' : ''));
+    cargarClientes(); cargarResumen();
+  } catch (e) { alert('❌ ' + e.message); }
 }
 
 /* =================== ARRANQUE =================== */
