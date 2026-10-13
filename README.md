@@ -237,7 +237,7 @@ Parámetros útiles del smoke test: `-RutaPhp <ruta a php.exe>` si PHP no está 
 
 Guion de ~5 minutos (cumple el criterio 10 del DoD). Requiere: Oracle XE activo con los 3 scripts instalados, la API corriendo (`php -S 127.0.0.1:8091 router.php`), `config\firebase.credentials.json` presente y la app instalada con su token registrado.
 
-1. **(Opcional) Limpieza:** re-ejecute `database\schema.sql` + `database\dispositivo_movil.sql` + `database\sp_bloquear_alerta.sql` y vuelva a registrar el token en la app. Si solo vació tablas de negocio conservando `AUDITORIA` (registro inmutable), ejecute `database\realinear_secuencias.sql` para realinear `SEQ_*` a `MAX(id)+1` y evitar `ORA-00001` (BIT-021/026; `servidor.ps1` lo verifica solo al arrancar).
+1. **(Opcional) Limpieza:** para una ronda nueva de pruebas ejecute `database\limpiar_pruebas.sql` (vacía `TRANSACCION`/`EVALUACION`/`ALERTA`, conserva `AUDITORIA`/`ADMIN_USUARIO`/`DISPOSITIVO_MOVIL` y realinea `SEQ_*` a `MAX(id)+1` — evita el `ORA-00001` de BIT-021/026). La bandeja local de la app se vacía con el botón "Limpiar" de la pestaña Perfil.
 
 2. **Transacción BAJO (sin alerta):**
 
