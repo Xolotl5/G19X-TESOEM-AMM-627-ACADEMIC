@@ -34,10 +34,11 @@
     <color name="midff_acento">#FFFFFF</color>
     <color name="blanco">#FFFFFF</color>
 
-    <!-- Bandas de riesgo con neón: cian APROBADA, púrpura EN_REVISION,
-         magenta BLOQUEADA / riesgo ALTO (contrato: BAJO menor 0.4,
-         MEDIO 0.4-0.7, ALTO mayor 0.7) -->
-    <color name="clasificacion_bajo">#C9CED5</color>
-    <color name="clasificacion_medio">#9BA1AA</color>
-    <color name="clasificacion_alto">#FFFFFF</color>
+    <!-- Bandas de riesgo (BIT-028): semántica rojo/amarillo/verde en tonos
+         "dark material" desaturados que armonizan con el carbón/cristal de la
+         estética monocroma (contrato: BAJO menor 0.4, MEDIO 0.4-0.7,
+         ALTO mayor 0.7) -->
+    <color name="clasificacion_bajo">#81C99B</color>
+    <color name="clasificacion_medio">#FDD663</color>
+    <color name="clasificacion_alto">#F28B82</color>
 </resources>

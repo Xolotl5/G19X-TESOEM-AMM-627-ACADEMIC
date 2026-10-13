@@ -22,6 +22,7 @@ public final class SesionCliente {
     private static final String CLAVE_CORREO  = "correo";
     private static final String CLAVE_UID     = "uid";
     private static final String CLAVE_CLIENTE = "id_cliente";
+    private static final String CLAVE_NOMBRE  = "nombre_mostrar";
 
     private SesionCliente() {
     }
@@ -61,6 +62,20 @@ public final class SesionCliente {
     /** Guarda el id_cliente elegido al registrar el dispositivo (BIT-017). */
     public static void guardarIdCliente(Context contexto, String idCliente) {
         prefs(contexto).edit().putString(CLAVE_CLIENTE, idCliente == null ? "" : idCliente.trim()).apply();
+    }
+
+    /**
+     * BIT-028: nombre para mostrar en la cabecera de la app (en lugar del
+     * correo). Es SOLO presentación: la sesión Firebase y el registro del
+     * dispositivo siguen usando el correo real. Cadena vacía = usar el correo.
+     */
+    public static void guardarNombre(Context contexto, String nombre) {
+        prefs(contexto).edit().putString(CLAVE_NOMBRE, nombre == null ? "" : nombre.trim()).apply();
+    }
+
+    /** Nombre para mostrar guardado por el usuario ('' = aún sin crear). */
+    public static String leerNombre(Context contexto) {
+        return prefs(contexto).getString(CLAVE_NOMBRE, "");
     }
 
     /**

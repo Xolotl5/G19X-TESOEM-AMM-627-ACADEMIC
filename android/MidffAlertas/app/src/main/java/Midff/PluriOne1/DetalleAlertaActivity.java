@@ -61,7 +61,7 @@ public class DetalleAlertaActivity extends AppCompatActivity {
         UtilidadesUi.resplandor(score, UtilidadesUi.colorGlow(colorNeon), 22f);
 
         TextView clasificacion = findViewById(R.id.txtValorClasificacion);
-        clasificacion.setText(alerta.clasificacion);
+        clasificacion.setText(alerta.clasificacionAmigable());
         clasificacion.setTextColor(colorNeon);
         UtilidadesUi.resplandor(clasificacion, UtilidadesUi.colorGlow(colorNeon), 12f);
 
@@ -71,7 +71,7 @@ public class DetalleAlertaActivity extends AppCompatActivity {
         monto.setTextColor(cian);
         UtilidadesUi.resplandor(monto, UtilidadesUi.colorGlow(cian), 16f);
 
-        ((TextView) findViewById(R.id.txtValorDecision)).setText(alerta.decision);
+        ((TextView) findViewById(R.id.txtValorDecision)).setText(alerta.decisionAmigable());
         ((TextView) findViewById(R.id.txtValorCliente)).setText(alerta.idCliente);
         ((TextView) findViewById(R.id.txtValorTransaccion)).setText(alerta.idTransaccion);
         ((TextView) findViewById(R.id.txtValorAlerta)).setText(alerta.idAlerta);
@@ -116,7 +116,7 @@ public class DetalleAlertaActivity extends AppCompatActivity {
                 : (alerta.esAprobada()
                         ? getColor(R.color.clasificacion_bajo)
                         : getColor(R.color.clasificacion_medio));
-        estado.setText(alerta.estaBloqueada() ? "BLOQUEADA" : alerta.estado);
+        estado.setText(alerta.estaBloqueada() ? "Bloqueada" : alerta.estadoAmigable());
         estado.setTextColor(color);
         UtilidadesUi.resplandor(estado, UtilidadesUi.colorGlow(color), 10f);
     }

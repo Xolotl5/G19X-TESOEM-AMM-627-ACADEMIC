@@ -157,7 +157,7 @@ public class NotificacionFcmService extends FirebaseMessagingService {
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(texto))
                 .setPriority(NotificationCompat.PRIORITY_HIGH)
                 .setCategory(NotificationCompat.CATEGORY_EVENT)
-                .setColor(desbloqueo ? 0xFFC9CED5 : 0xFFFFFFFF)
+                .setColor(desbloqueo ? 0xFF81C99B : 0xFFF28B82)
                 .setAutoCancel(true)
                 .setContentIntent(pendiente);
 
@@ -198,8 +198,8 @@ public class NotificacionFcmService extends FirebaseMessagingService {
                 .setStyle(new NotificationCompat.BigTextStyle().bigText(alerta.detalleLargo()))
                 .setPriority(sana ? NotificationCompat.PRIORITY_DEFAULT : NotificationCompat.PRIORITY_HIGH)
                 .setCategory(sana ? NotificationCompat.CATEGORY_STATUS : NotificationCompat.CATEGORY_ALARM)
-                .setColor(sana ? 0xFFC9CED5
-                        : (alerta.esRiesgoAlto() ? 0xFFFFFFFF : 0xFF787F89))
+                .setColor(sana ? 0xFF81C99B
+                        : (alerta.esRiesgoAlto() ? 0xFFF28B82 : 0xFFFDD663))
                 .setAutoCancel(true)
                 .setContentIntent(pendiente);
 

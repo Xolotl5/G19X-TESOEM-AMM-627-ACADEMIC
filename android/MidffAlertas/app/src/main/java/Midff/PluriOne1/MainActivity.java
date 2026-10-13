@@ -14,6 +14,7 @@ import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
 import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -162,13 +163,19 @@ public class MainActivity extends AppCompatActivity {
                     CODIGO_PERMISO_NOTIFICACIONES);
         }
     }
-    /** Cabecera: avatar (salta a Registro), usuario degradado, isla táctil. */
+    /** Cabecera: avatar (salta a Registro), usuario degradado, isla táctil.
+     *  BIT-028: muestra el NOMBRE creado por el usuario (si existe) en lugar
+     *  del correo de la cuenta; tocar el nombre abre su editor. */
     private void vincularCabecera() {
-        String usuario = AlertasRepositorio.leerUsuario(this);
+        String nombreMostrar = SesionCliente.leerNombre(this);
+        String usuario = (nombreMostrar == null || nombreMostrar.trim().isEmpty())
+                ? AlertasRepositorio.leerUsuario(this)
+                : nombreMostrar.trim();
         TextView txtUsuarioHeader = findViewById(R.id.txtUsuarioHeader);
         txtUsuarioHeader.setText(usuario);
         UtilidadesUi.textoDegradado(txtUsuarioHeader,
                 getColor(R.color.aurora_azul), getColor(R.color.aurora_rosa));
+        txtUsuarioHeader.setOnClickListener(v -> pedirNombreUsuario());
         TextView avatar = findViewById(R.id.txtAvatarIniciales);
         avatar.setText(UtilidadesUi.iniciales(usuario));
         findViewById(R.id.contenedorAvatar).setOnClickListener(v -> {
@@ -719,6 +726,43 @@ public class MainActivity extends AppCompatActivity {
     /** Isla dinámica: estado del sistema con el conteo de alertas. */
     private void actualizarIsla() {
         txtIslaEstado.setText(getString(R.string.isla_escaneando, alertas.size()));
+    }
+
+    /**
+     * BIT-028: nombre para mostrar en la cabecera (en lugar del correo). Es
+     * SOLO presentación: la sesión de Firebase y el registro del dispositivo
+     * siguen usando el correo real. Vaciar el campo restaura el correo.
+     */
+    private void pedirNombreUsuario() {
+        final EditText entrada = new EditText(this);
+        entrada.setText(SesionCliente.leerNombre(this));
+        entrada.setHint(R.string.nombre_pista);
+        entrada.setSingleLine();
+
+        int margen = (int) (20 * getResources().getDisplayMetrics().density);
+        LinearLayout contenedor = new LinearLayout(this);
+        contenedor.setPadding(margen, 0, margen, 0);
+        contenedor.addView(entrada, new LinearLayout.LayoutParams(
+                LinearLayout.LayoutParams.MATCH_PARENT, LinearLayout.LayoutParams.WRAP_CONTENT));
+
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.nombre_titulo)
+                .setMessage(R.string.nombre_mensaje)
+                .setView(contenedor)
+                .setPositiveButton(R.string.nombre_guardar, (dialogo, cual) -> {
+                    String nombre = entrada.getText().toString().trim();
+                    if (nombre.length() > 24) {
+                        nombre = nombre.substring(0, 24);
+                    }
+                    SesionCliente.guardarNombre(this, nombre);
+                    vincularCabecera();
+                    Toast.makeText(this, nombre.isEmpty()
+                            ? getString(R.string.nombre_vacio_mensaje)
+                            : getString(R.string.nombre_guardado, nombre),
+                            Toast.LENGTH_SHORT).show();
+                })
+                .setNegativeButton(R.string.accion_cancelar, null)
+                .show();
     }
 
     private void abrirDetalle(int posicion) {

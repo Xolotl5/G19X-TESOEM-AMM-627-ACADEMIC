@@ -14,10 +14,14 @@ import androidx.annotation.Nullable;
 import java.util.List;
 
 /**
- * Adaptador de la bandeja de alertas (RF-10, rediseño glass/neón): une la
- * lista de {@link ModeloAlerta} con el panel de cristal {@code item_alerta}
- * y pinta chip de clasificación, punto de riesgo y score con el neón de su
- * banda (cian BAJO/APROBADA, púrpura MEDIO/EN_REVISION, magenta ALTO).
+ * Adaptador de la bandeja de alertas (RF-10): une la lista de
+ * {@link ModeloAlerta} con el panel de cristal {@code item_alerta}.
+ *
+ * <p>BIT-028 (modismos entendibles): el protagonista de la tarjeta es el
+ * MONTO de la transacción (el score baja al detalle), el chip dice "Riesgo
+ * alto/medio/bajo · Bloqueada" y el punto, el chip y el resplandor usan la
+ * semántica rojo/ámbar/verde en tonos oscuros que combinan con la estética
+ * monocroma de la app.</p>
  */
 public class AdaptadorAlertas extends ArrayAdapter<ModeloAlerta> {
 
@@ -35,7 +39,7 @@ public class AdaptadorAlertas extends ArrayAdapter<ModeloAlerta> {
             vistaHolder = new Vista();
             vistaHolder.chipClasificacion = vista.findViewById(R.id.chipClasificacion);
             vistaHolder.puntoRiesgo = vista.findViewById(R.id.puntoRiesgo);
-            vistaHolder.score = vista.findViewById(R.id.txtItemScore);
+            vistaHolder.monto = vista.findViewById(R.id.txtItemMonto);
             vistaHolder.titulo = vista.findViewById(R.id.txtItemTitulo);
             vistaHolder.detalle = vista.findViewById(R.id.txtItemDetalle);
             vistaHolder.fecha = vista.findViewById(R.id.txtItemFecha);
@@ -46,28 +50,31 @@ public class AdaptadorAlertas extends ArrayAdapter<ModeloAlerta> {
 
         ModeloAlerta alerta = getItem(posicion);
         if (alerta != null) {
-            int colorNeon = colorSegunClasificacion(alerta.clasificacion);
+            int colorBanda = colorSegunClasificacion(alerta.clasificacion);
 
             vistaHolder.chipClasificacion.setText(alerta.estaBloqueada()
-                    ? alerta.clasificacion + " · BLOQUEADA"
-                    : alerta.clasificacion);
-            vistaHolder.chipClasificacion.setTextColor(colorNeon);
+                    ? alerta.clasificacionAmigable() + " · Bloqueada"
+                    : alerta.clasificacionAmigable());
+            vistaHolder.chipClasificacion.setTextColor(colorBanda);
             UtilidadesUi.resplandor(vistaHolder.chipClasificacion,
-                    UtilidadesUi.colorGlow(colorNeon), 10f);
+                    UtilidadesUi.colorGlow(colorBanda), 10f);
 
-            vistaHolder.score.setText(alerta.score);
-            vistaHolder.score.setTextColor(colorNeon);
-            UtilidadesUi.resplandor(vistaHolder.score,
-                    UtilidadesUi.colorGlow(colorNeon), 14f);
+            // BIT-028: el monto ocupa el lugar del score (dato que el usuario
+            // entiende de inmediato); el score queda en el detalle de la tarjeta.
+            vistaHolder.monto.setText(alerta.montoFormateado());
+            vistaHolder.monto.setTextColor(colorBanda);
+            UtilidadesUi.resplandor(vistaHolder.monto,
+                    UtilidadesUi.colorGlow(colorBanda), 14f);
 
-            vistaHolder.titulo.setText(alerta.tituloCorto());
-            vistaHolder.detalle.setText(alerta.detalleCorto());
+            vistaHolder.titulo.setText(alerta.tituloTarjeta());
+            vistaHolder.detalle.setText("Transacción " + alerta.idTransaccion
+                    + " · Score " + alerta.score);
             vistaHolder.fecha.setText(alerta.fechaRecepcion());
 
             if (vistaHolder.puntoRiesgo.getBackground() instanceof GradientDrawable) {
                 GradientDrawable punto =
                         (GradientDrawable) vistaHolder.puntoRiesgo.getBackground().mutate();
-                punto.setColor(colorNeon);
+                punto.setColor(colorBanda);
             }
         }
         return vista;
@@ -87,7 +94,7 @@ public class AdaptadorAlertas extends ArrayAdapter<ModeloAlerta> {
     private static final class Vista {
         TextView chipClasificacion;
         View puntoRiesgo;
-        TextView score;
+        TextView monto;
         TextView titulo;
         TextView detalle;
         TextView fecha;

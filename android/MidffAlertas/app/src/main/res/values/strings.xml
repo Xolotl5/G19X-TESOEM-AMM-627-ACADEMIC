@@ -139,4 +139,12 @@
     <string name="reporte_ok">Respuesta enviada: el banco la revisará</string>
     <string name="reporte_fallo">No fue posible enviar tu respuesta\n%1$s</string>
     <string name="reporte_ya">Ya respondiste a esta alerta</string>
+
+    <!-- BIT-028: nombre para mostrar en la cabecera (en vez del correo) -->
+    <string name="nombre_titulo">Tu nombre</string>
+    <string name="nombre_mensaje">Cómo quieres que la app te llame en lugar de tu correo. Solo cambia lo que se muestra: tu cuenta sigue siendo la misma.</string>
+    <string name="nombre_pista">p. ej. Ana G.</string>
+    <string name="nombre_guardar">Guardar</string>
+    <string name="nombre_guardado">Listo: te veremos como %1$s</string>
+    <string name="nombre_vacio_mensaje">Se mostrará tu correo de cuenta</string>
 </resources>

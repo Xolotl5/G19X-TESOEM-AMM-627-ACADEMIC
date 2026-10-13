@@ -155,6 +155,73 @@ public class ModeloAlerta {
                 || (decision != null && decision.toUpperCase(Locale.US).contains("APROB"));
     }
 
+    // -----------------------------------------------------------------------
+    // BIT-028: modismos entendibles para el usuario final (menos jerga técnica)
+    // -----------------------------------------------------------------------
+
+    /** Clasificación en lenguaje llano: "Riesgo alto/medio/bajo" o "Aprobada". */
+    public String clasificacionAmigable() {
+        if ("ALTO".equalsIgnoreCase(clasificacion)) {
+            return "Riesgo alto";
+        }
+        if ("MEDIO".equalsIgnoreCase(clasificacion)) {
+            return "Riesgo medio";
+        }
+        if (esSana() || esAprobada()) {
+            return "Aprobada";
+        }
+        return "Riesgo bajo";
+    }
+
+    /** Decisión en lenguaje llano ("Aprobada", "En revisión", "Bloqueada"). */
+    public String decisionAmigable() {
+        String d = decision == null ? "" : decision.toUpperCase(Locale.US);
+        if (d.contains("APROB")) {
+            return "Aprobada";
+        }
+        if (d.contains("REVIS")) {
+            return "En revisión";
+        }
+        if (d.contains("BLOQU")) {
+            return "Bloqueada";
+        }
+        return decision == null ? "-" : decision;
+    }
+
+    /** Estado de la alerta en lenguaje llano ("Pendiente/Atendida/Bloqueada"). */
+    public String estadoAmigable() {
+        if (estaBloqueada()) {
+            return "Bloqueada";
+        }
+        if ("ATENDIDA".equalsIgnoreCase(estado)) {
+            return "Atendida";
+        }
+        return "Pendiente";
+    }
+
+    /** Título de la tarjeta: qué le pasa a su dinero, sin jerga de motor. */
+    public String tituloTarjeta() {
+        if (esSana() || esAprobada()) {
+            return "Movimiento aprobado";
+        }
+        return esRiesgoAlto() ? "Posible fraude en tu cuenta" : "Movimiento inusual";
+    }
+
+    /**
+     * Monto protagonista de la tarjeta (BIT-028): "$ 15,499.00 MXN" con
+     * separador de miles; si el texto no es numérico se muestra tal cual.
+     */
+    public String montoFormateado() {
+        String monedaLegible = (moneda == null || moneda.trim().isEmpty() || "-".equals(moneda))
+                ? "" : " " + moneda.trim();
+        try {
+            double valor = Double.parseDouble(monto.replace(",", "").replace("$", "").trim());
+            return String.format(Locale.US, "$ %,.2f%s", valor, monedaLegible);
+        } catch (Exception e) {
+            return monto + monedaLegible;
+        }
+    }
+
     /** Cierto mientras la alerta espera al oficial (ni aprobada ni bloqueada). */
     public boolean enRevision() {
         return !estaBloqueada() && !esAprobada();
