@@ -99,6 +99,14 @@ if ($ruta === '/api/v1/admin/clientes' || $ruta === '/api/v1/admin/clientes.php'
     return true;
 }
 
+// Estado en Oracle de las alertas de un cliente: sincronizacion de la bandeja
+// de la app con las decisiones del banco (BIT-027).
+if ($ruta === '/api/v1/estado' || $ruta === '/api/v1/estado.php') {
+    require __DIR__ . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'v1'
+          . DIRECTORY_SEPARATOR . 'estado.php';
+    return true;
+}
+
 // Sondeo de salud (sin API-Key) para el descubrimiento automatico de la IP
 // por parte de la app Android: emulador, adb reverse o red WiFi local.
 if ($ruta === '/api/v1/ping' || $ruta === '/api/v1/ping.php') {
@@ -117,6 +125,9 @@ if ($ruta === '/' || $ruta === '/api/v1') {
             'POST /api/v1/transacciones' => 'evalua una transaccion (score, clasificacion, decision, alerta y push FCM si score >= 0.4)',
             'POST /api/v1/dispositivos'  => 'registra/actualiza el token FCM de la app Android (Sprint 3)',
             'POST /api/v1/bloquear'      => 'bloqueo preventivo de una alerta: ALERTA.estado = BLOQUEADA + registro en AUDITORIA (Sprint 4, HU-MVP-06)',
+            'POST /api/v1/reportar'      => 'respuesta del cliente a una alerta: NO_FUI_YO / SI_FUI_YO (Post-MVP, BIT-020/024)',
+            'POST /api/v1/desbloquear'   => 'desbloqueo por el banco tras SI_FUI_YO del cliente en riesgo ALTO (BIT-024)',
+            'GET  /api/v1/estado'        => 'estado en Oracle de las alertas de un cliente (sincronizacion de la app, BIT-027)',
         ],
         'documentacion' => 'docs/contratos/contrato_scoring.md',
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

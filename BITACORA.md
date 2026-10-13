@@ -8,14 +8,14 @@
 | **Título del proyecto** | Desarrollo de un Motor Inteligente de Detección de Fraude Financiero con Arquitectura Híbrida (Android, C, PHP, Oracle DB y Firebase) |
 | **Tipo de proyecto** | Residencias Profesionales — Ingeniería en Sistemas Computacionales |
 | **Documentos base** | `MVP_MIDFF.md` v1.0 (alcance del MVP) y `PRD_MIDFF.md` v1.0 |
-| **Versión de la bitácora** | 1.26 |
+| **Versión de la bitácora** | 1.27 |
 | **Fecha de apertura** | 23/09/2026 |
-| **Última actualización** | 09/10/2026 |
+| **Última actualización** | 12/10/2026 |
 | **Metodología** | Scrum — 4 sprints de 2 semanas (8 semanas) |
 | **Control de versiones** | Git (rama principal `master`) |
 | **Stack** | C · PHP 8+ · Oracle Database XE · Android (Java) · Firebase FCM · PowerShell |
 | **Responsable** | Residente del proyecto |
-| **Estado** | Post-MVP (BIT-026): flujo por nivel de riesgo sincronizado app↔consola (`prompt.txt`: BAJO auto, MEDIO con confirmación del cliente, ALTO bloqueada + Desbloquear) y demo de un comando (`servidor.ps1`, con verificación automática de secuencias Oracle anti `ORA-00001` vía `database/realinear_secuencias.sql`) |
+| **Estado** | Post-MVP (BIT-027): alertas push ~10× más rápidas de salir (caché de archivo del access_token FCM) y decisiones del banco (Bloquear/Desbloquear) reflejadas en la app en tiempo real (push `ESTADO`) y al abrir/retomar foco (`GET /api/v1/estado`); flujo por niveles de riesgo BIT-024 intacto |
 
 ---
 
@@ -463,6 +463,7 @@ El MVP se considera **terminado** cuando se cumple el 100 % de estos puntos
 | **BIT-024** | 09/10/2026 | Post-MVP | Sesión de trabajo | **Flujo sincronizado por nivel de riesgo (prompt.txt)**: BAJO auto-aprobado; MEDIO con "SÍ FUI YO" aprueba la alerta en el acto (`ATENDIDA`) y "NO FUI YO" genera el aviso ⚑ para el banco; ALTO llega bloqueada con **solo "SÍ FUI YO"** en la app (botón "No fui yo" oculto) y habilita **Desbloquear** en `MIDFF.html` (`POST /api/v1/desbloquear`: respeta `CK_EVALUACION_UMBRAL` del schema congelado —la evaluación histórica no se toca— y deja `SI_FUI_YO :: DESBLOQUEADA` + auditoría). Consola en vivo cada **5 s** y **fix ConnectException**: el reporte se envía tras `DescubrimientoApi.asegurar`. E2E verificado (409 sin confirmar/doble, ALTO desbloqueada aud 138, MEDIO auto-atendida) | Cerrada |
 | **BIT-025** | 09/10/2026 | Post-MVP | Sesión de trabajo | **`servidor.ps1`**: demo de un solo comando — agrega las DLLs de Oracle al PATH, autodetecta php.exe (PATH/Laragon), abre el firewall 8091 (regla persistente `MIDFF-API-8091`, una sola vez) y levanta la API en `0.0.0.0:8091` imprimiendo las URLs (consola/simulador/IP WiFi real, excluyendo adaptadores virtuales). Con esto la app se enlaza **sola por WiFi** (DescubrimientoApi ya escaneaba gateway + /24) y el `adb reverse` deja de ser obligatorio en la demo. Probado: bind `0.0.0.0:8091`, regla creada y ping OK | Cerrada |
 | **BIT-026** | 09/10/2026 | Post-MVP | Corrección + blindaje | **Secuencias Oracle auto-reparadas**: 3ª recurrencia del `ORA-00001 PK_AUDITORIA` (`errores.txt` 18:57) tras limpieza manual durante las pruebas de BIT-024 — tablas de negocio vaciadas con `AUDITORIA` conservada (inmutable) y `SEQ_AUDITORIA` atrás del `MAX(id)`. Corrección: realineación a `MAX(id)+1` (diagnóstico en vivo: las 4 secuencias ya alineadas tras el arreglo manual de la sesión, sin bitácora). Blindaje: **`database/realinear_secuencias.sql`** (idempotente, `ALTER SEQUENCE … RESTART` Oracle 18c+, omite schema ausente sin fallar) para las 4 secuencias + **paso [4/5] en `servidor.ps1`** que lo ejecuta al arrancar la demo (avisa, no detiene, si Oracle no responde). Verificado: reparación controlada de `SEQ_ALERTA` (1→2 con el script), re-ejecución no-op y transacción BAJO real persistida (`SP_REGISTRAR_TRANSACCION` OK) | Cerrada |
+| **BIT-027** | 12/10/2026 | Post-MVP | Sesión de trabajo | **Latencia de alertas ALTO + decisiones del banco en la app**: (1) **caché de archivo del access_token FCM** — el canje OAuth2 por petición (firma JWT + round-trip a Google) sumaba 1-3 s a cada envío; ahora solo el primer envío lo paga (medido: POST 1980→197 ms, `envio_ms` 245.5→59.5); (2) **push de estado `tipo_alerta=ESTADO`** cuando el banco Bloquea (`bloquear.php`) o Desbloquea (`desbloquear.php`) desde `MIDFF.html` — `midff_fcm_payload_estado/notificar_estado` con filtro por dueño (BIT-017) — y la app lo refleja (`NotificacionFcmService.procesarEstadoBanco`: actualiza la bandeja + notifica "bloqueada/desbloqueada por el banco"); (3) **`GET /api/v1/estado?id_cliente`** + `MainActivity.sincronizarEstados()` en `onResume` y `AlertasRepositorio.aplicarEstado(s)` para reconciliar con Oracle si el push se pierde (el detalle también se refresca). E2E: ALTO→`SI_FUI_YO`→desbloqueada (push 73 ms) y bloqueo (push 127 ms); `GET estado` devolvió `000004=BLOQUEADA, 000003=ATENDIDA` | Cerrada |
 
 ---
 
@@ -2092,6 +2093,7 @@ fila correspondiente en el índice 9.1 y actualizar la tabla de metadatos de la 
 | 1.23 | 09/10/2026 | Residente del proyecto | Se agrega la entrada **BIT-024**: flujo por nivel de riesgo sincronizado app↔consola (BAJO auto, MEDIO confirmación del cliente con aprobación/aviso, ALTO bloqueada con "SÍ FUI YO" que habilita Desbloquear en `MIDFF.html` vía `POST /api/v1/desbloquear`), consola en vivo a 5 s y fix del `ConnectException` con descubrimiento previo al envío. |
 | 1.24 | 09/10/2026 | Residente del proyecto | Se agrega la entrada **BIT-025**: `servidor.ps1` de un solo comando (Oracle PATH + firewall persistente + `0.0.0.0:8091` + URLs de demo); la app se enlaza sola por WiFi y `adb reverse` deja de ser obligatorio. |
 | 1.25 | 09/10/2026 | Residente del proyecto | Se agrega la entrada **BIT-026** (corrección + blindaje): 3ª recurrencia del `ORA-00001 PK_AUDITORIA` por `SEQ_AUDITORIA` desalineada tras limpiezas de pruebas; script idempotente `database/realinear_secuencias.sql` (las 4 secuencias) + verificación automática al arrancar en `servidor.ps1` (paso 4/5); E2E verificado con transacción BAJO real. |
+| 1.26 | 12/10/2026 | Residente del proyecto | Se agrega la entrada **BIT-027**: caché de archivo del access_token FCM (alertas ~10× más rápidas de salir del servidor), push `ESTADO` al bloquear/desbloquear desde `MIDFF.html` y `GET /api/v1/estado` + `sincronizarEstados()` en la app para reflejar las decisiones del banco. E2E verificado y APK compilado. |
 
 ---
 

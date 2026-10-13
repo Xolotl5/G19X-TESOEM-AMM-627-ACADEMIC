@@ -2,6 +2,7 @@ package Midff.PluriOne1;
 
 import android.util.Log;
 
+import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
 
@@ -13,8 +14,11 @@ import java.net.ConnectException;
 import java.net.HttpURLConnection;
 import java.net.SocketTimeoutException;
 import java.net.URL;
+import java.net.URLEncoder;
 import java.net.UnknownHostException;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
+import java.util.Map;
 
 /**
  * Cliente minimo de la API REST MIDFF (sin dependencias externas).
@@ -49,6 +53,14 @@ public final class ApiClient {
     /** Callback de las llamadas asincronas (se invoca en el hilo de red). */
     public interface Callback {
         void terminado(boolean ok, String mensaje);
+    }
+
+    /**
+     * Callback de {@link #obtenerEstados(String, CallbackEstados)} (BIT-027):
+     * mapa id_alerta -> estado actual en Oracle (BLOQUEADA / ATENDIDA / ...).
+     */
+    public interface CallbackEstados {
+        void terminado(boolean ok, Map<String, String> estados, String mensaje);
     }
 
     private ApiClient() {
@@ -145,6 +157,58 @@ public final class ApiClient {
                 Log.e(ETIQUETA, "fallo la llamada a " + ruta, e);
                 if (callback != null) {
                     callback.terminado(false, mensajeDeExcepcion(e));
+                }
+            } finally {
+                if (conexion != null) {
+                    conexion.disconnect();
+                }
+            }
+        }).start();
+    }
+
+    /**
+     * GET /api/v1/estado?id_cliente=... (BIT-027): estado actual en Oracle de
+     * las alertas del cliente. La app lo usa para reflejar las decisiones del
+     * banco (bloqueo/desbloqueo) aunque el push de estado se haya perdido.
+     * Se ejecuta en su propio hilo; el callback llega en el hilo de red.
+     */
+    public static void obtenerEstados(final String idCliente, final CallbackEstados callback) {
+        new Thread(() -> {
+            HttpURLConnection conexion = null;
+            try {
+                URL url = new URL(baseUrl + "/api/v1/estado?id_cliente="
+                        + URLEncoder.encode(idCliente, "UTF-8"));
+                conexion = (HttpURLConnection) url.openConnection();
+                conexion.setRequestMethod("GET");
+                conexion.setConnectTimeout(6000);
+                conexion.setReadTimeout(6000);
+                conexion.setRequestProperty("X-API-Key", apiKey);
+
+                int codigo = conexion.getResponseCode();
+                String texto = leer(codigo >= 400
+                        ? conexion.getErrorStream() : conexion.getInputStream());
+                if (codigo == 200) {
+                    JSONArray arreglo = new JSONObject(texto).optJSONArray("alertas");
+                    Map<String, String> estados = new HashMap<>();
+                    if (arreglo != null) {
+                        for (int i = 0; i < arreglo.length(); i++) {
+                            JSONObject fila = arreglo.optJSONObject(i);
+                            if (fila != null) {
+                                estados.put(fila.optString("id_alerta"),
+                                        fila.optString("estado"));
+                            }
+                        }
+                    }
+                    if (callback != null) {
+                        callback.terminado(true, estados, "");
+                    }
+                } else if (callback != null) {
+                    callback.terminado(false, null, mensajeHttp(codigo, texto));
+                }
+            } catch (Exception e) {
+                Log.e(ETIQUETA, "fallo GET /api/v1/estado", e);
+                if (callback != null) {
+                    callback.terminado(false, null, mensajeDeExcepcion(e));
                 }
             } finally {
                 if (conexion != null) {

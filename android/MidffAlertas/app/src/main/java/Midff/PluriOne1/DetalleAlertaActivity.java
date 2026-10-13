@@ -234,4 +234,30 @@ public class DetalleAlertaActivity extends AppCompatActivity {
         botonSiFui.setOnClickListener(null);
         botonNoFui.setOnClickListener(null);
     }
+
+    @Override
+    protected void onResume() {
+        super.onResume();
+        refrescarEstadoDesdeBandeja();
+    }
+
+    /**
+     * BIT-027: si el banco bloqueo o desbloqueo la alerta mientras este detalle
+     * estaba abierto, el estado mostrado se refresca desde la bandeja local
+     * (que el push ESTADO y la sincronizacion mantienen al dia con Oracle).
+     */
+    private void refrescarEstadoDesdeBandeja() {
+        if (alerta == null || alerta.idAlerta == null) {
+            return;
+        }
+        for (ModeloAlerta candidata : new AlertasRepositorio(this).listar()) {
+            if (alerta.idAlerta.equals(candidata.idAlerta)) {
+                if (!candidata.estado.equalsIgnoreCase(alerta.estado)) {
+                    alerta.estado = candidata.estado;
+                    pintarEstado(findViewById(R.id.txtValorEstado));
+                }
+                return;
+            }
+        }
+    }
 }

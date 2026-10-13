@@ -136,6 +136,7 @@ public class MainActivity extends AppCompatActivity {
     protected void onResume() {
         super.onResume();
         recargarBandeja();   // el push puede llegar con la app cerrada
+        sincronizarEstados();   // BIT-027: decisiones del banco (bloqueo/desbloqueo)
         if (!desbloqueado) {
             pedirBiometria();   // cada entrada exige huella/rostro/PIN
         }
@@ -599,6 +600,33 @@ public class MainActivity extends AppCompatActivity {
                     txtToken.setText(R.string.token_no_disponible);
                     txtIslaEstado.setText(R.string.isla_sin_enlace);
                 });
+    }
+
+    /**
+     * BIT-027: trae de Oracle ({@code GET /api/v1/estado}) el estado real de
+     * las alertas del cliente para reflejar las decisiones del banco aunque el
+     * push de estado se haya perdido (doze, red, app matada). Silencioso: si
+     * la API no esta al alcance la bandeja local sigue siendo el reflejo.
+     */
+    private void sincronizarEstados() {
+        String idCliente = SesionCliente.leerIdCliente(this);
+        if (idCliente == null || idCliente.trim().isEmpty()) {
+            return;   // sin sesion no hay de quien filtrar (modo demo legado)
+        }
+        DescubrimientoApi.asegurar(this, (apiOk, urlBase, motivo) -> {
+            if (!apiOk) {
+                return;
+            }
+            ApiClient.obtenerEstados(idCliente.trim(), (ok, estados, mensaje) -> {
+                if (!ok || estados == null || estados.isEmpty()) {
+                    return;
+                }
+                int cambios = repositorio.aplicarEstados(estados);
+                if (cambios > 0) {
+                    runOnUiThread(this::recargarBandeja);
+                }
+            });
+        });
     }
 
     /** Vuelve a leer la bandeja local (alertas recibidas por FCM). */

@@ -68,6 +68,15 @@ public class NotificacionFcmService extends FirebaseMessagingService {
     public void onMessageReceived(@NonNull RemoteMessage mensaje) {
         Map<String, String> datos = mensaje.getData();
 
+        // BIT-027: actualizacion de estado decidida por el BANCO (bloqueo o
+        // desbloqueo). No es una alerta nueva: actualiza la existente en la
+        // bandeja y avisa con una notificacion propia.
+        String tipoFcm = datos.get("tipo_alerta") == null ? "" : datos.get("tipo_alerta").trim();
+        if ("ESTADO".equalsIgnoreCase(tipoFcm)) {
+            procesarEstadoBanco(datos);
+            return;
+        }
+
         ModeloAlerta alerta = ModeloAlerta.desdeDatosFcm(datos);
         if (alerta == null && mensaje.getNotification() != null) {
             // Respaldo: push con solo "notification" (sin data de negocio).
@@ -96,6 +105,64 @@ public class NotificacionFcmService extends FirebaseMessagingService {
         // y las de riesgo en el resto de la bandeja.
         new AlertasRepositorio(this).guardar(alerta);
         mostrarNotificacionLocal(alerta);
+    }
+
+    /**
+     * Push ESTADO (BIT-027): el banco bloqueo o desbloqueo una alerta. Refleja
+     * el estado en la bandeja local (si la alerta ya llego por push) y notifica
+     * al cliente; si la bandeja no tiene la alerta, la notificacion igual
+     * informa la decision (la sincronizacion con Oracle la reconciliara).
+     */
+    private void procesarEstadoBanco(Map<String, String> datos) {
+        String idAlerta = datos.get("id_alerta") == null ? "" : datos.get("id_alerta").trim();
+        String estado   = datos.get("estado") == null ? "" : datos.get("estado").trim();
+        String evento   = datos.get("evento") == null ? "" : datos.get("evento").trim();
+        String detalle  = datos.get("detalle") == null ? "" : datos.get("detalle").trim();
+        if (idAlerta.isEmpty() || estado.isEmpty()) {
+            Log.w(ETIQUETA, "push ESTADO sin id_alerta/estado; se descarta");
+            return;
+        }
+
+        boolean cambio = new AlertasRepositorio(this).aplicarEstado(idAlerta, estado);
+        Log.i(ETIQUETA, "decision del banco " + idAlerta + " -> " + estado
+                + (cambio ? " (bandeja actualizada)" : " (sin cambios locales)"));
+
+        if (Build.VERSION.SDK_INT >= 33
+                && checkSelfPermission(android.Manifest.permission.POST_NOTIFICATIONS)
+                        != PackageManager.PERMISSION_GRANTED) {
+            return;   // sin permiso: el cambio queda solo en la bandeja
+        }
+        crearCanal();
+
+        boolean desbloqueo = "DESBLOQUEO".equalsIgnoreCase(evento);
+        String titulo = desbloqueo
+                ? "MIDFF: transaccion desbloqueada por el banco"
+                : "MIDFF: alerta bloqueada por el banco";
+        String texto = detalle.isEmpty()
+                ? idAlerta + " ahora esta " + estado
+                : detalle + " (" + idAlerta + ")";
+
+        Intent intencion = new Intent(this, MainActivity.class);
+        intencion.setFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TOP);
+        PendingIntent pendiente = PendingIntent.getActivity(
+                this,
+                idAlerta.hashCode(),
+                intencion,
+                PendingIntent.FLAG_UPDATE_CURRENT | PendingIntent.FLAG_IMMUTABLE);
+
+        NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CANAL_ALERTAS)
+                .setSmallIcon(R.drawable.ic_stat_midff)
+                .setContentTitle(titulo)
+                .setContentText(texto)
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(texto))
+                .setPriority(NotificationCompat.PRIORITY_HIGH)
+                .setCategory(NotificationCompat.CATEGORY_EVENT)
+                .setColor(desbloqueo ? 0xFFC9CED5 : 0xFFFFFFFF)
+                .setAutoCancel(true)
+                .setContentIntent(pendiente);
+
+        NotificationManagerCompat.from(this)
+                .notify(("ESTADO:" + idAlerta).hashCode(), builder.build());
     }
 
     /** Notificacion local con monto, score y clasificacion (RF-10). */

@@ -36,6 +36,7 @@ declare(strict_types=1);
 */
 
 require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'db.php';
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'firebase.php';
 
 date_default_timezone_set('America/Mexico_City');
 
@@ -151,6 +152,49 @@ error_log(sprintf(
     (int) $resultado['id_auditoria'],
     (string) $resultado['fecha_atencion']
 ));
+
+/* -----------------------------------------------------------------------------
+ * 5. AVISO PUSH AL CLIENTE (BIT-027): la decision del banco (bloqueo) se
+ *    refleja en la app en tiempo real. Best-effort como RF-09: ningun fallo
+ *    de FCM altera la respuesta del bloqueo ya persistido en Oracle.
+ * -------------------------------------------------------------------------- */
+$instanteFcm = hrtime(true);
+try {
+    $cnxDueno = midff_db_conectar();
+    $selDueno = $cnxDueno->prepare('SELECT t.id_cliente, t.uid_transaccion'
+                                  . ' FROM ALERTA a'
+                                  . ' JOIN EVALUACION e ON e.id_evaluacion = a.id_evaluacion'
+                                  . ' JOIN TRANSACCION t ON t.id_transaccion = e.id_transaccion'
+                                  . ' WHERE a.id_alerta = :id');
+    $selDueno->execute([':id' => $idAlerta]);
+    $dueno = $selDueno->fetch(PDO::FETCH_ASSOC);
+} catch (PDOException $e) {
+    $dueno = false;
+    error_log('[MIDFF-FCM-ESTADO] no se resolvio el dueno de ' . $alertaId . ': ' . trim($e->getMessage()));
+}
+if (is_array($dueno) && (string) $dueno['ID_CLIENTE'] !== '') {
+    $resumenFcm = midff_fcm_notificar_estado([
+        'evento'         => 'BLOQUEO',
+        'id_alerta'      => $alertaId,
+        'id_transaccion' => (string) $dueno['UID_TRANSACCION'],
+        'id_cliente'     => (string) $dueno['ID_CLIENTE'],
+        'estado'         => 'BLOQUEADA',
+        'decision'       => 'BLOQUEADA',
+        'atendida_por'   => $usuario,
+        'detalle'        => 'El banco bloqueo preventivamente la transaccion '
+                           . (string) $dueno['UID_TRANSACCION'],
+    ]);
+    error_log(sprintf(
+        '[MIDFF-FCM-ESTADO] bloqueo %s cliente=%s dispositivos=%d exitosos=%d fallidos=%d envio_ms=%.1f :: %s',
+        $alertaId,
+        (string) $dueno['ID_CLIENTE'],
+        (int) $resumenFcm['dispositivos'],
+        (int) $resumenFcm['exitosos'],
+        (int) $resumenFcm['fallidos'],
+        (hrtime(true) - $instanteFcm) / 1e6,
+        $resumenFcm['mensaje']
+    ));
+}
 
 responder(200, [
     'ok'             => true,

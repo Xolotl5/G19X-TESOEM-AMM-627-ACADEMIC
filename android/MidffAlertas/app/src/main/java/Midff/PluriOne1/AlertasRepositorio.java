@@ -8,6 +8,7 @@ import org.json.JSONException;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 /**
  * Almacen local de la bandeja de alertas y del token FCM del dispositivo.
@@ -75,25 +76,61 @@ public class AlertasRepositorio {
      * este reflejo solo alimenta la vista (RF-10).
      */
     public synchronized void marcarBloqueada(String idAlerta) {
-        if (idAlerta == null || idAlerta.trim().isEmpty()) {
-            return;
+        aplicarEstado(idAlerta, "BLOQUEADA");
+    }
+
+    /**
+     * BIT-027: aplica a la bandeja local el estado que Oracle reporta para una
+     * alerta (decision del banco: BLOQUEADA al bloquear, ATENDIDA al
+     * desbloquear o aprobar). Alimenta tanto el push de estado en tiempo real
+     * como la sincronizacion con {@code GET /api/v1/estado}.
+     *
+     * @return true si la alerta existia y su estado cambio.
+     */
+    public synchronized boolean aplicarEstado(String idAlerta, String estado) {
+        if (idAlerta == null || idAlerta.trim().isEmpty()
+                || estado == null || estado.trim().isEmpty()) {
+            return false;
         }
+        boolean cambio = false;
         try {
             JSONArray actual = leerArreglo();
             JSONArray nueva  = new JSONArray();
             for (int i = 0; i < actual.length(); i++) {
                 ModeloAlerta alerta = ModeloAlerta.desdeJson(actual.optString(i, null));
                 if (alerta != null) {
-                    if (idAlerta.equals(alerta.idAlerta)) {
-                        alerta.estado = "BLOQUEADA";
+                    if (idAlerta.equals(alerta.idAlerta)
+                            && !estado.trim().equalsIgnoreCase(alerta.estado)) {
+                        alerta.estado = estado.trim();
+                        cambio = true;
                     }
                     nueva.put(alerta.aJson());
                 }
             }
-            preferencias.edit().putString(CLAVE_ALERTAS, nueva.toString()).apply();
+            if (cambio) {
+                preferencias.edit().putString(CLAVE_ALERTAS, nueva.toString()).apply();
+            }
         } catch (JSONException e) {
-            // El reflejo local nunca debe fallar el flujo de bloqueo.
+            // El reflejo local nunca debe fallar el flujo de sincronizacion.
         }
+        return cambio;
+    }
+
+    /**
+     * BIT-027: aplica en lote los estados que reporta Oracle (mapa
+     * id_alerta -> estado). Devuelve cuantas alertas cambiaron.
+     */
+    public synchronized int aplicarEstados(Map<String, String> estados) {
+        if (estados == null || estados.isEmpty()) {
+            return 0;
+        }
+        int cambios = 0;
+        for (Map.Entry<String, String> entrada : estados.entrySet()) {
+            if (aplicarEstado(entrada.getKey(), entrada.getValue())) {
+                cambios++;
+            }
+        }
+        return cambios;
     }
 
     private JSONArray leerArreglo() {

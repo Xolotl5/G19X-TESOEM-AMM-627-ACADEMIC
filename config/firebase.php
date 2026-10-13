@@ -155,9 +155,50 @@ function midff_fcm_endpoint(): string
     return 'https://fcm.googleapis.com/v1/projects/' . midff_fcm_proyecto() . '/messages:send';
 }
 
+/* -----------------------------------------------------------------------------
+ * 2b. CACHE DE ARCHIVO DEL ACCESS_TOKEN (BIT-027)
+ *     php -S no comparte memoria entre peticiones y el canje OAuth2 (firma del
+ *     JWT + round-trip a oauth2.googleapis.com) sumaba 1-3 s a CADA envio: era
+ *     la causa principal de la demora percibida de las alertas. El token se
+ *     persiste en el directorio temporal con 5 min de margen (Google lo emite
+ *     por 3600 s); si el archivo no se puede leer/escribir se cae al
+ *     comportamiento anterior (emitir por peticion, solo mas lento).
+ * -------------------------------------------------------------------------- */
+
+/** Ruta del cache: una por cuenta de servicio (hash de client_email|proyecto). */
+function midff_fcm_ruta_cache_token(array $cuenta): string
+{
+    $semilla = (string) ($cuenta['client_email'] ?? '') . '|' . (string) ($cuenta['project_id'] ?? '');
+    return sys_get_temp_dir() . DIRECTORY_SEPARATOR . 'midff_fcm_token_'
+         . substr(md5($semilla), 0, 12) . '.json';
+}
+
+/** @return array{0:string,1:int}|null par [token, expira] si el cache es legible. */
+function midff_fcm_leer_cache_token(string $ruta): ?array
+{
+    $crudo = @file_get_contents($ruta);
+    if (!is_string($crudo) || $crudo === '') {
+        return null;
+    }
+    $datos = json_decode($crudo, true);
+    if (!is_array($datos) || (string) ($datos['token'] ?? '') === '' || !isset($datos['expira'])) {
+        return null;
+    }
+    return [(string) $datos['token'], (int) $datos['expira']];
+}
+
+function midff_fcm_escribir_cache_token(string $ruta, string $token, int $expira): void
+{
+    @file_put_contents($ruta, json_encode(['token' => $token, 'expira' => $expira]), LOCK_EX);
+}
+
 /**
  * Obtiene (y cachea) un access_token OAuth2 de la cuenta de servicio: firma un
  * JWT RS256 con la clave privada del JSON y lo canjea en token_uri.
+ *
+ * <p>BIT-027: ademas del cache estatico por peticion, existe el cache de
+ * archivo compartido entre peticiones (seccion 2b arriba), que elimina el
+ * round-trip a Google en los envios consecutivos.</p>
  *
  * @return string access_token, o cadena vacia si no se pudo emitir.
  */
@@ -173,6 +214,15 @@ function midff_fcm_access_token(): string
     $cuenta = midff_fcm_cargar_cuenta();
     if ($cuenta === null) {
         return '';
+    }
+
+    // BIT-027: cache de archivo compartido entre peticiones (php -S).
+    $rutaCache = midff_fcm_ruta_cache_token($cuenta);
+    $cacheado  = midff_fcm_leer_cache_token($rutaCache);
+    if ($cacheado !== null && $cacheado[1] > time() + 60) {
+        $token  = $cacheado[0];
+        $expira = $cacheado[1];
+        return $token;
     }
 
     $clavePrivada = (string) ($cuenta['private_key'] ?? '');
@@ -232,7 +282,11 @@ function midff_fcm_access_token(): string
     }
 
     $token  = (string) $respuesta['access_token'];
-    $expira = $ahora + (int) ($respuesta['expires_in'] ?? 3600);
+    // BIT-027: margen de 5 min para nunca usar un token a punto de expirar,
+    // y persistencia en el cache de archivo (vea seccion 2b).
+    $expira = $ahora + max(300, (int) ($respuesta['expires_in'] ?? 3600) - 300);
+    midff_fcm_escribir_cache_token($rutaCache, $token, $expira);
+    error_log(sprintf('[MIDFF-FCM] access_token emitido y cacheado (expira %s)', date('H:i:s', $expira)));
     return $token;
 }
 
@@ -526,6 +580,55 @@ function midff_fcm_payload_sana(array $datos): array
             ],
         ],
     ];
+}
+
+/* -----------------------------------------------------------------------------
+ * 5c. PAYLOAD DE ACTUALIZACION DE ESTADO (decision del banco, BIT-027)
+ *
+ *     Cuando el banco BLOQUEA (POST /api/v1/bloquear) o DESBLOQUEA
+ *     (POST /api/v1/desbloquear) una alerta desde la consola MIDFF.html, el
+ *     cliente debe enterarse en tiempo real: este payload viaja SOLO con data
+ *     (tipo_alerta = ESTADO) y la app actualiza la alerta existente en la
+ *     bandeja en vez de insertar una nueva. Prioridad high: la decision del
+ *     banco sobre un posible fraude es urgente.
+ * -------------------------------------------------------------------------- */
+function midff_fcm_payload_estado(array $datos): array
+{
+    return [
+        'message' => [
+            'token'  => (string) ($datos['token'] ?? ''),
+            'android' => [
+                'priority'     => 'high',
+                'collapse_key' => 'midff_estado_' . substr((string) ($datos['id_alerta'] ?? 'x'), -10),
+            ],
+            'data' => [
+                'tipo_alerta'      => 'ESTADO',
+                'evento'           => (string) ($datos['evento'] ?? ''),   // BLOQUEO | DESBLOQUEO
+                'id_alerta'        => (string) ($datos['id_alerta'] ?? ''),
+                'id_transaccion'   => (string) ($datos['id_transaccion'] ?? ''),
+                'id_cliente'       => (string) ($datos['id_cliente'] ?? ''),
+                'estado'           => (string) ($datos['estado'] ?? ''),   // BLOQUEADA | ATENDIDA
+                'decision'         => (string) ($datos['decision'] ?? ''),
+                'atendida_por'     => (string) ($datos['atendida_por'] ?? ''),
+                'detalle'          => (string) ($datos['detalle'] ?? ''),
+                'origen'           => 'MIDFF-BANCO',
+            ],
+        ],
+    ];
+}
+
+/**
+ * Orquestador del aviso de estado del banco (BIT-027): entrega SOLO a los
+ * dispositivos del dueno de la alerta (mismo filtro por cliente, BIT-017).
+ */
+function midff_fcm_notificar_estado(array $datos): array
+{
+    $idCliente = trim((string) ($datos['id_cliente'] ?? ''));
+    return midff_fcm_enviar_a_dispositivos(static function (string $token) use ($datos): array {
+        $payload          = $datos;
+        $payload['token'] = $token;
+        return midff_fcm_payload_estado($payload);
+    }, $idCliente);
 }
 
 /* -----------------------------------------------------------------------------

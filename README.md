@@ -249,6 +249,8 @@ Guion de ~5 minutos (cumple el criterio 10 del DoD). Requiere: Oracle XE activo 
 
 3. **Transacción ALTO (alerta de fraude):** reuse el ejemplo de `explicacion.txt` §11 (cliente `CLI-003`, monto 15499, 7 operaciones/hora, ubicación e IP distintas) → `score 0.95 · ALTO · BLOQUEADA` con `alerta_id ALR-2026-XXXXXX`.
 
+   **Decisiones del banco en la app (BIT-027):** al Bloquear/Desbloquear desde `MIDFF.html` el cliente recibe un push `ESTADO` en tiempo real (bandeja + notificación "el banco bloqueó/desbloqueó tu transacción") y la app además reconcilia con Oracle al abrirse o retomar foco (`GET /api/v1/estado?id_cliente=...`). El access_token FCM queda cacheado en disco: solo el primer push del día paga el canje OAuth2 (~2 s); los siguientes salen en ~0.2 s.
+
 4. **Push en el teléfono:** la notificación llega en < 2 s con monto, score y clasificación (servidor → Google autenticado por OAuth2). Tóquela para abrir el detalle.
 
 5. **Acción "Bloquear" (HU-MVP-06):** pulse el botón de la pantalla de detalle. La app envía:

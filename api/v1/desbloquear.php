@@ -23,6 +23,7 @@ declare(strict_types=1);
  */
 
 require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'db.php';
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'firebase.php';
 
 date_default_timezone_set('America/Mexico_City');
 
@@ -72,17 +73,25 @@ if (midff_db_driver_disponible() !== 'pdo_oci') {
     responder(500, ['error' => 'sin driver pdo_oci: revise php.ini']);
 }
 
+// Dueno de la alerta para el aviso push de BIT-027 (se captura en la misma
+// consulta bloqueante para no abrir otra ventana de consistencia).
+$clienteDueno = null;
+$trxUid       = '';
+
 try {
     $cnx = midff_db_conectar();
     $cnx->beginTransaction();
 
-    $ver = $cnx->prepare('SELECT e.decision, a.respuesta, a.estado'
+    $ver = $cnx->prepare('SELECT e.decision, a.respuesta, a.estado, t.id_cliente, t.uid_transaccion'
                        . ' FROM ALERTA a'
                        . ' JOIN EVALUACION e ON e.id_evaluacion = a.id_evaluacion'
+                       . ' JOIN TRANSACCION t ON t.id_transaccion = e.id_transaccion'
                        . ' WHERE a.id_alerta = :id'
                        . ' FOR UPDATE');
     $ver->execute([':id' => $idNumerico]);
     $fila = $ver->fetch(PDO::FETCH_ASSOC);
+    $clienteDueno = $fila === false ? null : (string) $fila['ID_CLIENTE'];
+    $trxUid       = $fila === false ? ''   : (string) $fila['UID_TRANSACCION'];
     if ($fila === false) {
         $cnx->rollBack();
         responder(404, ['error' => 'alerta inexistente: ' . $alertaId]);
@@ -124,6 +133,33 @@ try {
 }
 
 error_log(sprintf('[MIDFF-DESBLOQUEO] %s desbloqueo %s (auditoria %d)', $usuario, $alertaId, $idAud));
+
+/* BIT-027: aviso push al cliente — su confirmacion SI_FUI_YO habilito el
+   desbloqueo y el banco lo ejecuto; la app actualiza la bandeja en tiempo real. */
+if ($clienteDueno !== null && $clienteDueno !== '') {
+    $instanteFcm = hrtime(true);
+    $resumenFcm  = midff_fcm_notificar_estado([
+        'evento'         => 'DESBLOQUEO',
+        'id_alerta'      => $alertaId,
+        'id_transaccion' => $trxUid,
+        'id_cliente'     => $clienteDueno,
+        'estado'         => 'ATENDIDA',
+        'decision'       => 'APROBADA',
+        'atendida_por'   => $usuario,
+        'detalle'        => 'El banco desbloqueo la transaccion ' . $trxUid
+                          . ' tras tu confirmacion',
+    ]);
+    error_log(sprintf(
+        '[MIDFF-FCM-ESTADO] desbloqueo %s cliente=%s dispositivos=%d exitosos=%d fallidos=%d envio_ms=%.1f :: %s',
+        $alertaId,
+        $clienteDueno,
+        (int) $resumenFcm['dispositivos'],
+        (int) $resumenFcm['exitosos'],
+        (int) $resumenFcm['fallidos'],
+        (hrtime(true) - $instanteFcm) / 1e6,
+        $resumenFcm['mensaje']
+    ));
+}
 
 responder(200, [
     'ok'           => true,
