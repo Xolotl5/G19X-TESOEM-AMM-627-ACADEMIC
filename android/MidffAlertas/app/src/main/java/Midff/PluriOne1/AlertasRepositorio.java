@@ -25,6 +25,7 @@ public class AlertasRepositorio {
     private static final String CLAVE_ALERTAS   = "alertas";
     private static final String CLAVE_TOKEN     = "token_fcm";
     private static final String CLAVE_USUARIO   = "usuario_oficial";
+    private static final String CLAVE_GUIA      = "guia_vista";
     private static final int    MAX_ALERTAS     = 100;
 
     private final SharedPreferences preferencias;
@@ -160,6 +161,18 @@ public class AlertasRepositorio {
     /** Usuario del oficial usado por el autoregistro del servicio. */
     public static String leerUsuario(Context contexto) {
         return prefs(contexto).getString(CLAVE_USUARIO, "OFICIAL-MOVIL");
+    }
+
+    // -----------------------------------------------------------------------
+    // Guia de bienvenida (BIT-032): una vez por instalacion, no por sesion.
+    // -----------------------------------------------------------------------
+
+    public static boolean guiaVista(Context contexto) {
+        return prefs(contexto).getBoolean(CLAVE_GUIA, false);
+    }
+
+    public static void marcarGuiaVista(Context contexto) {
+        prefs(contexto).edit().putBoolean(CLAVE_GUIA, true).apply();
     }
 
     private static SharedPreferences prefs(Context contexto) {

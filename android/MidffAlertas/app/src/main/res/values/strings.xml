@@ -150,4 +150,11 @@
 
     <!-- BIT-030: baja de cuenta detectada al abrir la app -->
     <string name="cuenta_eliminada">Tu cuenta fue eliminada: se borraron tus datos del servidor</string>
+
+    <!-- BIT-032: guía de bienvenida y estados llanos -->
+    <string name="btn_guia">Guía de inicio</string>
+    <string name="guia_titulo">¡Bienvenido a MIDFF!</string>
+    <string name="guia_entendido">Entendido</string>
+    <string name="guia_cuerpo">Así funciona tu app en 5 pasos:\n\n1) Bandeja: aquí llegan todos tus movimientos; el punto de color indica el riesgo (verde aprobado, amarillo por revisar, rojo posible fraude).\n\n2) Monto: la cifra grande de cada tarjeta es el monto del movimiento; toca la tarjeta para ver el detalle completo.\n\n3) ¿No reconoces un cargo? Ábrelo y responde «No fui yo»: el banco lo revisará y tomará cartas en el asunto.\n\n4) Riesgo alto: el movimiento llega bloqueado; si fuiste tú, confirma con «Sí fui yo» y el banco lo desbloqueará (lo verás como Aprobada).\n\n5) Personaliza: toca tu nombre en la esquina superior izquierda para elegir cómo quieres que la app te llame.\n\nLas decisiones del banco se reflejan aquí automáticamente.</string>
+    <string name="alerta_resuelta">Aprobada: ya no requiere respuesta</string>
 </resources>

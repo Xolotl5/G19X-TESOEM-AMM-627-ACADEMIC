@@ -677,6 +677,16 @@
                     android:textSize="12sp" />
 
                 <androidx.appcompat.widget.AppCompatButton
+                    android:id="@+id/btnGuia"
+                    android:layout_width="match_parent"
+                    android:layout_height="44dp"
+                    android:layout_marginTop="12dp"
+                    android:background="@drawable/btn_cristal_ripple"
+                    android:text="@string/btn_guia"
+                    android:textColor="@color/neon_cian"
+                    android:textSize="12sp" />
+
+                <androidx.appcompat.widget.AppCompatButton
                     android:id="@+id/btnCerrarSesion"
                     android:layout_width="match_parent"
                     android:layout_height="44dp"

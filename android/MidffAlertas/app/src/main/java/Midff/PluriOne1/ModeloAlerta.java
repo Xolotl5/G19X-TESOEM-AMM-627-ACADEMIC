@@ -149,9 +149,12 @@ public class ModeloAlerta {
         }
     }
 
-    /** Cierto para transacciones aprobadas (banda BAJO o decisión APROBADA). */
+    /** Cierto para transacciones aprobadas (banda BAJO o decisión APROBADA).
+     *  BIT-032: también las resueltas a favor (ATENDIDA: confirmadas por el
+     *  cliente o desbloqueadas por el banco) cuentan como aprobadas en la app. */
     public boolean esAprobada() {
         return esSana()
+                || "ATENDIDA".equalsIgnoreCase(estado)
                 || (decision != null && decision.toUpperCase(Locale.US).contains("APROB"));
     }
 
@@ -188,13 +191,15 @@ public class ModeloAlerta {
         return decision == null ? "-" : decision;
     }
 
-    /** Estado de la alerta en lenguaje llano ("Pendiente/Atendida/Bloqueada"). */
+    /** Estado de la alerta en lenguaje llano. BIT-032: una alerta ATENDIDA
+     *  (confirmada por el cliente o desbloqueada por el banco) se muestra como
+     *  "Aprobada"; si el banco la considera fraude queda BLOQUEADA y así se ve. */
     public String estadoAmigable() {
         if (estaBloqueada()) {
             return "Bloqueada";
         }
         if ("ATENDIDA".equalsIgnoreCase(estado)) {
-            return "Atendida";
+            return "Aprobada";
         }
         return "Pendiente";
     }

@@ -54,7 +54,9 @@ public class AdaptadorAlertas extends ArrayAdapter<ModeloAlerta> {
 
             vistaHolder.chipClasificacion.setText(alerta.estaBloqueada()
                     ? alerta.clasificacionAmigable() + " · Bloqueada"
-                    : alerta.clasificacionAmigable());
+                    : (alerta.esAprobada() && !alerta.esSana()
+                            ? alerta.clasificacionAmigable() + " · Aprobada"
+                            : alerta.clasificacionAmigable()));
             vistaHolder.chipClasificacion.setTextColor(colorBanda);
             UtilidadesUi.resplandor(vistaHolder.chipClasificacion,
                     UtilidadesUi.colorGlow(colorBanda), 10f);

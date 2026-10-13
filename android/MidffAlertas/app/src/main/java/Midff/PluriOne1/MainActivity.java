@@ -426,6 +426,7 @@ public class MainActivity extends AppCompatActivity {
             dialogoBloqueo.dismiss();
         }
         actualizarIsla();
+        mostrarGuiaPrimeraVez();   // BIT-032: onboarding tras el desbloqueo
     }
 
     /** Cierra la sesión de Firebase y vuelve al login. */
@@ -506,6 +507,7 @@ public class MainActivity extends AppCompatActivity {
         findViewById(R.id.btnActualizar).setOnClickListener(v -> actualizarBandeja());
         findViewById(R.id.btnLimpiar).setOnClickListener(v -> confirmarLimpiar());
         findViewById(R.id.btnCopiarToken).setOnClickListener(v -> copiarToken());
+        findViewById(R.id.btnGuia).setOnClickListener(v -> mostrarGuia());   // BIT-032
         findViewById(R.id.btnCerrarSesion).setOnClickListener(v -> confirmarCerrarSesion());
     }
 
@@ -814,6 +816,26 @@ public class MainActivity extends AppCompatActivity {
                 })
                 .setNegativeButton(R.string.accion_cancelar, null)
                 .show();
+    }
+
+    /**
+     * BIT-032: guía de primeros pasos para quien recién instala la app. Se
+     * muestra sola la primera vez que se desbloquea (una vez por instalación)
+     * y se puede reabrir con el botón "Guía de inicio" de la pestaña Perfil.
+     */
+    private void mostrarGuia() {
+        new AlertDialog.Builder(this)
+                .setTitle(R.string.guia_titulo)
+                .setMessage(R.string.guia_cuerpo)
+                .setPositiveButton(R.string.guia_entendido, null)
+                .show();
+    }
+
+    private void mostrarGuiaPrimeraVez() {
+        if (!AlertasRepositorio.guiaVista(this)) {
+            AlertasRepositorio.marcarGuiaVista(this);
+            mostrarGuia();
+        }
     }
 
     private void abrirDetalle(int posicion) {

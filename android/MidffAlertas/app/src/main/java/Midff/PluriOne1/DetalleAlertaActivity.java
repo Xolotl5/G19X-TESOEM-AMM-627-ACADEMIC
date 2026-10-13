@@ -82,13 +82,21 @@ public class DetalleAlertaActivity extends AppCompatActivity {
         pintarAnalitica();
         poblarCarrusel();
 
-        // BIT-020/024: el cliente responde a SU alerta. En nivel ALTO (o ya
-        // bloqueada) solo se ofrece "SI FUI YO": al confirmarlo, la consola
-        // habilita el DESBLOQUEO para el administrador.
+        // BIT-020/024/032: el cliente responde a SU alerta cuando aplica:
+        //  * Transaccion sana (riesgo BAJO): NO hay alerta en Oracle y el POST
+        //    daria 404 -> los botones se ocultan (nada que responder).
+        //  * Bloqueada o ya resuelta (ATENDIDA): sin acciones disponibles.
+        //  * En nivel ALTO solo se ofrece "SI FUI YO": al confirmarlo, la
+        //    consola habilita el DESBLOQUEO para el administrador.
         botonNoFui = findViewById(R.id.btnNoFuiYo);
         botonSiFui = findViewById(R.id.btnSiFuiYo);
-        if (alerta.estaBloqueada()) {
-            deshabilitarBotones(getString(R.string.bloqueo_ya));
+        if (alerta.esSana()) {
+            botonNoFui.setVisibility(View.GONE);
+            botonSiFui.setVisibility(View.GONE);
+        } else if (alerta.estaBloqueada() || alerta.esAprobada()) {
+            deshabilitarBotones(alerta.estaBloqueada()
+                    ? getString(R.string.bloqueo_ya)
+                    : getString(R.string.alerta_resuelta));
         } else {
             botonNoFui.setOnClickListener(v -> reportar("NO_FUI_YO"));
             botonSiFui.setOnClickListener(v -> reportar("SI_FUI_YO"));
@@ -209,7 +217,14 @@ public class DetalleAlertaActivity extends AppCompatActivity {
                             deshabilitarBotones(getString(R.string.reporte_ya));
                             Toast.makeText(this, R.string.reporte_ok, Toast.LENGTH_LONG).show();
                         } else {
-                            restaurarBotones();
+                            // BIT-032: si Oracle dice "ya fue reportada" (409),
+                            // los botones se retiran con el aviso en vez de
+                            // restaurarse y repetir el error.
+                            if (mensaje != null && mensaje.contains("ya fue reportada")) {
+                                deshabilitarBotones(getString(R.string.reporte_ya));
+                            } else {
+                                restaurarBotones();
+                            }
                             Toast.makeText(this,
                                     getString(R.string.reporte_fallo, mensaje),
                                     Toast.LENGTH_LONG).show();
