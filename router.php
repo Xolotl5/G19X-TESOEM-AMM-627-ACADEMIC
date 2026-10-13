@@ -99,6 +99,15 @@ if ($ruta === '/api/v1/admin/clientes' || $ruta === '/api/v1/admin/clientes.php'
     return true;
 }
 
+// Baja de cuenta de cliente: purga dispositivos + historial completo y
+// anonimiza la auditoria (lo llama la app cuando Firebase ya no tiene al
+// usuario, BIT-030).
+if ($ruta === '/api/v1/baja' || $ruta === '/api/v1/baja.php') {
+    require __DIR__ . DIRECTORY_SEPARATOR . 'api' . DIRECTORY_SEPARATOR . 'v1'
+          . DIRECTORY_SEPARATOR . 'baja.php';
+    return true;
+}
+
 // Estado en Oracle de las alertas de un cliente: sincronizacion de la bandeja
 // de la app con las decisiones del banco (BIT-027).
 if ($ruta === '/api/v1/estado' || $ruta === '/api/v1/estado.php') {
@@ -128,6 +137,7 @@ if ($ruta === '/' || $ruta === '/api/v1') {
             'POST /api/v1/reportar'      => 'respuesta del cliente a una alerta: NO_FUI_YO / SI_FUI_YO (Post-MVP, BIT-020/024)',
             'POST /api/v1/desbloquear'   => 'desbloqueo por el banco tras SI_FUI_YO del cliente en riesgo ALTO (BIT-024)',
             'GET  /api/v1/estado'        => 'estado en Oracle de las alertas de un cliente (sincronizacion de la app, BIT-027)',
+            'POST /api/v1/baja'          => 'baja de cuenta: purga dispositivos e historial completo y anonimiza auditoria (BIT-030)',
         ],
         'documentacion' => 'docs/contratos/contrato_scoring.md',
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

@@ -10,6 +10,7 @@ import android.graphics.Color;
 import android.app.Dialog;
 import android.os.Build;
 import android.os.Bundle;
+import android.util.Log;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -28,6 +29,8 @@ import androidx.core.app.ActivityCompat;
 import androidx.core.content.ContextCompat;
 
 import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseAuthInvalidUserException;
+import com.google.firebase.auth.FirebaseUser;
 import com.google.firebase.messaging.FirebaseMessaging;
 
 import java.util.ArrayList;
@@ -104,6 +107,11 @@ public class MainActivity extends AppCompatActivity {
             return;
         }
 
+        // BIT-030: si la cuenta fue BORRADA desde Firebase (consola/soporte),
+        // esta app lo detecta aqui y purga sus datos del servidor antes de
+        // cerrar la sesion local: el usuario desaparece de todos lados.
+        verificarCuentaFirebase();
+
         setContentView(R.layout.activity_main);
 
         repositorio = new AlertasRepositorio(this);
@@ -131,6 +139,45 @@ public class MainActivity extends AppCompatActivity {
         ejecutarDescubrimiento(true);
         registroAutomatico();
         recargarBandeja();
+    }
+
+    /**
+     * BIT-030: verifica contra Firebase que la cuenta persistida siga viva.
+     * Si fue eliminada desde la consola de Firebase, el SDK local la tiene en
+     * cache pero reload() lanza FirebaseAuthInvalidUserException: en ese caso
+     * se purgan TODOS sus datos del servidor (POST /api/v1/baja) y se regresa
+     * al login con la sesion local cerrada.
+     */
+    private void verificarCuentaFirebase() {
+        FirebaseUser usuario = FirebaseAuth.getInstance().getCurrentUser();
+        if (usuario == null) {
+            return;   // sesion local huerfana: el login de LoginActivity la repara
+        }
+        usuario.reload().addOnFailureListener(error -> {
+            if (error instanceof FirebaseAuthInvalidUserException) {
+                Log.w("MIDFF-Firebase", "la cuenta ya no existe en Firebase: purgando el servidor");
+                darDeBajaYCerrarSesion();
+            }
+        });
+    }
+
+    /** Purga el servidor y cierra la sesion local (flujo de baja, BIT-030). */
+    private void darDeBajaYCerrarSesion() {
+        final String idCliente = SesionCliente.leerIdCliente(this);
+        DescubrimientoApi.asegurar(this, (apiOk, urlBase, motivo) -> {
+            if (apiOk && idCliente != null && !idCliente.trim().isEmpty()) {
+                ApiClient.darDeBaja(idCliente.trim(), (ok, mensaje) ->
+                        Log.i("MIDFF-Firebase", "baja remota " + (ok ? "OK" : "FALLO") + ": " + mensaje));
+            }
+            FirebaseAuth.getInstance().signOut();
+            SesionCliente.cerrar(MainActivity.this);
+            runOnUiThread(() -> {
+                Toast.makeText(MainActivity.this, R.string.cuenta_eliminada, Toast.LENGTH_LONG).show();
+                startActivity(new Intent(MainActivity.this, LoginActivity.class)
+                        .addFlags(Intent.FLAG_ACTIVITY_NEW_TASK | Intent.FLAG_ACTIVITY_CLEAR_TASK));
+                finish();
+            });
+        });
     }
 
     @Override

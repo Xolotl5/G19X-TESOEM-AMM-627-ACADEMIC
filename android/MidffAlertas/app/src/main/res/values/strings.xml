@@ -147,4 +147,7 @@
     <string name="nombre_guardar">Guardar</string>
     <string name="nombre_guardado">Listo: te veremos como %1$s</string>
     <string name="nombre_vacio_mensaje">Se mostrará tu correo de cuenta</string>
+
+    <!-- BIT-030: baja de cuenta detectada al abrir la app -->
+    <string name="cuenta_eliminada">Tu cuenta fue eliminada: se borraron tus datos del servidor</string>
 </resources>

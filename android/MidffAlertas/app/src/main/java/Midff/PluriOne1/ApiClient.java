@@ -218,6 +218,25 @@ public final class ApiClient {
         }).start();
     }
 
+    /**
+     * POST /api/v1/baja (BIT-030): purga del servidor TODOS los datos del
+     * cliente (dispositivos, transacciones, evaluaciones y alertas) y
+     * anonimiza su seudonimo en AUDITORIA. La app lo llama cuando detecta
+     * que la cuenta ya no existe en Firebase Auth.
+     */
+    public static void darDeBaja(final String idCliente, final Callback callback) {
+        try {
+            JSONObject cuerpo = new JSONObject();
+            cuerpo.put("id_cliente", idCliente);
+            post("/api/v1/baja", cuerpo.toString().getBytes(StandardCharsets.UTF_8), callback);
+        } catch (Exception e) {
+            Log.e(ETIQUETA, "no fue posible armar el cuerpo de la baja", e);
+            if (callback != null) {
+                callback.terminado(false, mensajeDeExcepcion(e));
+            }
+        }
+    }
+
     private static String leer(InputStream entrada) throws Exception {
         if (entrada == null) {
             return "";
