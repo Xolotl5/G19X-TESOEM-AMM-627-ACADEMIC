@@ -304,6 +304,22 @@
                     android:layout_height="wrap_content"
                     android:orientation="horizontal">
 
+                    <androidx.appcompat.widget.AppCompatButton
+                        android:id="@+id/btnActualizarAlertas"
+                        android:layout_width="wrap_content"
+                        android:layout_height="wrap_content"
+                        android:layout_marginEnd="10dp"
+                        android:background="@drawable/chip_cristal_ripple"
+                        android:paddingBottom="9dp"
+                        android:paddingEnd="14dp"
+                        android:paddingStart="14dp"
+                        android:paddingTop="9dp"
+                        android:text="@string/btn_actualizar"
+                        android:textAllCaps="false"
+                        android:textColor="@color/neon_cian"
+                        android:textSize="12sp"
+                        android:textStyle="bold" />
+
                     <LinearLayout
                         android:id="@+id/chipTodas"
                         android:layout_width="wrap_content"
@@ -621,17 +637,6 @@
                             android:textColor="@color/neon_cian"
                             android:textSize="12sp"
                             android:textStyle="bold" />
-
-                        <androidx.appcompat.widget.AppCompatButton
-                            android:id="@+id/btnActualizar"
-                            android:layout_width="0dp"
-                            android:layout_height="44dp"
-                            android:layout_marginEnd="6dp"
-                            android:layout_weight="1"
-                            android:background="@drawable/btn_cristal_ripple"
-                            android:text="@string/btn_actualizar"
-                            android:textColor="@color/texto_titulo"
-                            android:textSize="12sp" />
 
                         <androidx.appcompat.widget.AppCompatButton
                             android:id="@+id/btnLimpiar"

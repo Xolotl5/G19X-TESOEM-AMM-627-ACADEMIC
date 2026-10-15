@@ -504,7 +504,7 @@ public class MainActivity extends AppCompatActivity {
 
         btnRegistrar = findViewById(R.id.btnRegistrar);
         btnRegistrar.setOnClickListener(v -> registrarDispositivo());
-        findViewById(R.id.btnActualizar).setOnClickListener(v -> actualizarBandeja());
+        findViewById(R.id.btnActualizarAlertas).setOnClickListener(v -> actualizarBandeja());
         findViewById(R.id.btnLimpiar).setOnClickListener(v -> confirmarLimpiar());
         findViewById(R.id.btnCopiarToken).setOnClickListener(v -> copiarToken());
         findViewById(R.id.btnGuia).setOnClickListener(v -> mostrarGuia());   // BIT-032
@@ -819,16 +819,13 @@ public class MainActivity extends AppCompatActivity {
     }
 
     /**
-     * BIT-032: guía de primeros pasos para quien recién instala la app. Se
-     * muestra sola la primera vez que se desbloquea (una vez por instalación)
+     * BIT-032/033: guía de primeros pasos para quien recién instala la app.
+     * Se muestra sola la primera vez que se desbloquea (una vez por instalación)
      * y se puede reabrir con el botón "Guía de inicio" de la pestaña Perfil.
+     * BIT-033: ahora es un asistente interactivo (GuiaInicio).
      */
     private void mostrarGuia() {
-        new AlertDialog.Builder(this)
-                .setTitle(R.string.guia_titulo)
-                .setMessage(R.string.guia_cuerpo)
-                .setPositiveButton(R.string.guia_entendido, null)
-                .show();
+        GuiaInicio.mostrar(this);
     }
 
     private void mostrarGuiaPrimeraVez() {
