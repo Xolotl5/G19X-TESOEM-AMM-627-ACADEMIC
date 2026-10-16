@@ -49,7 +49,7 @@
         android:paddingEnd="10dp"
         android:paddingStart="10dp"
         android:paddingTop="3dp"
-        android:shadowColor="#66C9CED5"
+        android:shadowColor="#66C9B8FF"
         android:shadowDx="0"
         android:shadowDy="0"
         android:shadowRadius="10"

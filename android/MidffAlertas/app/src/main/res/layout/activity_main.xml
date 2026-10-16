@@ -80,7 +80,7 @@
                 android:layout_height="wrap_content"
                 android:layout_marginStart="6dp"
                 android:text="@string/isla_estado_conectando"
-                android:textColor="#CDCDD6"
+                android:textColor="#CBBDF0"
                 android:textSize="11sp" />
         </LinearLayout>
     </LinearLayout>
@@ -130,7 +130,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
                             android:fontFamily="sans-serif-medium"
-                            android:shadowColor="#66C9CED5"
+                            android:shadowColor="#66C9B8FF"
                             android:shadowDx="0"
                             android:shadowDy="0"
                             android:shadowRadius="18"
@@ -173,7 +173,7 @@
                             android:layout_height="wrap_content"
                             android:layout_marginTop="2dp"
                             android:fontFamily="sans-serif-medium"
-                            android:shadowColor="#66C9CED5"
+                            android:shadowColor="#66C9B8FF"
                             android:shadowDx="0"
                             android:shadowDy="0"
                             android:shadowRadius="18"
@@ -268,7 +268,7 @@
                         android:layout_width="match_parent"
                         android:layout_height="wrap_content"
                         android:layout_marginTop="6dp"
-                        android:textColor="#CDCDD6"
+                        android:textColor="#CBBDF0"
                         android:textSize="12sp" />
                 </LinearLayout>
 

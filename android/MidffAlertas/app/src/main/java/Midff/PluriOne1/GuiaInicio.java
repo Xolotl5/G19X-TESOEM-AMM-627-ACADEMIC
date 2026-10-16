@@ -59,7 +59,7 @@ public final class GuiaInicio {
 
         descripcion = new TextView(actividad);
         descripcion.setTextSize(14f);
-        descripcion.setTextColor(0xFFA0A0AB);
+        descripcion.setTextColor(0xFFAEA3C7);
         descripcion.setGravity(Gravity.CENTER);
         descripcion.setLineSpacing(dp(3), 1f);
         LinearLayout.LayoutParams pDesc = new LinearLayout.LayoutParams(MATCH, WRAP);
@@ -192,11 +192,11 @@ public final class GuiaInicio {
                 avatar.setText("TÚ");
                 avatar.setGravity(Gravity.CENTER);
                 avatar.setTypeface(Typeface.DEFAULT_BOLD);
-                avatar.setTextColor(0xFF0B0C0E);
+                avatar.setTextColor(0xFF0A0812);
                 avatar.setTextSize(16f);
                 GradientDrawable circulo = new GradientDrawable();
                 circulo.setShape(GradientDrawable.OVAL);
-                circulo.setColor(0xFFC9CED5);
+                circulo.setColor(0xFF9F7BFF);
                 avatar.setBackground(circulo);
                 LinearLayout.LayoutParams pAvatar = new LinearLayout.LayoutParams(dp(58), dp(58));
                 pAvatar.bottomMargin = dp(8);
@@ -226,7 +226,7 @@ public final class GuiaInicio {
         TextView etiqueta = new TextView(actividad);
         etiqueta.setText(texto);
         etiqueta.setTextSize(14f);
-        etiqueta.setTextColor(0xFFE9EBEE);
+        etiqueta.setTextColor(0xFFE6DEFA);
         fila.addView(etiqueta, new LinearLayout.LayoutParams(WRAP, WRAP));
 
         LinearLayout.LayoutParams pFila = new LinearLayout.LayoutParams(WRAP, WRAP);
@@ -248,7 +248,7 @@ public final class GuiaInicio {
         TextView v = new TextView(actividad);
         v.setText(texto);
         v.setTextSize(12f);
-        v.setTextColor(0xFF8A8A95);
+        v.setTextColor(0xFF8F84AD);
         v.setGravity(Gravity.CENTER);
         return v;
     }
@@ -286,10 +286,10 @@ public final class GuiaInicio {
         fondo.setShape(GradientDrawable.RECTANGLE);
         fondo.setCornerRadius(dp(22));
         if (primario) {
-            v.setTextColor(0xFF0B0C0E);
+            v.setTextColor(0xFF0A0812);
             fondo.setColor(0xFFFFFFFF);
         } else {
-            v.setTextColor(0xFF9BA1AA);
+            v.setTextColor(0xFFC9B8FF);
             fondo.setColor(0x00000000);
             fondo.setStroke(dp(1), 0x33FFFFFF);
         }

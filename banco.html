@@ -5,14 +5,14 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Banco Ficticio — MIDFF</title>
 <style>
-:root{--bg:#0a0b0d;--panel:#141519;--text:#e9ebee;--muted:#9aa0a8;--ok:#c9ced5;--warn:#9ba1aa;--alto:#ffffff;--border:#26292f;--input:#0d0e11}
+:root{--bg:#0a0812;--panel:#170f26;--text:#e6defa;--muted:#a99bd6;--ok:#c9b8ff;--warn:#9f7bff;--alto:#ffffff;--border:#2b2240;--input:#0e0a18}
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,"Segoe UI",Roboto,sans-serif;background:var(--bg);color:var(--text)}
 .contenedor{max-width:860px;margin:0 auto;padding:24px}
 h1{font-size:22px;margin:0 0 4px}
 .sub{color:var(--muted);font-size:13px;margin-bottom:20px}
 .tarjeta{background:var(--panel);border:1px solid var(--border);border-radius:12px;padding:18px;margin-bottom:18px}
-.tarjeta h2{font-size:15px;margin:0 0 12px;color:#cbd5e1}
+.tarjeta h2{font-size:15px;margin:0 0 12px;color:#cbbdf0}
 .campo{margin-bottom:12px}
 .campo label{display:block;font-size:12px;color:var(--muted);margin-bottom:4px}
 .campo input,.campo select{width:100%;padding:9px 10px;background:var(--input);border:1px solid var(--border);border-radius:8px;color:var(--text);font-size:14px}
@@ -20,24 +20,24 @@ h1{font-size:22px;margin:0 0 4px}
 @media(max-width:600px){.rejilla{grid-template-columns:1fr}}
 .botones{display:flex;flex-wrap:wrap;gap:8px;margin-bottom:14px}
 button{border:0;border-radius:8px;padding:10px 14px;font-size:13px;cursor:pointer;font-weight:600;color:#fff}
-.btn-sana{background:#23262c}
-.btn-media{background:#33373d}
-.btn-alta{background:#ffffff;color:#0a0b0d}
+.btn-sana{background:#28203a}
+.btn-media{background:#3a2f55}
+.btn-alta{background:#ffffff;color:#0a0812}
 .btn-aleatoria{background:#2a2d33}
-.btn-enviar{background:#d7dbe1;color:#0a0b0d;width:100%;font-size:15px}
+.btn-enviar{background:#d4c2ff;color:#0a0812;width:100%;font-size:15px}
 .btn-enviar:disabled{opacity:.5;cursor:not-allowed}
-.respuesta{background:#0b1220;border:1px solid var(--border);border-radius:8px;padding:14px;font-family:ui-monospace,Consolas,monospace;font-size:13px;white-space:pre-wrap;word-break:break-word;min-height:60px}
+.respuesta{background:#0e0b1c;border:1px solid var(--border);border-radius:8px;padding:14px;font-family:ui-monospace,Consolas,monospace;font-size:13px;white-space:pre-wrap;word-break:break-word;min-height:60px}
 .bajo{border-left:4px solid var(--ok)}
 .medio{border-left:4px solid var(--warn)}
 .alto{border-left:4px solid var(--alto)}
 .historial{list-style:none;margin:0;padding:0}
 .historial li{padding:10px 12px;border-bottom:1px solid var(--border);font-size:13px;display:flex;justify-content:space-between;gap:10px;align-items:center}
 .historial li:last-child{border-bottom:0}
-.estado-bajo{color:#c9ced5}.estado-medio{color:#9ba1aa}.estado-alto{color:#ffffff}
+.estado-bajo{color:#c9b8ff}.estado-medio{color:#9f7bff}.estado-alto{color:#ffffff}
 .config{display:flex;gap:10px;align-items:flex-end;flex-wrap:wrap}
 .config .campo{flex:1;min-width:180px;margin-bottom:0}
 .nota{font-size:12px;color:var(--muted);margin-top:10px}
-code{background:#0b1220;padding:1px 5px;border-radius:4px}
+code{background:#0e0b1c;padding:1px 5px;border-radius:4px}
 </style>
 </head>
 <body>

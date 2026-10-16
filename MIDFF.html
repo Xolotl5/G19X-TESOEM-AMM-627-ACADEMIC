@@ -5,20 +5,20 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>MIDFF · Consola del Banco</title>
 <style>
-:root{--bg:#0a0b0d;--panel:#141519;--panel2:#101114;--text:#e9ebee;--muted:#9aa0a8;--ok:#c9ced5;--warn:#9ba1aa;--alto:#ffffff;--brand:#ffffff;--border:#26292f;--input:#0d0e11}
+:root{--bg:#0a0812;--panel:#170f26;--panel2:#150f22;--text:#e6defa;--muted:#a99bd6;--ok:#c9b8ff;--warn:#9f7bff;--alto:#ffffff;--brand:#ffffff;--border:#2b2240;--input:#0e0a18}
 *{box-sizing:border-box}
 body{margin:0;font-family:system-ui,"Segoe UI",Roboto,sans-serif;background:radial-gradient(1200px 600px at 80% -10%,#ffffff0a,transparent),var(--bg);color:var(--text);min-height:100vh}
 .contenedor{max-width:1180px;margin:0 auto;padding:22px}
 h1{font-size:20px;margin:0}
 .sub{color:var(--muted);font-size:12.5px;margin-top:2px}
 .tarjeta{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--border);border-radius:14px;padding:18px;margin-bottom:16px}
-.tarjeta h2{font-size:14px;margin:0 0 12px;color:#cfe0f5;letter-spacing:.4px;text-transform:uppercase}
+.tarjeta h2{font-size:14px;margin:0 0 12px;color:#d9ccff;letter-spacing:.4px;text-transform:uppercase}
 label{display:block;font-size:12px;color:var(--muted);margin:10px 0 4px}
 input,select{width:100%;padding:10px 11px;background:var(--input);border:1px solid var(--border);border-radius:9px;color:var(--text);font-size:14px}
-button{border:0;border-radius:9px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;color:#0a0b0d;background:var(--brand)}
+button{border:0;border-radius:9px;padding:10px 16px;font-size:13px;font-weight:600;cursor:pointer;color:#0a0812;background:var(--brand)}
 button:disabled{opacity:.5;cursor:not-allowed}
-button.secundario{background:#23262c;color:#dfe3e8}
-button.peligro{background:#d7dbe1;color:#0a0b0d}
+button.secundario{background:#28203a;color:#e0d9fb}
+button.peligro{background:#d4c2ff;color:#0a0812}
 button.mini{padding:5px 10px;font-size:12px}
 .mensaje{font-size:12.5px;min-height:16px;margin-top:8px}
 .error{color:var(--alto)}.ok{color:var(--ok)}
@@ -26,17 +26,17 @@ button.mini{padding:5px 10px;font-size:12px}
 #pantallaLogin{display:flex;align-items:center;justify-content:center;min-height:92vh}
 #cajaLogin{width:380px;background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--border);border-radius:16px;padding:26px;box-shadow:0 20px 60px #0009}
 .logo{display:flex;gap:10px;align-items:center;margin-bottom:6px}
-.logo .escudo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#c9ced5,#8a9099);display:flex;align-items:center;justify-content:center;font-size:19px;flex:none}
+.logo .escudo{width:38px;height:38px;border-radius:10px;background:linear-gradient(135deg,#c9b8ff,#8f84ad);display:flex;align-items:center;justify-content:center;font-size:19px;flex:none}
 header{display:flex;justify-content:space-between;align-items:center;gap:12px;margin-bottom:16px;flex-wrap:wrap}
 .chips{display:flex;gap:8px;align-items:center;flex-wrap:wrap}
-.chip{background:#1b1e24;border:1px solid var(--border);border-radius:999px;padding:5px 12px;font-size:12px;color:#c9ced5}
+.chip{background:#201830;border:1px solid var(--border);border-radius:999px;padding:5px 12px;font-size:12px;color:#c9b8ff}
 .chip b{color:#fff}
 .vivo{display:inline-flex;align-items:center;gap:6px}
 .vivo::before{content:'';width:8px;height:8px;border-radius:50%;background:#ffffff;box-shadow:0 0 8px #ffffffcc;animation:pulso 1.6s infinite}
 @keyframes pulso{50%{opacity:.35}}
 nav.tabs{display:flex;gap:6px;margin-bottom:16px;flex-wrap:wrap}
-nav.tabs button{background:#1b1e24;color:#c9ced5;border:1px solid var(--border)}
-nav.tabs button.activo{background:var(--brand);color:#06121f;border-color:transparent}
+nav.tabs button{background:#201830;color:#c9b8ff;border:1px solid var(--border)}
+nav.tabs button.activo{background:var(--brand);color:#0c0a1a;border-color:transparent}
 .kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(160px,1fr));gap:12px;margin-bottom:16px}
 .kpi{background:linear-gradient(180deg,var(--panel),var(--panel2));border:1px solid var(--border);border-radius:12px;padding:14px}
 .kpi .titulo{font-size:11px;color:var(--muted);text-transform:uppercase;letter-spacing:.6px}
@@ -49,13 +49,13 @@ th{color:var(--muted);text-align:left;font-size:11px;text-transform:uppercase;le
 td{padding:9px 10px;border-bottom:1px solid #1b2942;vertical-align:middle}
 tr:last-child td{border-bottom:0}
 .tag{display:inline-block;padding:2px 9px;border-radius:999px;font-size:11px;font-weight:700}
-.tag-bajo{background:#1c1f24;color:#c9ced5}.tag-medio{background:#24272d;color:#a7adb6}.tag-alto{background:#ffffff;color:#0a0b0d}
-.tag-pend{background:#2a2d33;color:#d7dbe1}.tag-aten{background:#1c1f24;color:#c9ced5}
+.tag-bajo{background:#211932;color:#c9b8ff}.tag-medio{background:#292039;color:#b3a7e0}.tag-alto{background:#ffffff;color:#0a0812}
+.tag-pend{background:#2a2d33;color:#d4c2ff}.tag-aten{background:#211932;color:#c9b8ff}
 .puntaje{font-family:ui-monospace,Consolas,monospace;font-weight:700}
 .serie{display:flex;align-items:flex-end;gap:3px;height:120px;margin-top:8px}
 .serie .col{flex:1;display:flex;flex-direction:column;justify-content:flex-end;gap:2px;height:100%}
 .serie .barra{border-radius:3px 3px 0 0;min-height:2px}
-.serie .b-bajo{background:#c9ced566}.serie .b-medio{background:#9ba1aa99}.serie .b-alto{background:#ffffffdd}
+.serie .b-bajo{background:#c9b8ff66}.serie .b-medio{background:#9f7bff99}.serie .b-alto{background:#ffffffdd}
 .ejes{display:flex;justify-content:space-between;color:var(--muted);font-size:10.5px;margin-top:4px}
 .filtros{display:grid;grid-template-columns:1.4fr 1fr 1fr 1fr auto;gap:10px;align-items:end}
 @media(max-width:800px){.filtros{grid-template-columns:1fr 1fr}}

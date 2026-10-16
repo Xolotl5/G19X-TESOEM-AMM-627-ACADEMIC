@@ -77,7 +77,7 @@
                     android:layout_width="wrap_content"
                     android:layout_height="wrap_content"
                     android:fontFamily="sans-serif-medium"
-                    android:shadowColor="#66C9CED5"
+                    android:shadowColor="#66C9B8FF"
                     android:shadowDx="0"
                     android:shadowDy="0"
                     android:shadowRadius="22"
@@ -169,7 +169,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:layout_marginTop="4dp"
-                android:shadowColor="#66C9CED5"
+                android:shadowColor="#66C9B8FF"
                 android:shadowDx="0"
                 android:shadowDy="0"
                 android:shadowRadius="10"
@@ -296,7 +296,7 @@
                 android:layout_width="match_parent"
                 android:layout_height="wrap_content"
                 android:fontFamily="sans-serif-medium"
-                android:shadowColor="#66C9CED5"
+                android:shadowColor="#66C9B8FF"
                 android:shadowDx="0"
                 android:shadowDy="0"
                 android:shadowRadius="16"
@@ -428,6 +428,33 @@
                     android:layout_height="wrap_content"
                     android:textColor="@color/texto_secundario"
                     android:textSize="13sp" />
+            </LinearLayout>
+
+            <!-- BIT-034 (XAI): la razon en lenguaje llano de la alerta -->
+            <LinearLayout
+                android:id="@+id/filaMotivo"
+                android:layout_width="match_parent"
+                android:layout_height="wrap_content"
+                android:layout_marginTop="8dp"
+                android:orientation="horizontal"
+                android:visibility="gone">
+
+                <TextView
+                    style="@style/EtiquetaDetalle"
+                    android:layout_width="0dp"
+                    android:layout_height="wrap_content"
+                    android:layout_weight="1"
+                    android:text="@string/etiqueta_motivo" />
+
+                <TextView
+                    android:id="@+id/txtValorMotivo"
+                    android:layout_width="wrap_content"
+                    android:layout_height="wrap_content"
+                    android:layout_marginStart="12dp"
+                    android:gravity="end"
+                    android:textColor="@color/neon_purpura"
+                    android:textSize="13sp"
+                    android:textStyle="bold" />
             </LinearLayout>
 
             <LinearLayout

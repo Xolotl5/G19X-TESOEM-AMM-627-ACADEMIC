@@ -41,6 +41,7 @@ public class AdaptadorAlertas extends ArrayAdapter<ModeloAlerta> {
             vistaHolder.puntoRiesgo = vista.findViewById(R.id.puntoRiesgo);
             vistaHolder.monto = vista.findViewById(R.id.txtItemMonto);
             vistaHolder.titulo = vista.findViewById(R.id.txtItemTitulo);
+            vistaHolder.motivo = vista.findViewById(R.id.txtItemMotivo);
             vistaHolder.detalle = vista.findViewById(R.id.txtItemDetalle);
             vistaHolder.fecha = vista.findViewById(R.id.txtItemFecha);
             vista.setTag(vistaHolder);
@@ -69,6 +70,9 @@ public class AdaptadorAlertas extends ArrayAdapter<ModeloAlerta> {
                     UtilidadesUi.colorGlow(colorBanda), 14f);
 
             vistaHolder.titulo.setText(alerta.tituloTarjeta());
+            // BIT-034 (XAI): la razon morada bajo el titulo (solo si existe).
+            vistaHolder.motivo.setText(alerta.tieneMotivo() ? alerta.motivo : "");
+            vistaHolder.motivo.setVisibility(alerta.tieneMotivo() ? View.VISIBLE : View.GONE);
             vistaHolder.detalle.setText("Transacción " + alerta.idTransaccion
                     + " · Score " + alerta.score);
             vistaHolder.fecha.setText(alerta.fechaRecepcion());
@@ -98,6 +102,7 @@ public class AdaptadorAlertas extends ArrayAdapter<ModeloAlerta> {
         View puntoRiesgo;
         TextView monto;
         TextView titulo;
+        TextView motivo;
         TextView detalle;
         TextView fecha;
     }

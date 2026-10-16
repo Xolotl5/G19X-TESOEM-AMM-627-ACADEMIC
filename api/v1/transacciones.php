@@ -298,6 +298,39 @@ if (!is_numeric($score) || (float) $score < 0.0 || (float) $score > 1.0
     fallaInterna('la salida del motor no cumple el contrato (score/clasificacion/decision)');
 }
 $score = (float) $score;
+
+/* -----------------------------------------------------------------------------
+ * 5b. MOTIVO EXPLICATIVO (XAI, BIT-034): frases en lenguaje llano derivadas
+ *     de las variables auditable del motor (RF-08) que viajan en el push y
+ *     en la tarjeta de la app: el cliente ve POR QUE su transaccion llamo
+ *     la atencion ("Monto 12.9x tu habitual · Desde una ubicacion distinta").
+ *     Es IA explicable aplicada al usuario final: el scoring sigue intacto.
+ * -------------------------------------------------------------------------- */
+$motivos = [];
+$montoV  = is_array($variables['monto'] ?? null) ? $variables['monto'] : [];
+$ratio   = isset($montoV['ratio']) && is_numeric($montoV['ratio'])
+             ? (float) $montoV['ratio'] : null;
+if ($ratio !== null && $ratio >= 1.5) {
+    $motivos[] = sprintf('Monto %.1fx tu habitual', $ratio);
+}
+$frecV   = is_array($variables['frecuencia'] ?? null) ? $variables['frecuencia'] : [];
+$txHora  = isset($frecV['entrada']) && is_numeric($frecV['entrada'])
+             ? (int) $frecV['entrada'] : null;
+if ($txHora !== null && $txHora > 2) {
+    $motivos[] = sprintf('%d operaciones en la ultima hora', $txHora);
+}
+$ubiV = is_array($variables['ubicacion_ip'] ?? null) ? $variables['ubicacion_ip'] : [];
+if (!empty($ubiV['ubicacion_distinta'])) {
+    $motivos[] = 'Desde una ubicacion distinta';
+}
+if (!empty($ubiV['ip_distinta'])) {
+    $motivos[] = 'Desde otro dispositivo o red';
+}
+if ($motivos === [] && $datosFaltantes !== []) {
+    $motivos[] = 'Sin historial suficiente para comparar';
+}
+$motivo = $motivos === [] ? 'Dentro de tu patron habitual' : implode(' · ', $motivos);
+
 /* -----------------------------------------------------------------------------
  * 6. PERSISTENCIA ATOMICA EN ORACLE XE (RF-07 / RF-08 / RNF-05 / HU-MVP-04)
  * -------------------------------------------------------------------------- */
@@ -358,6 +391,7 @@ if ($alertaId !== null) {
         'score'            => $score,
         'clasificacion'    => $clasificacion,
         'decision'         => $decision,
+        'motivo'           => $motivo,
         'fecha_evaluacion' => $fechaHoraIso,
     ]);
     error_log(sprintf(
@@ -379,6 +413,7 @@ if ($alertaId !== null) {
         'score'            => $score,
         'clasificacion'    => $clasificacion,
         'decision'         => $decision,
+        'motivo'           => $motivo,
         'fecha_evaluacion' => $fechaHoraIso,
     ]);
     error_log(sprintf(

@@ -197,8 +197,11 @@ public class NotificacionFcmService extends FirebaseMessagingService {
         NotificationCompat.Builder builder = new NotificationCompat.Builder(this, CANAL_ALERTAS)
                 .setSmallIcon(R.drawable.ic_stat_midff)
                 .setContentTitle(alerta.tituloNotificacion())
-                .setContentText(alerta.detalleCorto())
-                .setStyle(new NotificationCompat.BigTextStyle().bigText(alerta.detalleLargo()))
+                .setContentText(alerta.tieneMotivo() ? alerta.motivo : alerta.detalleCorto())
+                .setStyle(new NotificationCompat.BigTextStyle().bigText(
+                        alerta.tieneMotivo()
+                                ? alerta.motivo + "\n" + alerta.detalleLargo()
+                                : alerta.detalleLargo()))
                 .setPriority(sana ? NotificationCompat.PRIORITY_DEFAULT : NotificationCompat.PRIORITY_HIGH)
                 .setCategory(sana ? NotificationCompat.CATEGORY_STATUS : NotificationCompat.CATEGORY_ALARM)
                 .setColor(sana ? 0xFF81C99B

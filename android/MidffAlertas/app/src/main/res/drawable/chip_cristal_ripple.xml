@@ -1,6 +1,6 @@
 <?xml version="1.0" encoding="utf-8"?>
 <!-- Chip de cristal con feedback táctil (filtros de la bandeja) -->
 <ripple xmlns:android="http://schemas.android.com/apk/res/android"
-    android:color="#33C9CED5">
+    android:color="#33C9B8FF">
     <item android:drawable="@drawable/chip_cristal" />
 </ripple>

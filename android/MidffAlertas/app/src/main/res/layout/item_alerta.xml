@@ -45,7 +45,7 @@
             android:layout_width="wrap_content"
             android:layout_height="wrap_content"
             android:fontFamily="sans-serif-medium"
-            android:shadowColor="#66C9CED5"
+            android:shadowColor="#66C9B8FF"
             android:shadowDx="0"
             android:shadowDy="0"
             android:shadowRadius="12"
@@ -64,6 +64,17 @@
         android:textAppearance="?attr/textAppearanceTitleMedium"
         android:textColor="@color/texto_titulo"
         android:textStyle="bold" />
+
+    <!-- BIT-034 (XAI): por que el motor marco esta transaccion -->
+    <TextView
+        android:id="@+id/txtItemMotivo"
+        android:layout_width="match_parent"
+        android:layout_height="wrap_content"
+        android:layout_marginTop="3dp"
+        android:ellipsize="end"
+        android:maxLines="2"
+        android:textAppearance="?attr/textAppearanceBodySmall"
+        android:textColor="@color/neon_purpura" />
 
     <TextView
         android:id="@+id/txtItemDetalle"

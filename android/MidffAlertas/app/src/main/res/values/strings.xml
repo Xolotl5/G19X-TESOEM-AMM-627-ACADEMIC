@@ -122,6 +122,7 @@
     <string name="etiqueta_alerta">Alerta</string>
     <string name="etiqueta_fecha">Fecha de evaluación</string>
     <string name="etiqueta_recibida">Recibida en el dispositivo</string>
+<string name="etiqueta_motivo">Por qué te avisamos</string>
     <string name="etiqueta_estado">Estado</string>
     <string name="formato_monto">%1$s %2$s</string>
 

@@ -78,6 +78,17 @@ public class DetalleAlertaActivity extends AppCompatActivity {
         ((TextView) findViewById(R.id.txtValorFecha)).setText(alerta.fechaEvaluacion);
         ((TextView) findViewById(R.id.txtValorRecibida)).setText(alerta.fechaRecepcion());
 
+        // BIT-034 (XAI): la razon de la alerta solo aparece si el motor la
+        // explico (variable auditable traducida a lenguaje llano).
+        View filaMotivo = findViewById(R.id.filaMotivo);
+        TextView motivo = findViewById(R.id.txtValorMotivo);
+        if (alerta.tieneMotivo()) {
+            motivo.setText(alerta.motivo);
+            filaMotivo.setVisibility(View.VISIBLE);
+        } else {
+            filaMotivo.setVisibility(View.GONE);
+        }
+
         pintarEstado(findViewById(R.id.txtValorEstado));
         pintarAnalitica();
         poblarCarrusel();

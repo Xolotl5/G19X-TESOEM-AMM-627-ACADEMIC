@@ -14,8 +14,8 @@
                 android:centerX="0.12"
                 android:centerY="0.06"
                 android:gradientRadius="440dp"
-                android:startColor="#33585F69"
-                android:endColor="#00585F69" />
+                android:startColor="#335E4B8A"
+                android:endColor="#005E4B8A" />
         </shape>
     </item>
     <item>
@@ -25,8 +25,8 @@
                 android:centerX="0.92"
                 android:centerY="0.16"
                 android:gradientRadius="420dp"
-                android:startColor="#2EC4C9D0"
-                android:endColor="#00C4C9D0" />
+                android:startColor="#2ED4C2FF"
+                android:endColor="#00D4C2FF" />
         </shape>
     </item>
     <item>
@@ -36,8 +36,8 @@
                 android:centerX="0.45"
                 android:centerY="0.96"
                 android:gradientRadius="520dp"
-                android:startColor="#30787F89"
-                android:endColor="#00787F89" />
+                android:startColor="#308A5CFF"
+                android:endColor="#008A5CFF" />
         </shape>
     </item>
 </layer-list>

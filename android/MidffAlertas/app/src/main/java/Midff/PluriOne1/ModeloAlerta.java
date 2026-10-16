@@ -29,6 +29,13 @@ public class ModeloAlerta {
     public String decision;
     public String tipoAlerta;
 
+    /**
+     * BIT-034 (XAI): razon en lenguaje llano de por que la transaccion llamo
+     * la atencion ("Monto 12.9x tu habitual · Desde una ubicacion distinta");
+     * viene del backend derivada de las variables auditables del motor.
+     */
+    public String motivo;
+
     /** Estado de la alerta en Oracle: PENDIENTE | ATENDIDA | BLOQUEADA (Sprint 4). */
     public String estado;
     public String fechaEvaluacion;
@@ -55,6 +62,8 @@ public class ModeloAlerta {
         alerta.clasificacion   = texto(datos.get("clasificacion"));
         alerta.decision        = texto(datos.get("decision"));
         alerta.tipoAlerta      = texto(datos.get("tipo_alerta"));
+        String motivoFcm = datos.get("motivo");
+        alerta.motivo = motivoFcm == null ? "" : motivoFcm.trim();
         alerta.fechaEvaluacion = texto(datos.get("fecha_evaluacion"));
         // El push no viaja con el estado: nace PENDIENTE hasta que el oficial
         // la bloquea desde la app (HU-MVP-06, Sprint 4).
@@ -80,6 +89,7 @@ public class ModeloAlerta {
         objeto.put("clasificacion", clasificacion);
         objeto.put("decision", decision);
         objeto.put("tipo_alerta", tipoAlerta);
+        objeto.put("motivo", motivo == null ? "" : motivo);
         objeto.put("estado", estado);
         objeto.put("fecha_evaluacion", fechaEvaluacion);
         objeto.put("recibida_en_ms", recibidaEnMs);
@@ -112,6 +122,7 @@ public class ModeloAlerta {
             alerta.clasificacion   = objeto.optString("clasificacion", "-");
             alerta.decision        = objeto.optString("decision", "-");
             alerta.tipoAlerta      = objeto.optString("tipo_alerta", "-");
+            alerta.motivo          = objeto.optString("motivo", "");
             alerta.estado          = objeto.optString("estado", "PENDIENTE");
             alerta.fechaEvaluacion = objeto.optString("fecha_evaluacion", "-");
             alerta.recibidaEnMs    = objeto.optLong("recibida_en_ms", System.currentTimeMillis());
@@ -252,10 +263,16 @@ public class ModeloAlerta {
 
     public String detalleLargo() {
         return detalleCorto()
+                + (tieneMotivo() ? "\nPor que te avisamos: " + motivo : "")
                 + "\nTransaccion: " + idTransaccion
                 + "\nAlerta: " + idAlerta
                 + "\nDecision: " + decision
                 + "\nFecha: " + fechaEvaluacion;
+    }
+
+    /** BIT-034 (XAI): cierto si la alerta trae razon explicativa del motor. */
+    public boolean tieneMotivo() {
+        return motivo != null && !motivo.trim().isEmpty() && !"-".equals(motivo.trim());
     }
 
     public String fechaRecepcion() {
