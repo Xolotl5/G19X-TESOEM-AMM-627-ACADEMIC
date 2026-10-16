@@ -7,7 +7,7 @@
 * **Siglas:** MIDFF
 * **Tipo de Proyecto:** Residencias Profesionales – Ingeniería en Sistemas Computacionales
 * **Formato:** Markdown (`README.md`)
-* **Estado:** MVP terminado (Sprint 4 · 28/09/2026)
+* **Estado:** MVP terminado (Sprint 4 · 28/09/2026) **+ post-MVP completo** (BIT-034 · 15/10/2026: IA explicable en la notificación, app del cliente con Firebase Auth/biometría/flujo por nivel de riesgo, consola web en vivo y paleta "Noche Violeta")
 * **Licencia:** Privada / Académica
 
 El **MIDFF** evalúa transacciones financieras en tiempo real, calcula un score de riesgo (0.0–1.0), clasifica la operación (BAJO/MEDIO/ALTO), persiste toda la evidencia en Oracle XE, notifica al oficial mediante push (Firebase FCM) y permite **bloquear preventivamente** la alerta desde una app Android, con auditoría completa de cada decisión.
@@ -18,6 +18,103 @@ El **MIDFF** evalúa transacciones financieras en tiempo real, calcula un score 
 Transaccion (HTTP/JSON) -> API PHP -> motor C (score) -> Oracle (atomico + auditoria)
       -> push FCM (< 2 s) -> app Android (bandeja) -> "Bloquear" -> Oracle + auditoria
 ```
+
+---
+
+## ⚡ 0. Guía rápida de levantamiento (máquina nueva — paso a paso)
+
+> Escrita para levantar **todo el sistema** en una máquina Windows limpia,
+> siguiendo los pasos **en orden** (pensada también para operarse con ayuda
+> de agentes de IA). **Puerto oficial de la API: `8091`.**
+
+### Prerrequisitos
+
+| # | Software | Para qué | Notas |
+|---|---|---|---|
+| 1 | Windows 10/11 + PowerShell | Automatización y servidor | No requiere admin: el firewall se abre solo (1 sola vez) o imprime el comando |
+| 2 | Oracle Database XE 21c | Base de datos | Servicio iniciado; conexión `localhost:1521/XEPDB1` |
+| 3 | PHP 8.1+ (Laragon recomendado) | API REST | Extensiones necesarias: `pdo_oci` (u `oci8`), `curl`, `openssl`, `mbstring` |
+| 4 | gcc / MinGW-w64 | Compilar el motor C | Opcional si ya existe `src/motor/bin/midff-scoring.exe` |
+| 5 | Android Studio + JDK 17 | (Opcional) recompilar la app | Para solo **instalar** el APK no se necesita |
+
+### Paso 1 — Base de datos Oracle (una sola vez)
+
+Con SQL*Plus (o SQL Developer) conectado como **SYSTEM**, ejecutar en este orden:
+
+```sql
+@ database/MIDFFuser.sql                  -- usuario MIDFFuser (dueño del esquema)
+@ database/schema.sql                     -- tablas, SPs, triggers y auditoría inmutable
+@ database/dispositivo_movil.sql          -- tabla de tokens FCM (Sprint 3)
+@ database/dispositivo_movil_id_cliente.sql  -- filtro de push por cliente (BIT-017)
+@ database/dispositivo_movil_uid.sql      -- uid de Firebase para purga (BIT-031)
+@ database/admin_usuario.sql              -- usuario de la consola MIDFF.html
+@ database/sp_bloquear_alerta.sql         -- SP de bloqueo preventivo (Sprint 4)
+```
+
+> `realinear_secuencias.sql` lo ejecuta `servidor.ps1` automáticamente en cada arranque
+> (anti `ORA-00001`); `limpiar_pruebas.sql` es solo para vaciar datos de prueba.
+> La API conecta por defecto con `MIDFFuser/midffadmin@localhost:1521/XEPDB1`
+> (sobreescribible con las variables de entorno `MIDFF_DB_USUARIO`, `MIDFF_DB_CLAVE`,
+> `MIDFF_DB_HOST`, `MIDFF_DB_PUERTO`, `MIDFF_DB_SERVICIO`).
+
+### Paso 2 — Compilar el motor C
+
+```powershell
+.\build.ps1
+```
+
+Compila `src/motor/bin/midff-scoring.exe` y ejecuta las **167 verificaciones**
+(unitarias + contrato + latencia). Si el `.exe` ya viene compilado, este paso es opcional.
+
+### Paso 3 — Firebase (2 credenciales)
+
+1. **Cuenta de servicio FCM (la usa el servidor):** colocar el JSON de la cuenta de
+   servicio del proyecto en **`config/firebase.credentials.json`** (no se versiona).
+   Alternativa: variable de entorno `MIDFF_FCM_CUENTA_SERVICIO` con la ruta del JSON.
+2. **Para entrar a la consola de Firebase:** dejar un archivo de texto llamado
+   **`cuenta_admin.txt` dentro de la carpeta `firebase/`**
+   (ruta exacta: `firebase/cuenta_admin.txt`) con el **correo y la contraseña** de la
+   cuenta administradora del proyecto. Con esas credenciales se inicia sesión en
+   `console.firebase.google.com` (proyecto **MIDFF Alertas**).
+3. (Solo para recompilar la app) `android/MidffAlertas/app/google-services.json`
+   (existe plantilla `google-services.json.example` versionada).
+
+### Paso 4 — Levantar la API (puerto 8091)
+
+```powershell
+.\servidor.ps1
+```
+
+Un solo comando hace todo: agrega las DLLs del cliente Oracle al PATH, autodetecta
+`php.exe` (PATH o Laragon), abre el **puerto 8091** en el firewall de Windows (regla
+persistente `MIDFF-API-8091`, una sola vez), realinea las secuencias de Oracle y levanta
+la API con `php -S 0.0.0.0:8091 router.php` (accesible por WiFi, USB y emulador).
+
+**Verificación:** abrir `http://localhost:8091/api/v1/ping` → debe responder
+`{"servicio":"midff", ...}` con HTTP 200.
+
+### Paso 5 — Consola del banco y simulador (navegador)
+
+* **`MIDFF.html`** — consola del banco: KPIs, bandeja global, **Bloquear/Desbloquear**,
+  serie de 24 h y refresco automático cada 5 s. (Pedirá el usuario administrador del Paso 1.)
+* **`banco.html`** — simulador del banco origen: dispara transacciones (plantillas de
+  riesgo bajo/medio/alto o aleatorias) contra `POST /api/v1/transacciones`.
+
+### Paso 6 — App Android
+
+1. Instalar `android/MidffAlertas/app/build/outputs/apk/debug/app-debug.apk`.
+2. Iniciar sesión (Firebase Auth, correo/contraseña) y pasar la biometría.
+3. La app **se enlaza sola** a la API por WiFi (misma red que la PC: escaneo automático
+   del gateway y la subred). Alternativa por USB: `adb reverse tcp:8091 tcp:8091`.
+
+### Paso 7 — Demo end-to-end (2 minutos)
+
+1. En `banco.html` elegir la plantilla **"Posible fraude"** y enviar.
+2. El teléfono recibe el push **con el motivo explicado**
+   ("Monto 12.9× tu habitual · Desde una ubicación distinta").
+3. En la app: **"No fui yo"** notifica al banco; las de riesgo alto llegan bloqueadas
+   y se aprueban con la doble confirmación cliente → banco.
+4. `MIDFF.html` refleja todo en vivo (≤ 5 s) y puede desbloquear desde la consola.
 
 ---
 

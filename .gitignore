@@ -437,6 +437,18 @@ config.local.*
 #   pruebas/casos/*.json · pruebas/e2e/*.ps1 · datos/datasets/*.json
 # Plantillas de configuración (nunca con credenciales reales)
 #   .env.example · api/src/Config/config.example.php · android/**/google-services.json.example
+# -----------------------------------------------------------------------------
+# 10. ARCHIVOS LOCALES DE TRABAJO Y CREDENCIALES DE ACCESO (nunca subir a GitHub)
+# -----------------------------------------------------------------------------
+# Notas de trabajo del residente (borradores locales, no son entregables)
+errores.txt
+explicacion.txt
+prompt.txt
+
+# Credencial de la cuenta administradora de Firebase (correo y contrasena de
+# la consola) — SOLO para el equipo del proyecto, jamas en el repositorio
+firebase/cuenta_admin.txt
+
 # =============================================================================
-# Fin del archivo .gitignore — MIDFF (última actualización: 23/09/2026)
+# Fin del archivo .gitignore — MIDFF (última actualización: 15/10/2026)
 # =============================================================================
