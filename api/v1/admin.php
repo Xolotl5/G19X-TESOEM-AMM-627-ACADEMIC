@@ -24,25 +24,13 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'db.php';
 require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'firebase.php';
-require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'bajas.php';
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'bajas.php';
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'http.php';
 
 date_default_timezone_set('America/Mexico_City');
 
-define('MIDFF_ADMIN_SECRETO', getenv('MIDFF_ADMIN_SECRETO') ?: 'MIDFF-SECRETO-DEV-2026');
+define('MIDFF_ADMIN_SECRETO', midff_env_obligatoria('MIDFF_ADMIN_SECRETO'));
 define('MIDFF_ADMIN_SESION_SEG', 8 * 3600);
-
-function responder(int $codigo, array $cuerpo): void
-{
-    http_response_code($codigo);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($cuerpo, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
-}
-
-function rechazar(string $mensaje): void
-{
-    responder(400, ['error' => $mensaje]);
-}
 
 /* --------------------------- Token de sesion (HMAC) ------------------------- */
 function midff_admin_token_firmar(string $usuario): string

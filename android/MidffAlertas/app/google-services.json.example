@@ -1,0 +1,37 @@
+{
+  "_README": [
+    "Plantilla de google-services.json (MIDFF). Copie este archivo a",
+    "android/MidffAlertas/app/google-services.json y sustituya los valores",
+    "por los de SU proyecto Firebase (Consola > Configuracion del proyecto >",
+    "Sus apps > Android > google-services.json). El archivo real NO se",
+    "versiona (.gitignore). La 'current_key' es la Web API key del proyecto,",
+    "que tambien debe ir en MIDFF_FIREBASE_WEB_KEY del .env del servidor."
+  ],
+  "project_info": {
+    "project_number": "NUMERO_DEL_PROYECTO",
+    "project_id": "id-del-proyecto",
+    "storage_bucket": "id-del-proyecto.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:NUMERO:android:HASH_DEL_APP_ID",
+        "android_client_info": {
+          "package_name": "Midff.PluriOne1"
+        }
+      },
+      "oauth_client": [],
+      "api_key": [
+        {
+          "current_key": "WEB_API_KEY_DEL_PROYECTO"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": []
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}

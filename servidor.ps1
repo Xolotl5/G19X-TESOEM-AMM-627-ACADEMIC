@@ -24,6 +24,30 @@ param(
 
 $ErrorActionPreference = 'Stop'
 
+# 0) Cargar el .env local (no versionado) como variables de entorno del proceso
+#    (BIT-036, Corte 1: ningun secreto vive en el codigo; ver .env.example)
+$envFile = Join-Path $PSScriptRoot '.env'
+if (Test-Path $envFile) {
+    Get-Content $envFile | ForEach-Object {
+        $linea = $_.Trim()
+        if ($linea -and -not $linea.StartsWith('#')) {
+            $pos = $linea.IndexOf('=')
+            if ($pos -gt 0) {
+                $k = $linea.Substring(0, $pos).Trim()
+                $v = $linea.Substring($pos + 1).Trim()
+                if ($k -and $v -and -not (Get-Item "Env:$k" -ErrorAction SilentlyContinue)) {
+                    Set-Item "Env:$k" $v
+                }
+            }
+        }
+    }
+    Write-Host '[0/5] .env cargado (secretos locales inyectados al proceso)'
+} elseif ($env:MIDFF_API_KEY -or $env:MIDFF_DB_CLAVE) {
+    Write-Host '[0/5] secretos tomados de las variables de entorno existentes'
+} else {
+    Write-Warning 'No existe .env ni variables de entorno: la API rechazara peticiones protegidas. Copie .env.example a .env y llene los valores.'
+}
+
 # 1) DLLs del cliente Oracle XE al PATH (mismo criterio que smoke-test.ps1)
 $oracleBin = 'C:\app\100157216\product\21c\dbhomeXE\bin'
 if (-not (Test-Path $oracleBin)) {

@@ -2,6 +2,9 @@ package Midff.PluriOne1;
 
 import android.util.Log;
 
+import com.google.firebase.auth.FirebaseAuth;
+import com.google.firebase.auth.FirebaseUser;
+
 import org.json.JSONArray;
 import org.json.JSONException;
 import org.json.JSONObject;
@@ -64,6 +67,33 @@ public final class ApiClient {
     }
 
     private ApiClient() {
+    }
+
+    /**
+     * BIT-036 (Corte 1): ID token fresco de Firebase para autorizar al
+     * CLIENTE (Authorization: Bearer). Se llama desde hilos de red: la espera
+     * de Tasks es intencional. Devuelve null si no hay sesion iniciada.
+     */
+    private static String idTokenFirebase() {
+        try {
+            FirebaseUser usuario = FirebaseAuth.getInstance().getCurrentUser();
+            if (usuario == null) {
+                return null;
+            }
+            return usuario.getIdToken(false).getResult().getToken();
+        } catch (Exception e) {
+            Log.w(ETIQUETA, "sin ID token de Firebase: " + e.getMessage());
+            return null;
+        }
+    }
+
+    /** Encabezados de autenticacion comunes: X-API-Key + Bearer del cliente. */
+    private static void autenticar(HttpURLConnection conexion) {
+        conexion.setRequestProperty("X-API-Key", apiKey);
+        String token = idTokenFirebase();
+        if (token != null && !token.trim().isEmpty()) {
+            conexion.setRequestProperty("Authorization", "Bearer " + token);
+        }
     }
 
     /**
@@ -150,7 +180,7 @@ public final class ApiClient {
                 conexion.setReadTimeout(8000);
                 conexion.setDoOutput(true);
                 conexion.setRequestProperty("Content-Type", "application/json; charset=utf-8");
-                conexion.setRequestProperty("X-API-Key", apiKey);
+                autenticar(conexion);
 
                 try (OutputStream salida = conexion.getOutputStream()) {
                     salida.write(cuerpo);
@@ -190,7 +220,7 @@ public final class ApiClient {
                 conexion.setRequestMethod("GET");
                 conexion.setConnectTimeout(6000);
                 conexion.setReadTimeout(6000);
-                conexion.setRequestProperty("X-API-Key", apiKey);
+                autenticar(conexion);
 
                 int codigo = conexion.getResponseCode();
                 String texto = leer(codigo >= 400

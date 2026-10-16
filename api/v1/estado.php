@@ -23,32 +23,29 @@ declare(strict_types=1);
  */
 
 require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'db.php';
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'http.php';
 
 date_default_timezone_set('America/Mexico_City');
 
-define('MIDFF_API_KEY', getenv('MIDFF_API_KEY') ?: 'MIDFF-API-KEY-2026-SPRINT2');
-
-function responder(int $codigo, array $cuerpo): void
-{
-    http_response_code($codigo);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($cuerpo, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
-}
-
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
     header('Allow: GET');
-    responder(405, ['error' => 'metodo no permitido: use GET /api/v1/estado?id_cliente=...']);
+    responder(405, ['error' => 'metodo no permitido: use GET /api/v1/estado']);
 }
 
-$claveRecibida = $_SERVER['HTTP_X_API_KEY'] ?? '';
-if ($claveRecibida === '' || !hash_equals(MIDFF_API_KEY, (string) $claveRecibida)) {
-    responder(401, ['error' => 'encabezado X-API-Key ausente o invalido']);
-}
+midff_exigir_api_key();
 
-$idCliente = trim((string) ($_GET['id_cliente'] ?? ''));
+/* BIT-036 (Corte 1): el id_cliente YA NO se confia al parametro de la URL.
+ * Se deriva del ID token de Firebase del usuario autenticado; el parametro
+ * solo se conserva por compatibilidad y se ignora si difiere. */
+$idClienteToken = midff_exigir_cliente_firebase();
+$idClienteParam = trim((string) ($_GET['id_cliente'] ?? ''));
+if ($idClienteParam !== '' && $idClienteParam !== $idClienteToken) {
+    responder(403, ['error' => 'el id_cliente solicitado no corresponde '
+                             . 'al usuario autenticado']);
+}
+$idCliente = $idClienteToken;
 if ($idCliente === '' || mb_strlen($idCliente) > 40) {
-    responder(400, ['error' => 'parametro id_cliente obligatorio (hasta 40 caracteres)']);
+    responder(400, ['error' => 'id_cliente autenticado invalido (hasta 40 caracteres)']);
 }
 
 if (midff_db_driver_disponible() !== 'pdo_oci') {

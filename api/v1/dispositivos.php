@@ -37,34 +37,16 @@ declare(strict_types=1);
   --------------------------------------------------------------------------------
 */
 
-require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'db.php';
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'db.php';
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'http.php';
 
 date_default_timezone_set('America/Mexico_City');
 
 /* Misma clave del endpoint de transacciones (D-25): una sola API Key para el MVP. */
-define('MIDFF_API_KEY', getenv('MIDFF_API_KEY') ?: 'MIDFF-API-KEY-2026-SPRINT2');
 
 /* -----------------------------------------------------------------------------
  * Utilidades de respuesta HTTP (siempre JSON)
  * -------------------------------------------------------------------------- */
-function responder(int $codigo, array $cuerpo): void
-{
-    http_response_code($codigo);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($cuerpo, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
-}
-
-function rechazar(string $mensaje): void
-{
-    responder(400, ['error' => $mensaje]);
-}
-
-function fallaInterna(string $mensaje): void
-{
-    responder(500, ['error' => $mensaje]);
-}
-
 /* -----------------------------------------------------------------------------
  * UPSERT del dispositivo en DISPOSITIVO_MOVIL (database/dispositivo_movil.sql)
  *
@@ -171,10 +153,32 @@ if ($metodo !== 'POST' && $metodo !== 'GET') {
 /* -----------------------------------------------------------------------------
  * 2. API KEY (RF-02 / RNF-03): la misma de POST /api/v1/transacciones (D-25)
  * -------------------------------------------------------------------------- */
-$claveRecibida = $_SERVER['HTTP_X_API_KEY'] ?? '';
-if ($claveRecibida === '' || !hash_equals(MIDFF_API_KEY, (string) $claveRecibida)) {
-    responder(401, ['error' => 'encabezado X-API-Key ausente o invalido']);
+midff_exigir_api_key();
+
+/* -----------------------------------------------------------------------------
+ * 2a. BIT-036 (Corte 1): el REGISTRO exige el ID token de Firebase.
+ *      El uid SIEMPRE proviene del token (nunca del cuerpo) y el id_cliente
+ *      del cuerpo solo se acepta la primera vez; despues queda fijado al uid.
+ * -------------------------------------------------------------------------- */
+$tokenUsuario   = null;
+$idClientePrevio = null;
+if (($metodo ?? '') === 'POST') {
+    $tokenUsuario = midff_verificar_id_token();
+    try {
+        $cnxV  = midff_db_conectar();
+        $sentV = $cnxV->prepare('SELECT id_cliente FROM DISPOSITIVO_MOVIL'
+                              . ' WHERE uid_firebase = :uidfb AND activo = 1'
+                              . ' FETCH FIRST 1 ROWS ONLY');
+        $sentV->execute([':uidfb' => $tokenUsuario['uid']]);
+        $filaV = $sentV->fetch(PDO::FETCH_ASSOC);
+        $idClientePrevio = $filaV === false ? '' : trim((string) ($filaV['ID_CLIENTE'] ?? ''));
+    } catch (PDOException $e) {
+        responder(500, ['error' => 'fallo Oracle al verificar el dispositivo: '
+                                 . trim($e->getMessage())]);
+    }
 }
+
+
 
 /* -----------------------------------------------------------------------------
  * 2b. GET: lista de dispositivos con su id_cliente (BIT-018, banco/admin).
@@ -244,6 +248,19 @@ if ($uidCrudo !== null && !is_string($uidCrudo)) {
 $uidFirebase = $uidCrudo === null ? '' : trim($uidCrudo);
 if (mb_strlen($uidFirebase) > 128) {
     rechazar('uid_firebase excede 128 caracteres');
+}
+
+/* BIT-036: el uid autenticado en el token manda sobre el del cuerpo. */
+if ($tokenUsuario !== null) {
+    $uidFirebase = $tokenUsuario['uid'];
+    // id_cliente: fijado al primero registrado para ese uid (anti suplantacion).
+    if ($idClientePrevio !== '') {
+        if ($idCliente !== '' && $idCliente !== $idClientePrevio) {
+            responder(403, ['error' => 'el id_cliente no corresponde al usuario '
+                                     . 'autenticado en este dispositivo']);
+        }
+        $idCliente = $idClientePrevio;
+    }
 }
 
 // token_fcm: obligatorio, 64-255 caracteres (CHECK + VARCHAR2(255) en Oracle).

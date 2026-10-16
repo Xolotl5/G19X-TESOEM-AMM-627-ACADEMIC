@@ -1,6 +1,8 @@
 <?php
 declare(strict_types=1);
 
+require_once __DIR__ . DIRECTORY_SEPARATOR . 'http.php';
+
 /*
  --------------------------------------------------------------------------------
  -- MIDFF - Motor Inteligente de Deteccion de Fraude Financiero
@@ -40,8 +42,8 @@ declare(strict_types=1);
  *    getenv() permite inyectar las credenciales reales sin tocar el codigo,
  *    cumpliendo la convencion de secretos de BITACORA.md seccion 4.2.
  */
-define('MIDFF_DB_USUARIO',  getenv('MIDFF_DB_USUARIO')  ?: 'MIDFFuser');
-define('MIDFF_DB_CLAVE',    getenv('MIDFF_DB_CLAVE')    ?: 'midffadmin');
+define('MIDFF_DB_USUARIO',  midff_env_obligatoria('MIDFF_DB_USUARIO'));
+define('MIDFF_DB_CLAVE',    midff_env_obligatoria('MIDFF_DB_CLAVE'));
 define('MIDFF_DB_HOST',     getenv('MIDFF_DB_HOST')     ?: 'localhost');
 define('MIDFF_DB_PUERTO',   getenv('MIDFF_DB_PUERTO')   ?: '1521');
 define('MIDFF_DB_SERVICIO', getenv('MIDFF_DB_SERVICIO') ?: 'XEPDB1');

@@ -47,13 +47,13 @@ declare(strict_types=1);
 
 require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'db.php';
 require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'firebase.php';
+require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'http.php';
 
 date_default_timezone_set('America/Mexico_City');
 
 /* -----------------------------------------------------------------------------
  * Parametros locales del endpoint (placeholders sobreescribibles por entorno)
  * -------------------------------------------------------------------------- */
-define('MIDFF_API_KEY', getenv('MIDFF_API_KEY') ?: 'MIDFF-API-KEY-2026-SPRINT2');
 define('MIDFF_MOTOR_EXE', getenv('MIDFF_MOTOR_EXE')
     ?: dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'src' . DIRECTORY_SEPARATOR . 'motor'
        . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . 'midff-scoring.exe');
@@ -61,24 +61,6 @@ define('MIDFF_MOTOR_EXE', getenv('MIDFF_MOTOR_EXE')
 /* -----------------------------------------------------------------------------
  * Utilidades de respuesta HTTP (siempre JSON)
  * -------------------------------------------------------------------------- */
-function responder(int $codigo, array $cuerpo): void
-{
-    http_response_code($codigo);
-    header('Content-Type: application/json; charset=utf-8');
-    echo json_encode($cuerpo, JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);
-    exit;
-}
-
-function rechazar(string $mensaje): void
-{
-    responder(400, ['error' => $mensaje]);
-}
-
-function fallaInterna(string $mensaje): void
-{
-    responder(500, ['error' => $mensaje]);
-}
-
 /* -----------------------------------------------------------------------------
  * 1. METODO: solo POST (405 + encabezado Allow, RFC 7231)
  * -------------------------------------------------------------------------- */
@@ -90,10 +72,9 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
 /* -----------------------------------------------------------------------------
  * 2. API KEY (RF-02 / RNF-03): comparacion en tiempo constante (hash_equals)
  * -------------------------------------------------------------------------- */
-$claveRecibida = $_SERVER['HTTP_X_API_KEY'] ?? '';
-if ($claveRecibida === '' || !hash_equals(MIDFF_API_KEY, (string) $claveRecibida)) {
-    responder(401, ['error' => 'encabezado X-API-Key ausente o invalido']);
-}
+midff_exigir_api_key();
+
+
 
 /* -----------------------------------------------------------------------------
  * 3. CUERPO JSON Y VALIDACION DE CAMPOS (RF-02 / HU-MVP-01.3)

@@ -155,10 +155,10 @@ El motor analiza cada transacción con un modelo de reglas ponderado y explicabl
 | **Motor Analítico** | **C** (gcc/MinGW) | Scoring de las 3 variables, umbrales y detalle auditable; latencia en microsegundos. |
 | **Backend / API REST** | **PHP 8.1+** | `POST /api/v1/transacciones`, `/dispositivos` y `/bloquear`; orquesta motor C, Oracle y FCM. |
 | **Base de Datos** | **Oracle Database XE 21c** | Persistencia ACID (`SP_REGISTRAR_TRANSACCION`, `SP_BLOQUEAR_ALERTA`) y auditoría inmutable. |
-| **Cliente Móvil** | **Android (Java)** | Bandeja de alertas, detalle y acción "Bloquear" (HU-MVP-06). |
-| **Mensajería Tiempo Real** | **Firebase FCM (HTTP v1/OAuth2)** | Push con monto, score y clasificación cuando `score >= 0.4`. |
-| **Automatización** | **PowerShell (`.ps1`)** | `build.ps1` (compilación y pruebas del motor) y `smoke-test.ps1` (flujo API→C→Oracle). |
-| **Panel Administrativo** | HTML5/CSS3/JS | *Post-MVP v1.1* (RF-13); fuera del alcance de este repositorio. |
+| **Cliente Móvil** | **Android (Java)** | App del cliente: Firebase Auth + biometría, bandeja con motivo explicable, "Sí/No fui yo" y bloqueo/desbloqueo sincronizado. |
+| **Mensajería Tiempo Real** | **Firebase FCM (HTTP v1/OAuth2)** | Push con monto, score, clasificación y **motivo** cuando `score >= 0.4`; también los cambios de estado decididos por el banco. |
+| **Automatización** | **PowerShell (`.ps1`)** | `build.ps1` (compilación + 167 verificaciones), `smoke-test.ps1` (flujo API→C→Oracle) y `servidor.ps1` (levanta todo en el puerto 8091). |
+| **Consola del banco** | HTML5/CSS3/JS (`MIDFF.html`) | **Entregada en el post-MVP** (RF-13): KPIs, bandeja global, Bloquear/Desbloquear y refresco cada 5 s. `banco.html` simula el banco origen. |
 
 ---
 
@@ -187,7 +187,7 @@ C:\todoMIDFF
 ├── smoke-test.ps1             # Flujo API -> motor C -> Oracle + métricas
 ├── MIDFF.html                 # Consola del banco (login admin, KPIs, alertas, clientes)
 ├── banco.html                 # Simulador de transacciones del banco
-├── BITACORA.md                # Memoria auditable del proyecto (BIT-001..BIT-019)
+├── BITACORA.md                # Memoria auditable del proyecto (BIT-001..BIT-036)
 ├── PRD_MIDFF.md / MVP_MIDFF.md# Requisitos y alcance del MVP
 └── router.php                 # Router del servidor embebido php -S
 ```
@@ -424,18 +424,21 @@ SELECT id_dispositivo, usuario, rol, activo FROM DISPOSITIVO_MOVIL;
 | :--- | :--- | :--- |
 | Sprint 1 (23/09/2026) | `18430ae` | Motor C + esquema Oracle + `build.ps1` + dataset (BIT-001/BIT-002). |
 | Sprint 2 (24/09/2026) | `cbac5a3` | API `POST /api/v1/transacciones` + persistencia atómica + `smoke-test.ps1` (BIT-003). |
-| Sprint 3 (24–28/09/2026) | pendiente | FCM HTTP v1 + `DISPOSITIVO_MOVIL` + `POST /api/v1/dispositivos` + app Android (BIT-004 a BIT-009). |
-| Sprint 4 (28/09/2026) | pendiente | `POST /api/v1/bloquear` + `SP_BLOQUEAR_ALERTA` + botón "Bloquear" + README y cierre del MVP (BIT-010). |
+| Sprint 3 (24–28/09/2026) | cerrado | FCM HTTP v1 + `DISPOSITIVO_MOVIL` + `POST /api/v1/dispositivos` + app Android (BIT-004 a BIT-009). |
+| Sprint 4 (28/09/2026) | cerrado | `POST /api/v1/bloquear` + `SP_BLOQUEAR_ALERTA` + botón "Bloquear" + README y cierre del MVP (BIT-010, DoD 10/10). |
+| **Post-MVP** (01/10–16/10/2026) | 19 commits | App del cliente completa (Auth+biometría+flujo por riesgo), consola `MIDFF.html` en vivo, XAI (motivo por alerta), seguridad del Corte 1 (secretos por entorno + autorización por cliente) y documentación de cierre (BIT-011 a BIT-036). |
 
-La memoria completa y auditable del proyecto (decisiones D-01 a D-37, métricas, riesgos y evidencias) está en **`BITACORA.md`**.
+La memoria completa y auditable del proyecto (decisiones D-01 a D-58, métricas, riesgos y evidencias) está en **`BITACORA.md`**.
 
 ---
 
 ## 11. Créditos y Información del Desarrollador
 
-* **Desarrollador / Responsable:** Residente del proyecto (Residencias Profesionales, Ingeniería en Sistemas Computacionales).
+* **Desarrollador / Responsable:** Alejandro — Residente del proyecto (Residencias Profesionales, Ingeniería en Sistemas Computacionales, PluriOne).
 * **Documentos base:** `PRD_MIDFF.md` (requisitos) y `MVP_MIDFF.md` (alcance, DoD y métricas).
-* **Metodología:** Scrum — 4 sprints de 2 semanas; bitácora con entradas `BIT-001` a `BIT-010`.
+* **Metodología:** Scrum — 4 sprints de 2 semanas + fase post-MVP; bitácora con entradas `BIT-001` a `BIT-036`.
+* **Uso declarado de IA:** partes del código, las pruebas y la documentación fueron desarrolladas con asistencia de un agente de programación basado en IA, bajo dirección, decisión técnica y revisión del residente; el diseño, el alcance y cada decisión (D-01…D-58) quedan documentados en `BITACORA.md`.
+* **APK:** la carpeta `build/` no se versiona; para instalar sin compilar, publicar `app-debug.apk` como **GitHub Release** del repositorio.
 
 
 

@@ -81,7 +81,8 @@ $script:RutaDataset     = Join-Path $script:RaizRepositorio 'datos\datasets\tran
 $script:RutaMotorExe    = Join-Path $script:RaizRepositorio 'src\motor\bin\midff-scoring.exe'
 $script:RutaRouter      = Join-Path $script:RaizRepositorio 'router.php'
 
-if ([string]::IsNullOrEmpty($ApiKey))  { $ApiKey  = if ($env:MIDFF_API_KEY) { $env:MIDFF_API_KEY } else { 'MIDFF-API-KEY-2026-SPRINT2' } }
+if ([string]::IsNullOrEmpty($ApiKey))  { $ApiKey  = $env:MIDFF_API_KEY }
+if ([string]::IsNullOrEmpty($ApiKey))  { throw 'Falta MIDFF_API_KEY: copie .env.example a .env, exporte la variable o use -ApiKey (el valor ya NO vive en el codigo)' }
 if ([string]::IsNullOrEmpty($DbUsuario)) { $DbUsuario = if ($env:MIDFF_DB_USUARIO) { $env:MIDFF_DB_USUARIO } else { 'MIDFFuser' } }
 if ([string]::IsNullOrEmpty($DbClave))   { $DbClave   = if ($env:MIDFF_DB_CLAVE) { $env:MIDFF_DB_CLAVE } else { 'midffadmin' } }
 
