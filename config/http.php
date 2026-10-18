@@ -149,9 +149,9 @@ function midff_exigir_cliente_firebase(): string
     try {
         $cnx  = midff_db_conectar();
         $sent = $cnx->prepare('SELECT id_cliente FROM DISPOSITIVO_MOVIL'
-                            . ' WHERE uid_firebase = :uid AND activo = 1'
+                            . ' WHERE uid_firebase = :uidfb AND activo = 1'
                             . ' FETCH FIRST 1 ROWS ONLY');
-        $sent->execute([':uid' => $usuario['uid']]);
+        $sent->execute([':uidfb' => $usuario['uid']]);
         $fila = $sent->fetch(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
         responder(500, ['error' => 'fallo Oracle al resolver el cliente autenticado: '
