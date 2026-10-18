@@ -7,9 +7,9 @@
 | **Nombre del producto** | MIDFF — Motor Inteligente de Detección de Fraude Financiero |
 | **Título del proyecto** | Desarrollo de un Motor Inteligente de Detección de Fraude Financiero con Arquitectura Híbrida (Android, C, PHP, Oracle DB y Firebase) |
 | **Tipo de proyecto** | Residencias Profesionales |
-| **Versión del documento** | 1.0 |
-| **Fecha de elaboración** | 21/09/2026 |
-| **Estado** | Borrador en revisión |
+| **Versión del documento** | 1.1 |
+| **Fecha de elaboración** | 21/09/2026 (v1.0) · actualizado 16/10/2026 (v1.1) |
+| **Estado** | MVP cerrado + post-MVP entregado; requisitos vigentes |
 | **Documento fuente** | `ideas.txt` |
 | **Metodología** | Scrum |
 | **Control de versiones** | Git |
@@ -19,6 +19,7 @@
 | Versión | Fecha | Autor | Descripción del cambio |
 |---|---|---|---|
 | 1.0 | 21/09/2026 | Residente del proyecto | Versión inicial generada a partir de `ideas.txt` |
+| 1.1 | 16/10/2026 | Alejandro Miranda Martínez | Actualización post-MVP: stack definitivo C/PHP/Oracle/Android-Firebase (sustituye la propuesta inicial Python/React/Azure; ver `docs/Justificacion_Tecnologias.md`), motor de reglas ponderadas explicable (sin ML entrenado en v1.x) y estado real de RF-12/13/14 tras el post-MVP. |
 
 ---
 
@@ -31,6 +32,8 @@ El sistema se apoya en tres pilares principales:
 1. **Analítica de alta velocidad:** un motor escrito en **C** que procesa variables transaccionales (montos, frecuencia, localización, patrón de conducta) mediante un modelo de scoring/reglas avanzadas para clasificar el nivel de riesgo en **microsegundos**.
 2. **Orquestación y persistencia empresarial:** una **API REST en PHP 8+** que recibe las operaciones, interactúa con el motor en C y las persiste en **Oracle Database** bajo estándares de auditoría bancaria.
 3. **Monitoreo móvil en tiempo real:** un ecosistema en **Android Studio (Java)** sincronizado mediante **Firebase Cloud Messaging (FCM)** que notifica instantáneamente al personal de seguridad o a los usuarios ante cualquier anomalía, permitiendo el **bloqueo preventivo inmediato**.
+
+> **Nota de versión (v1.1, 16/10/2026):** el stack definitivo acordado con el stakeholder es **C (motor) + PHP (API) + Oracle DB + Android/Java con Firebase**, en sustitución de la propuesta inicial *Python/React/Azure* (justificación completa en `docs/Justificacion_Tecnologias.md`). La analítica de la v1.x es un **motor de reglas ponderadas explicable** (0.45 monto / 0.30 frecuencia / 0.25 ubicación-IP), **no un modelo de ML entrenado** (ver §4.2); entrenar o calibrar con datos históricos es el objetivo de la v2.0. El post-MVP ya entregó la consola del banco (`MIDFF.html`), la app del cliente con Firebase Auth/biometría y el motivo de cada alerta en lenguaje llano.
 
 ## 2. Visión del producto
 
@@ -109,6 +112,8 @@ Desarrollar un motor inteligente de detección de fraude financiero con arquitec
 | **RF-13** | **Dashboard administrativo:** el panel web (HTML5/CSS/JavaScript) debe mostrar monitoreo en tiempo real y gráficos de desempeño (volumen transaccional, distribución de riesgo, alertas activas). | Media |
 | **RF-14** | **Consulta de historial:** el dashboard y los roles autorizados deben poder consultar el historial de evaluaciones, alertas y decisiones. | Media |
 | **RF-15** | **Automatización:** deben existir scripts PowerShell (.ps1) para compilación del motor C, ejecución de pruebas y despliegue. | Media |
+
+> **Estado post-MVP (v1.1, 16/10/2026):** RF-13 y RF-14 **entregados** (consola `MIDFF.html` y bandeja/detalle en la app vía `GET /api/v1/estado`); RF-12 se resolvió **sin Realtime Database**, con reconciliación push/pull mediante `/estado` y sincronización al retomar el foco (BIT-027). Los 9 endpoints de la API exigen `X-API-Key` y los de cliente verifican además el ID token de Firebase del usuario (endurecimiento del Corte 1).
 
 ## 7. Requisitos no funcionales (RNF)
 

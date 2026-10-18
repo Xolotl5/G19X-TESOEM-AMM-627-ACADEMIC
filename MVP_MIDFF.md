@@ -6,9 +6,9 @@
 |---|---|
 | **Nombre del producto** | MIDFF — Motor Inteligente de Detección de Fraude Financiero |
 | **Documento base** | `PRD_MIDFF.md` v1.0 |
-| **Versión del documento** | 1.0 |
-| **Fecha de elaboración** | 21/09/2026 |
-| **Estado** | Borrador en revisión |
+| **Versión del documento** | 1.1 |
+| **Fecha de elaboración** | 21/09/2026 (v1.0) · actualizado 16/10/2026 (v1.1) |
+| **Estado** | MVP cerrado (28/09/2026) + post-MVP entregado (16/10/2026) |
 | **Metodología** | Scrum (sprints de 2 semanas) |
 | **Duración estimada del MVP** | 8 semanas (4 sprints) |
 | **Control de versiones** | Git |
@@ -18,6 +18,7 @@
 | Versión | Fecha | Autor | Descripción del cambio |
 |---|---|---|---|
 | 1.0 | 21/09/2026 | Residente del proyecto | Versión inicial derivada del PRD MIDFF v1.0 |
+| 1.1 | 16/10/2026 | Alejandro Miranda Martínez | Actualización post-MVP: stack definitivo C/PHP/Oracle/Android-Firebase (en lugar de la propuesta inicial Python/React/Azure, ver `docs/Justificacion_Tecnologias.md`), motor declarado como sistema de **reglas ponderadas** explicable (no ML entrenado), RF-12/13/14 resueltos o replanteados y hoja de ruta v1.1 marcada como entregada. |
 
 ---
 
@@ -29,7 +30,9 @@ En una sola frase, el MVP debe demostrar el flujo completo:
 
 > **Transacción → Score (motor C) → Clasificación y decisión → Auditoría (Oracle DB) → Notificación push (FCM) → Bloqueo preventivo (App Android)**
 
-Todo lo que no sea imprescindible para demostrar ese ciclo de extremo a extremo queda **diferido al backlog post-MVP** (dashboard web, historiales, sincronización por Realtime Database, modelos ML, etc.).
+Todo lo que no sea imprescindible para demostrar ese ciclo de extremo a extremo quedó **diferido al backlog post-MVP**; los diferidos principales (dashboard web, historial) ya se entregaron en el post-MVP (ver §13).
+
+> **Nota de alcance (v1.1, 16/10/2026):** el «motor inteligente» es un **sistema de reglas ponderadas explicable** (`score = 0.45·monto + 0.30·frecuencia + 0.25·ubicación/IP`), **no un modelo de ML entrenado**; la calibración de los pesos con datos de `EVALUACION` queda como trabajo futuro (v2.0, `docs/Informe_Final.md` §7). El stack definitivo es **C + PHP + Oracle + Android/Firebase**, acordado con el stakeholder en sustitución de la propuesta inicial Python/React/Azure (`docs/Justificacion_Tecnologias.md`). El post-MVP ya entregó además la consola del banco (`MIDFF.html`), la app del cliente con Firebase Auth/biometría y el motivo de cada alerta en lenguaje llano (BIT-034).
 
 ### Hipótesis a validar
 
@@ -70,9 +73,9 @@ Para decidir qué entra al MVP se aplicaron los siguientes criterios sobre los r
 | **RF-09** | Notificación push vía FCM | ✅ Incluido | Solo para riesgo medio/alto (score ≥ 0.4) a dispositivos registrados. |
 | **RF-10** | App Android de alertas | ✅ Incluido | App básica en Java: registro de token FCM y bandeja de alertas. |
 | **RF-11** | Bloqueo preventivo inmediato | ✅ Incluido | Acción "Bloquear" sobre una alerta; se registra en Oracle vía API. |
-| **RF-12** | Sincronización Realtime DB | ⏸️ Diferido | En el MVP el estado se consulta/confirma por API REST; sin Realtime DB. |
-| **RF-13** | Dashboard administrativo web | ⏸️ Diferido | Durante el MVP el monitoreo se hace con consultas SQL y logs. |
-| **RF-14** | Consulta de historial | ⏸️ Diferido | Sin UI; solo consultas SQL directas sobre las tablas. |
+| **RF-12** | Sincronización Realtime DB | ⏸️ Diferido (resuelto distinto) | En el MVP el estado se consulta/confirma por API REST; en el post-MVP se resolvió con `GET /api/v1/estado` (reconciliación push/pull), sin Realtime DB. |
+| **RF-13** | Dashboard administrativo web | ✅ Entregado post-MVP | Consola del banco `MIDFF.html`: login admin, KPIs, bandeja global, Bloquear/Desbloquear y refresco cada 5 s. |
+| **RF-14** | Consulta de historial | ✅ Entregado post-MVP | Bandeja y detalle en la app del cliente (`GET /api/v1/estado`) e historial consultable en la consola del banco. |
 | **RF-15** | Scripts PowerShell | 🟡 Simplificado | Solo `build.ps1` (motor C) y `smoke-test.ps1` (prueba del flujo). |
 
 ### 4.2 Requisitos no funcionales aplicables al MVP
@@ -193,6 +196,8 @@ Los siguientes elementos del PRD **no** se construyen en el MVP y pasan al backl
 | Modelo ML entrenado | Evolución PRD §15 | El MVP usa scoring por reglas con las 3 variables. |
 | App iOS | Fuera de alcance PRD | No aplica. |
 
+> **Actualización v1.1 (16/10/2026):** el dashboard web (RF-13) y la consulta de historial (RF-14) **dejaron de ser diferidos**: se entregaron en el post-MVP (`MIDFF.html` y bandeja/detalle de la app). El resto de la tabla sigue vigente como backlog de producción.
+
 ## 9. Criterios de aceptación del MVP (Definition of Done)
 
 El MVP se considera **terminado** cuando se cumple el 100 % de los siguientes puntos:
@@ -241,13 +246,13 @@ El MVP se considera **terminado** cuando se cumple el 100 % de los siguientes pu
 
 ## 13. Post-MVP — hoja de ruta de evolución
 
-| Versión | Alcance propuesto |
-|---|---|
-| **v1.1** | Dashboard web (RF-13), consulta de historial (RF-14) y sincronización con Firebase Realtime Database (RF-12). |
-| **v1.2** | Umbrales configurables, reintentos y cola de reenvío de notificaciones, optimización de la invocación del motor C (proceso persistente/pipes), endurecimiento de seguridad (roles, TLS estricto). |
-| **v2.0** | Modelo de ML entrenado sobre histórico de evaluaciones, escalabilidad horizontal, alta disponibilidad (objetivos RNF-02/RNF-06) y reportes/exportaciones. |
+| Versión | Alcance propuesto | Estado (16/10/2026) |
+|---|---|---|
+| **v1.1** | Dashboard web (RF-13), consulta de historial (RF-14) y sincronización servidor–móvil (RF-12 replanteada como `GET /api/v1/estado`). | **Entregada**: consola `MIDFF.html`, bandeja/detalle de la app y push de estado del banco (BIT-027). |
+| **v1.2** | Umbrales configurables, reintentos y cola de reenvío de notificaciones, optimización de la invocación del motor C (proceso persistente/pipes), endurecimiento de seguridad (roles, TLS estricto). | **Parcial**: seguridad endurecida en el Corte 1 (secretos solo por entorno sin valores por defecto, autorización por cliente con ID token de Firebase, utilidades comunes `config/http.php`); lo demás pendiente. |
+| **v2.0** | Modelo de ML entrenado o calibración de pesos con datos de `EVALUACION`, escalabilidad horizontal, alta disponibilidad (objetivos RNF-02/RNF-06) y reportes/exportaciones. | Pendiente. |
 
-**Decisión de paso a v1.1:** el MVP debe cumplir el 100 % de la sección 9 (Definition of Done) y sus métricas de la sección 10.
+**Decisión de paso a v1.1:** el MVP cumplió el 100 % de la sección 9 (Definition of Done) y sus métricas de la sección 10 (cierre el 28/09/2026, BIT-010).
 
 ---
 

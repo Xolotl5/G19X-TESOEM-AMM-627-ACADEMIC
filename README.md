@@ -71,11 +71,10 @@ Compila `src/motor/bin/midff-scoring.exe` y ejecuta las **167 verificaciones**
 1. **Cuenta de servicio FCM (la usa el servidor):** colocar el JSON de la cuenta de
    servicio del proyecto en **`config/firebase.credentials.json`** (no se versiona).
    Alternativa: variable de entorno `MIDFF_FCM_CUENTA_SERVICIO` con la ruta del JSON.
-2. **Para entrar a la consola de Firebase:** dejar un archivo de texto llamado
-   **`cuenta_admin.txt` dentro de la carpeta `firebase/`**
-   (ruta exacta: `firebase/cuenta_admin.txt`) con el **correo y la contraseña** de la
-   cuenta administradora del proyecto. Con esas credenciales se inicia sesión en
-   `console.firebase.google.com` (proyecto **MIDFF Alertas**).
+2. **Para entrar a la consola de Firebase:** iniciar sesión en
+   `console.firebase.google.com` (proyecto **MIDFF Alertas**) con las credenciales
+   administrativas guardadas en un **gestor de contraseñas**, fuera del repositorio.
+   Ninguna credencial se versiona ni se almacena en archivos del proyecto.
 3. (Solo para recompilar la app) `android/MidffAlertas/app/google-services.json`
    (existe plantilla `google-services.json.example` versionada).
 
@@ -144,7 +143,7 @@ El motor analiza cada transacción con un modelo de reglas ponderado y explicabl
 * **Bloqueo Preventivo:** botón "Bloquear" en la app → `POST /api/v1/bloquear` → `ALERTA.estado = BLOQUEADA` + `AUDITORIA`.
 * **Auditoría:** toda evaluación y decisión queda registrada de forma atómica e inmutable en Oracle XE.
 
-> Delimitación: el dashboard web (RF-13), el historial consultable (RF-14) y Firebase Realtime Database (RF-12) quedan para la versión 1.1 (post-MVP). El alcance completo está en `MVP_MIDFF.md`.
+> Delimitación: el dashboard web (RF-13) y el historial consultable (RF-14) **se entregaron en el post-MVP** (consola `MIDFF.html` + `GET /api/v1/estado`); Firebase Realtime Database (RF-12) quedó desplazada por esa sincronización vía API. El alcance completo está en `MVP_MIDFF.md` (v1.1).
 
 ---
 
@@ -434,7 +433,7 @@ La memoria completa y auditable del proyecto (decisiones D-01 a D-58, métricas,
 
 ## 11. Créditos y Información del Desarrollador
 
-* **Desarrollador / Responsable:** Alejandro — Residente del proyecto (Residencias Profesionales, Ingeniería en Sistemas Computacionales, PluriOne).
+* **Desarrollador / Responsable:** Alejandro Miranda Martínez — Residente del proyecto (Residencias Profesionales, Ingeniería en Sistemas Computacionales, PluriOne).
 * **Documentos base:** `PRD_MIDFF.md` (requisitos) y `MVP_MIDFF.md` (alcance, DoD y métricas).
 * **Metodología:** Scrum — 4 sprints de 2 semanas + fase post-MVP; bitácora con entradas `BIT-001` a `BIT-036`.
 * **Uso declarado de IA:** partes del código, las pruebas y la documentación fueron desarrolladas con asistencia de un agente de programación basado en IA, bajo dirección, decisión técnica y revisión del residente; el diseño, el alcance y cada decisión (D-01…D-58) quedan documentados en `BITACORA.md`.

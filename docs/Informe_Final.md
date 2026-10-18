@@ -1,7 +1,7 @@
 # MIDFF — Informe Final de Residencia Profesional
 
 **Proyecto:** Motor Inteligente de Detección de Fraude Financiero (MIDFF)
-**Empresa:** PluriOne · **Residente:** (nombre del residente) · **Fecha:** 15/10/2026
+**Empresa:** PluriOne · **Residente:** Alejandro Miranda Martínez · **Fecha:** 15/10/2026
 
 ---
 
