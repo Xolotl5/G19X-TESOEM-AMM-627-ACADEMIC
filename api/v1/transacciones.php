@@ -39,8 +39,10 @@ declare(strict_types=1);
  --                  contexto (passthrough al motor mientras no exista la
  --                  tabla de historial; si falta, el motor aplica fail-safe).
  --
- -- VARIABLES DE ENTORNO OPCIONALES:
- --   MIDFF_API_KEY   clave esperada en X-API-Key (default de desarrollo)
+ -- VARIABLES DE ENTORNO:
+ --   MIDFF_API_KEY   clave esperada en X-API-Key: OBLIGATORIA y EXCLUSIVA
+ --                  de los sistemas de ingesta del banco (la app Android no
+ --                  la conoce ni la envia, BIT-037; ver .env.example)
  --   MIDFF_MOTOR_EXE ruta del ejecutable del motor C
  --------------------------------------------------------------------------------
  */
@@ -59,9 +61,6 @@ define('MIDFF_MOTOR_EXE', getenv('MIDFF_MOTOR_EXE')
        . DIRECTORY_SEPARATOR . 'bin' . DIRECTORY_SEPARATOR . 'midff-scoring.exe');
 
 /* -----------------------------------------------------------------------------
- * Utilidades de respuesta HTTP (siempre JSON)
- * -------------------------------------------------------------------------- */
-/* -----------------------------------------------------------------------------
  * 1. METODO: solo POST (405 + encabezado Allow, RFC 7231)
  * -------------------------------------------------------------------------- */
 if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
@@ -70,11 +69,11 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
 }
 
 /* -----------------------------------------------------------------------------
- * 2. API KEY (RF-02 / RNF-03): comparacion en tiempo constante (hash_equals)
+ * 2. API KEY (RF-02 / RNF-03): comparacion en tiempo constante (hash_equals).
+ *    BIT-037 (Corte 2): MIDFF_API_KEY es la llave de INGESTA del banco; los
+ *    endpoints de la app ya no la aceptan (solo el token de Firebase).
  * -------------------------------------------------------------------------- */
 midff_exigir_api_key();
-
-
 
 /* -----------------------------------------------------------------------------
  * 3. CUERPO JSON Y VALIDACION DE CAMPOS (RF-02 / HU-MVP-01.3)

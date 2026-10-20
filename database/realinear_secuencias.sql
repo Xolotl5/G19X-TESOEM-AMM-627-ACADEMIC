@@ -11,7 +11,7 @@
 --   recurrencias anteriores; BIT-026 lo blinda de forma permanente).
 --
 -- USO (desde sqlplus con el usuario del esquema):
---   sqlplus MIDFFuser/midffadmin@localhost:1521/XEPDB1 @database\realinear_secuencias.sql
+--   sqlplus MIDFFuser@localhost:1521/XEPDB1 @database\realinear_secuencias.sql
 --
 -- Tambien lo ejecuta servidor.ps1 automaticamente al arrancar la demo (paso
 -- 4/5). Requiere Oracle 18c+ (ALTER SEQUENCE ... RESTART; XE 21c local OK).

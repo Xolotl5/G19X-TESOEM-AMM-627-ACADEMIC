@@ -73,10 +73,10 @@ registra contra la API (autoregistro del servicio o botón *Registrar token*):
 
 ```http
 POST /api/v1/dispositivos
-X-API-Key: MIDFF-API-KEY-2026-SPRINT2
+Authorization: Bearer <ID token de Firebase del cliente>
 Content-Type: application/json
 
-{ "usuario": "OFICIAL-01", "rol": "OFICIAL",
+{ "usuario": "cliente@banco.mx",
   "token_fcm": "<token de 64-255 caracteres>", "activo": true }
 ```
 
@@ -105,7 +105,7 @@ monto, score, clasificación, decisión y trazabilidad (`id_transaccion`,
 
 ## 5. Verificación (métrica "push < 2 s")
 
-1. `sqlplus MIDFFuser/midffadmin@localhost:1521/XEPDB1 @database/dispositivo_movil.sql`
+1. `sqlplus MIDFFuser@localhost:1521/XEPDB1 @database/dispositivo_movil.sql`
 2. Registrar el dispositivo real (paso 3) con la server key configurada.
 3. `.\smoke-test.ps1` — los casos MEDIO/ALTO disparan el push; el log de la API
    imprime `[MIDFF-FCM] ... exitosos=1 ... envio_ms=...` y la app recibe la

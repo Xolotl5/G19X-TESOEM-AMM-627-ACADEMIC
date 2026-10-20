@@ -15,7 +15,7 @@
 --       insercion; @@ invoca al script idempotente de BIT-026).
 --
 -- USO (desde la raiz del repositorio):
---   sqlplus MIDFFuser/midffadmin@localhost:1521/XEPDB1 @database\limpiar_pruebas.sql
+--   sqlplus MIDFFuser@localhost:1521/XEPDB1 @database\limpiar_pruebas.sql
 --
 -- NOTA: la bandeja LOCAL de la app (SharedPreferences del telefono) no depende
 --   de esta limpieza: use el boton "Limpiar" de la pestana Perfil de la app.

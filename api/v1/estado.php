@@ -4,7 +4,8 @@ declare(strict_types=1);
 /*
   --------------------------------------------------------------------------------
   -- MIDFF - Estado en Oracle de las alertas de un cliente (BIT-027)
-  -- Endpoint : GET /api/v1/estado?id_cliente=CLI-001   (header: X-API-Key)
+  -- Endpoint : GET /api/v1/estado?id_cliente=CLI-001
+  --            (header: Authorization: Bearer <ID token de Firebase>)
   -- Archivo  : api/v1/estado.php
   --
   -- Proposito: la bandeja de la app es un reflejo local de los push; cuando el
@@ -18,7 +19,8 @@ declare(strict_types=1);
   --   { ok, id_cliente, generado, alertas: [ { id_alerta: "ALR-<anio>-<num>",
   --     estado: PENDIENTE|ATENDIDA|BLOQUEADA, clasificacion, decision,
   --     respuesta, atendida_por, fecha_atencion, id_transaccion } ] }
-  -- ERRORES: 405 metodo · 401 API Key · 400 id_cliente · 500 Oracle.
+  -- ERRORES: 405 metodo · 401 token ausente/invalido · 400 id_cliente ·
+  --          403 id_cliente ajeno · 500 Oracle.
   --------------------------------------------------------------------------------
  */
 
@@ -32,7 +34,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'GET') {
     responder(405, ['error' => 'metodo no permitido: use GET /api/v1/estado']);
 }
 
-midff_exigir_api_key();
+/* BIT-037 (Corte 2): endpoint de la app; la X-API-Key de ingesta del banco ya
+ * NO autoriza aqui (viaja dentro del APK). Solo el ID token de Firebase. */
 
 /* BIT-036 (Corte 1): el id_cliente YA NO se confia al parametro de la URL.
  * Se deriva del ID token de Firebase del usuario autenticado; el parametro

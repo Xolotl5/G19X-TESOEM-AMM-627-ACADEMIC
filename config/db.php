@@ -25,8 +25,8 @@ require_once __DIR__ . DIRECTORY_SEPARATOR . 'http.php';
  --      BLOQUEO en AUDITORIA en una sola unidad atomica (HU-MVP-06 / RF-08).
  --
  -- VARIABLES DE ENTORNO RECONOCIDAS (produccion; jamas versionar credenciales):
- --   MIDFF_DB_USUARIO   (default: MIDFFuser)
- --   MIDFF_DB_CLAVE     (default: midffadmin)
+ --   MIDFF_DB_USUARIO   (obligatoria; p. ej. MIDFFuser)
+ --   MIDFF_DB_CLAVE     (obligatoria; vive solo en .env, BIT-036/037)
  --   MIDFF_DB_HOST      (default: localhost)
  --   MIDFF_DB_PUERTO    (default: 1521)
  --   MIDFF_DB_SERVICIO  (default: XEPDB1)

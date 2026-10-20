@@ -19,8 +19,9 @@
 
 1. **Oracle:** ejecutar `database/MIDFFuser.sql` y luego el resto de scripts
    (`schema.sql`, `dispositivo_movil*.sql`, `admin_usuario.sql`,
-   `sp_bloquear_alerta.sql`) como SYSTEM. Conexión por defecto de la API:
-   `MIDFFuser/midffadmin@localhost:1521/XEPDB1` (variables `MIDFF_DB_*` para cambiar).
+   `sp_bloquear_alerta.sql`) como SYSTEM. Conexión de la API definida por
+   entorno en `.env` (copiar `.env.example`; sin `MIDFF_DB_USUARIO` /
+   `MIDFF_DB_CLAVE` la API responde 500 y se niega a atender).
 2. **Motor C:** `.\build.ps1` → compila `src/motor/bin/midff-scoring.exe` y ejecuta
    167 verificaciones. El ejecutable puede fijarse con `MIDFF_MOTOR_EXE`.
 3. **Firebase:** cuenta de servicio en `config/firebase.credentials.json` (o variable
@@ -36,14 +37,15 @@
 
 | Método y ruta | Auth | Función |
 |---|---|---|
-| `POST /api/v1/transacciones` | `X-API-Key` | Ingesta + score + decisión + persistencia + push (contrato Anexo A del MVP) |
-| `POST /api/v1/dispositivos` | `X-API-Key` | Registro/UPSERT de token FCM por cliente |
-| `POST /api/v1/bloquear` | `X-API-Key` | Bloqueo preventivo del oficial (SP_BLOQUEAR_ALERTA) |
-| `POST /api/v1/desbloquear` | `X-API-Key` | Desbloqueo tras confirmación del cliente (push de ESTADO) |
-| `POST /api/v1/reportar` | `X-API-Key` | "No fui yo" del cliente (409 si ya fue reportada) |
-| `GET /api/v1/estado?id=` | `X-API-Key` | Estado de una alerta |
-| `GET /api/v1/admin/alertas` | admin consola | Historial completo para `MIDFF.html` |
-| `POST /api/v1/baja` | `X-API-Key` | Baja lógica de cuenta + purga verificada contra Firebase |
+| `POST /api/v1/transacciones` | `X-API-Key` (ingesta del banco) | Ingesta + score + decisión + persistencia + push (contrato Anexo A del MVP) |
+| `POST /api/v1/dispositivos` | Bearer: ID token de Firebase (cliente) | Registro/UPSERT de token FCM por cliente (rol fijo CLIENTE, BIT-037) |
+| `GET /api/v1/dispositivos` | Bearer: sesión de admin (consola) | Listado de dispositivos dados de alta (vista del banco) |
+| `POST /api/v1/bloquear` | Bearer: sesión de admin (consola) | Bloqueo preventivo (SP_BLOQUEAR_ALERTA); usuario sale del token (BIT-037) |
+| `POST /api/v1/desbloquear` | Bearer: sesión de admin (consola) | Desbloqueo tras confirmación del cliente (push de ESTADO) |
+| `POST /api/v1/reportar` | Bearer: ID token de Firebase (cliente) | "No/Sí fui yo" del cliente (409 si ya fue reportada) |
+| `GET /api/v1/estado?id=` | Bearer: ID token de Firebase (cliente) | Estado de SUS alertas (403 si pide las ajenas) |
+| `GET /api/v1/admin/*` | Bearer: sesión de admin (consola) | KPIs, bandeja global, clientes y sincronización de bajas para `MIDFF.html` |
+| `POST /api/v1/baja` | Bearer: ID token de Firebase (cliente) | Baja de cuenta + purga verificada contra Firebase |
 | `GET /api/v1/ping` | pública | Faro de descubrimiento (`{"servicio":"midff"}`) |
 
 ## 4. Operación diaria

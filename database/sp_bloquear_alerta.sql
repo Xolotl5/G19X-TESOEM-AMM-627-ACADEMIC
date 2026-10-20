@@ -36,7 +36,7 @@
 --   D-24 con database/dispositivo_movil.sql).
 --
 -- EJECUCION (SQL*Plus, como MIDFFuser en Oracle XE; COMPLEMENTA schema.sql):
---   sqlplus MIDFFuser/midffadmin@localhost:1521/XEPDB1 @sp_bloquear_alerta.sql
+--   sqlplus MIDFFuser@localhost:1521/XEPDB1 @sp_bloquear_alerta.sql
 --------------------------------------------------------------------------------
 
 PROMPT ========================================================================

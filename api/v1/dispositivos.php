@@ -5,7 +5,10 @@ declare(strict_types=1);
   --------------------------------------------------------------------------------
   -- MIDFF - Motor Inteligente de Deteccion de Fraude Financiero
   -- Componente: API REST (Sprint 3)
-  -- Endpoint : POST /api/v1/dispositivos   (header obligatorio: X-API-Key)
+  -- Endpoint : POST /api/v1/dispositivos  (header obligatorio:
+  --            Authorization: Bearer <ID token de Firebase del cliente>)
+  --            GET  /api/v1/dispositivos  (header obligatorio:
+  --            Authorization: Bearer <token de sesion de administrador>)
   -- Archivo  : api/v1/dispositivos.php
   --
   -- Proposito: registrar (UPSERT) el token FCM que entrega la app Android
@@ -16,23 +19,37 @@ declare(strict_types=1);
   --   se entrega SOLO a los dispositivos de su dueno.
   --
   -- Requisitos: RF-09 (notificacion push), RF-10 (app Android de alertas),
-  --             RF-02 (validacion de entrada y API Key, misma que
-  --             transacciones.php por decision D-25).
+  --             RF-02 (validacion de entrada).
+  --
+  -- SEGURIDAD (BIT-037, Corte 2):
+  --   - POST (app): SOLO ID token de Firebase; la llave de ingesta del banco
+  --     (MIDFF_API_KEY) ya no autoriza este endpoint porque viaja dentro del
+  --     APK y con ella no se debe poder tocar datos de clientes.
+  --   - GET (banco): sesion de administrador de MIDFF.html (antes bastaba la
+  --     X-API-Key compartida que tambien viaja en el APK).
+  --   - Primer registro: un id_cliente que ya pertenece a OTRO uid de
+  --     Firebase se rechaza con 403 (hueco de suplantacion: una cuenta nueva
+  --     podia registrarse con el id de otro y leer sus alertas).
+  --   - rol: la app solo puede registrar CLIENTE; el valor del cuerpo NO se
+  --     acepta (antes cualquiera con la llave podia autoproclamarse ADMIN).
   --
   -- CONTRATO DE ENTRADA (JSON):
   --   Obligatorios : token_fcm (string 64-255, el que entrega Firebase)
   --                  usuario   (string <= 60, correo del cliente o usuario)
   --   Opcionales   : id_cliente (string <= 40, cliente dueno del dispositivo;
-  --                              vacio = broadcast legado, modo oficial/demo)
-  --                  rol     (CLIENTE | OFICIAL | SUPERVISOR | ADMIN;
-  --                           default OFICIAL)
+  --                              se acepta SOLO la primera vez y solo si no
+  --                              pertenece ya a otra cuenta; despues queda
+  --                              fijado al uid del token)
+  --                  rol     (DESPRECADO: se ignora; la app siempre
+  --                           registra CLIENTE desde el BIT-037)
   --                  activo  (boolean; default true)
   --
   -- CONTRATO DE SALIDA (200):
   --   { "ok": true, "accion": "INSERT"|"UPDATE", "id_dispositivo": n,
   --     "token": "...<ultimos 6>", "mensaje": "..." }
   --
-  -- ERRORES: 405 metodo distinto de POST · 401 API Key invalida ·
+  -- ERRORES: 405 metodo distinto de GET/POST · 401 token ausente/invalido ·
+  --          403 id_cliente ajeno o rol distinto de CLIENTE ·
   --          400 cuerpo/campos invalidos · 500 fallo de Oracle.
   --------------------------------------------------------------------------------
 */
@@ -42,11 +59,6 @@ require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SE
 
 date_default_timezone_set('America/Mexico_City');
 
-/* Misma clave del endpoint de transacciones (D-25): una sola API Key para el MVP. */
-
-/* -----------------------------------------------------------------------------
- * Utilidades de respuesta HTTP (siempre JSON)
- * -------------------------------------------------------------------------- */
 /* -----------------------------------------------------------------------------
  * UPSERT del dispositivo en DISPOSITIVO_MOVIL (database/dispositivo_movil.sql)
  *
@@ -151,9 +163,15 @@ if ($metodo !== 'POST' && $metodo !== 'GET') {
 }
 
 /* -----------------------------------------------------------------------------
- * 2. API KEY (RF-02 / RNF-03): la misma de POST /api/v1/transacciones (D-25)
+ * 2. AUTORIZACION (BIT-037, Corte 2), por metodo:
+ *    - GET  (vista del banco/admin) -> sesion de administrador de MIDFF.html
+ *      (token Bearer HMAC; antes bastaba la X-API-Key que viaja en el APK).
+ *    - POST (registro desde la app) -> ID token de Firebase (paso 2a); la
+ *      llave de ingesta del banco ya NO autoriza este endpoint.
  * -------------------------------------------------------------------------- */
-midff_exigir_api_key();
+if ($metodo === 'GET') {
+    $adminSesion = midff_admin_token_validar();
+}
 
 /* -----------------------------------------------------------------------------
  * 2a. BIT-036 (Corte 1): el REGISTRO exige el ID token de Firebase.
@@ -177,8 +195,6 @@ if (($metodo ?? '') === 'POST') {
                                  . trim($e->getMessage())]);
     }
 }
-
-
 
 /* -----------------------------------------------------------------------------
  * 2b. GET: lista de dispositivos con su id_cliente (BIT-018, banco/admin).
@@ -220,12 +236,14 @@ if (mb_strlen($usuario) > 60) {
     rechazar('usuario excede 60 caracteres');
 }
 
-// rol: CLIENTE | OFICIAL | SUPERVISOR | ADMIN (CHECK en DISPOSITIVO_MOVIL.rol);
-// default OFICIAL para no romper llamadas existentes (banco.html/curl).
-$rol = strtoupper((string) ($cuerpo['rol'] ?? 'OFICIAL'));
-if (!in_array($rol, ['CLIENTE', 'OFICIAL', 'SUPERVISOR', 'ADMIN'], true)) {
-    rechazar('rol invalido: se espera CLIENTE, OFICIAL, SUPERVISOR o ADMIN');
+// rol (BIT-037, Corte 2): quien llama es la app (ID token de Firebase), asi
+// que el rol SIEMPRE es CLIENTE; el valor del cuerpo NO se acepta (con la
+// llave compartida de antes cualquiera podia autoproclamarse ADMIN).
+$rolCuerpo = strtoupper((string) ($cuerpo['rol'] ?? 'CLIENTE'));
+if ($rolCuerpo !== 'CLIENTE') {
+    responder(403, ['error' => 'la app solo puede registrar dispositivos con rol CLIENTE']);
 }
+$rol = 'CLIENTE';
 
 // id_cliente (BIT-017): opcional, string <= 40 (mismo tamanio que en
 // transacciones.php); vincula el dispositivo al dueno de las transacciones.
@@ -260,6 +278,26 @@ if ($tokenUsuario !== null) {
                                      . 'autenticado en este dispositivo']);
         }
         $idCliente = $idClientePrevio;
+    } elseif ($idCliente !== '') {
+        // BIT-037 (Corte 2), PRIMER REGISTRO: se cierra el hueco por el que
+        // una cuenta nueva de Firebase podia registrarse con el id_cliente de
+        // OTRO cliente y leer sus alertas en estado.php: el id solo se admite
+        // si no esta vinculado ya a un uid distinto del autenticado.
+        try {
+            $cnxD  = midff_db_conectar();
+            $sentD = $cnxD->prepare('SELECT uid_firebase FROM DISPOSITIVO_MOVIL'
+                                  . ' WHERE id_cliente = :cliente AND activo = 1'
+                                  . ' AND uid_firebase IS NOT NULL AND uid_firebase <> :uidfb'
+                                  . ' FETCH FIRST 1 ROWS ONLY');
+            $sentD->execute([':cliente' => $idCliente, ':uidfb' => $uidFirebase]);
+            if ($sentD->fetch(PDO::FETCH_ASSOC) !== false) {
+                responder(403, ['error' => 'el id_cliente ya esta vinculado a otra '
+                                         . 'cuenta de Firebase']);
+            }
+        } catch (PDOException $e) {
+            responder(500, ['error' => 'fallo Oracle al verificar el id_cliente: '
+                                     . trim($e->getMessage())]);
+        }
     }
 }
 

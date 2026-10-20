@@ -5,7 +5,8 @@ declare(strict_types=1);
   --------------------------------------------------------------------------------
   -- MIDFF - Motor Inteligente de Deteccion de Fraude Financiero
   -- Componente: reporte del cliente desde la app (Post-MVP, BIT-020)
-  -- Endpoint : POST /api/v1/reportar   (header obligatorio: X-API-Key)
+  -- Endpoint : POST /api/v1/reportar
+  --            (header: Authorization: Bearer <ID token de Firebase>)
   -- Archivo  : api/v1/reportar.php
   --
   -- Proposito: el cliente responde a SUS alertas con "No fui yo" (sospecha
@@ -21,7 +22,8 @@ declare(strict_types=1);
   --   Opcionales   : comentario (string <= 180)
   --
   -- CONTRATO DE SALIDA (200): { ok, mensaje, id_auditoria }
-  -- ERRORES: 405 metodo · 401 API Key · 400 campos · 404 alerta ajena ·
+  -- ERRORES: 405 metodo · 401 token ausente/invalido · 400 campos ·
+  --          403 id_cliente ajeno · 404 alerta ajena ·
   --          409 ya reportada · 500 fallo de Oracle.
   --------------------------------------------------------------------------------
  */
@@ -37,9 +39,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     responder(405, ['error' => 'metodo no permitido: use POST /api/v1/reportar']);
 }
 
-midff_exigir_api_key();
-
-
+/* BIT-037 (Corte 2): endpoint de la app; la X-API-Key de ingesta del banco ya
+ * NO autoriza aqui (viaja dentro del APK). Solo el ID token de Firebase. */
 
 $cuerpo = json_decode((string) file_get_contents('php://input'), true);
 if (!is_array($cuerpo)) {

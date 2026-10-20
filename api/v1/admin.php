@@ -16,7 +16,9 @@ declare(strict_types=1);
   --   1. POST sesion valida contra ADMIN_USUARIO (bcrypt o clave temporal
   --      de desarrollo) y firma {usuario, exp} con MIDFF_ADMIN_SECRETO.
   --   2. El resto de acciones exigen "Authorization: Bearer <token>".
-  --   El endpoint de bloqueo sigue siendo POST /api/v1/bloquear (X-API-Key).
+  --   El token lo firman/validan midff_admin_token_firmar/validar de
+  --   config/http.php (BIT-037: bloquear.php, desbloquear.php y el GET de
+  --   dispositivos.php comparten la MISMA sesion de administrador).
   --
   -- ERRORES: 405 metodo - 400 cuerpo - 401 credenciales/token - 500 Oracle.
   --------------------------------------------------------------------------------
@@ -29,32 +31,10 @@ require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SE
 
 date_default_timezone_set('America/Mexico_City');
 
-define('MIDFF_ADMIN_SECRETO', midff_env_obligatoria('MIDFF_ADMIN_SECRETO'));
-define('MIDFF_ADMIN_SESION_SEG', 8 * 3600);
-
-/* --------------------------- Token de sesion (HMAC) ------------------------- */
-function midff_admin_token_firmar(string $usuario): string
-{
-    $payload = rtrim(strtr(base64_encode(json_encode(['u' => $usuario, 'exp' => time() + MIDFF_ADMIN_SESION_SEG])), '+/', '-_'), '=');
-    return $payload . '.' . hash_hmac('sha256', $payload, MIDFF_ADMIN_SECRETO);
-}
-
-function midff_admin_token_validar(): string
-{
-    $encabezado = $_SERVER['HTTP_AUTHORIZATION'] ?? '';
-    if (strpos($encabezado, 'Bearer ') !== 0) {
-        responder(401, ['error' => 'encabezado Authorization: Bearer ausente']);
-    }
-    $partes = explode('.', substr($encabezado, 7));
-    if (count($partes) !== 2 || !hash_equals(hash_hmac('sha256', $partes[0], MIDFF_ADMIN_SECRETO), $partes[1])) {
-        responder(401, ['error' => 'token de sesion invalido']);
-    }
-    $datos = json_decode((string) base64_decode(strtr($partes[0], '-_', '+/')), true);
-    if (!is_array($datos) || (int) ($datos['exp'] ?? 0) < time()) {
-        responder(401, ['error' => 'sesion expirada: vuelva a iniciar sesion']);
-    }
-    return (string) ($datos['u'] ?? '');
-}
+/* Token de sesion (HMAC): MIDFF_ADMIN_SECRETO y las funciones
+ * midff_admin_token_firmar()/midff_admin_token_validar() viven en
+ * config/http.php desde el BIT-037, compartidas con bloquear.php,
+ * desbloquear.php y el GET de dispositivos.php. */
 
 function midff_admin_conectar(): PDO
 {

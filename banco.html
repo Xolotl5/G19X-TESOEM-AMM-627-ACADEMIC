@@ -49,7 +49,7 @@ code{background:#0e0b1c;padding:1px 5px;border-radius:4px}
     <h2>Conexión a la API</h2>
     <div class="config">
       <div class="campo"><label>URL del endpoint</label><input id="apiUrl" placeholder="/api/v1/transacciones"></div>
-      <div class="campo"><label>X-API-Key</label><input id="apiKey" value="MIDFF-API-KEY-2026-SPRINT2"></div>
+      <div class="campo"><label>X-API-Key</label><input id="apiKey" placeholder="valor de MIDFF_API_KEY (.env local)"></div>
     </div>
     <div class="nota">Abre esta página vía <code>http://127.0.0.1:8091/banco.html</code> (servidor: <code>php -S 0.0.0.0:8091 router.php</code>) para evitar problemas de CORS. La URL se recuerda entre sesiones (puerto 8091: el 8090 suele estar ocupado por Wondershare).</div>
   </div>
@@ -57,10 +57,10 @@ code{background:#0e0b1c;padding:1px 5px;border-radius:4px}
   <div class="tarjeta">
     <h2>Clientes registrados en la app (vista del banco)</h2>
     <div class="botones">
-      <button class="btn-aleatoria" onclick="cargarClientes()">Actualizar lista</button>
+      <button class="btn-aleatoria" onclick="window.open('MIDFF.html','_blank')">Abrir consola MIDFF.html</button>
     </div>
-    <ul class="historial" id="listaClientes"><li>Pulse «Actualizar lista» (GET /api/v1/dispositivos) para ver los clientes dados de alta en la app.</li></ul>
-    <div class="nota">Cada cliente ve en su app un <b>ID de cliente</b> generado al crear su cuenta. Para enviarle transacciones, use ese ID en el campo <code>id_cliente</code> (el botón «Usar» de cada fila lo copia al formulario).</div>
+    <ul class="historial" id="listaClientes"><li>Desde el BIT-037 esta vista exige sesión de administrador: abra la <b>consola MIDFF.html</b> (pestaña <b>Clientes</b>) para ver los ID de cliente dados de alta en la app.</li></ul>
+    <div class="nota">Cada cliente ve en su app un <b>ID de cliente</b> generado al crear su cuenta. Cópielo desde la consola y péguelo aquí en el campo <code>id_cliente</code> para enviarle transacciones.</div>
   </div>
 
   <div class="tarjeta">
@@ -188,41 +188,18 @@ function aleatoria() {
   $('ctx_ip').value = '189.203.4.7';
 }
 
-/* BIT-018: clientes registrados en la app (GET /api/v1/dispositivos). */
+/* BIT-018 → BIT-037: la lista de clientes registrados ya NO se consulta desde
+   aqui. GET /api/v1/dispositivos exige la sesion de administrador de la
+   consola (la X-API-Key de ingesta solo sirve para meter transacciones), asi
+   que esta vista se degrada a un aviso que remite a MIDFF.html. */
 let clientesRegistrados = [];
 
-async function cargarClientes() {
-  const ul = $('listaClientes');
-  ul.innerHTML = '<li>Cargando…</li>';
-  try {
-    const base = $('apiUrl').value.trim().replace(/\/transacciones$/, '');
-    const res = await fetch(base + '/dispositivos', {headers: {'X-API-Key': $('apiKey').value.trim()}});
-    const json = await res.json().catch(() => ({error: 'respuesta no JSON (HTTP ' + res.status + ')'}));
-    if (json.error) { ul.innerHTML = '<li>' + json.error + '</li>'; return; }
-    const filas = json.dispositivos || [];
-    if (!filas.length) { ul.innerHTML = '<li>Sin dispositivos registrados todavía (registre el token desde la app).</li>'; return; }
-    ul.innerHTML = '';
-    clientesRegistrados = [];
-    for (const d of filas) {
-      const idCli = d.ID_CLIENTE || d.id_cliente || '';
-      const usuario = d.USUARIO || d.usuario || '';
-      const rol = d.ROL || d.rol || '';
-      const activo = String(d.ACTIVO ?? d.activo) === '1';
-      if (idCli && activo) { clientesRegistrados.push(idCli); }
-      const li = document.createElement('li');
-      li.innerHTML = '<span><b>' + (idCli || '(sin vincular)') + '</b> · ' + usuario + ' · ' + rol + (activo ? '' : ' · <i>inactivo</i>') + '</span>'
-        + (idCli === '(sin vincular)' || !idCli ? '' :
-           '<button class="btn-aleatoria" style="padding:4px 10px" onclick="usarCliente(\'' + idCli + '\')">Usar</button>');
-      ul.appendChild(li);
-    }
-    // UX: si el id_cliente actual no es uno registrado, se usa el primero
-    // activo para que las pruebas lleguen SIEMPRE a un telefono real.
-    if (clientesRegistrados.length && !clientesRegistrados.includes($('id_cliente').value.trim())) {
-      $('id_cliente').value = clientesRegistrados[0];
-    }
-  } catch (e) {
-    ul.innerHTML = '<li>ERROR de red: ' + e.message + '</li>';
-  }
+function cargarClientes() {
+  $('listaClientes').innerHTML =
+    '<li>Desde el BIT-037 esta vista exige sesión de administrador: abra la ' +
+    '<b>consola MIDFF.html</b> (pestaña <b>Clientes</b>) para ver los ID de ' +
+    'cliente dados de alta en la app y cópielos en el campo ' +
+    '<code>id_cliente</code> de este simulador.</li>';
 }
 
 function usarCliente(id) {
@@ -281,8 +258,8 @@ async function enviar() {
   }
 }
 
-/* Arranque: se cargan los clientes registrados para que el id_cliente del
-   formulario apunte a un telefono real desde el primer envio. */
+/* Arranque (BIT-037): se muestra el aviso de que la lista de clientes
+   registrados vive en la consola MIDFF.html (requiere sesion de admin). */
 if (location.protocol.startsWith('http')) {
   cargarClientes();
 }

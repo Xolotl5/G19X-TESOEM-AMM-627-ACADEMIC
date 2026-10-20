@@ -53,9 +53,10 @@ Con SQL*Plus (o SQL Developer) conectado como **SYSTEM**, ejecutar en este orden
 
 > `realinear_secuencias.sql` lo ejecuta `servidor.ps1` automáticamente en cada arranque
 > (anti `ORA-00001`); `limpiar_pruebas.sql` es solo para vaciar datos de prueba.
-> La API conecta por defecto con `MIDFFuser/midffadmin@localhost:1521/XEPDB1`
-> (sobreescribible con las variables de entorno `MIDFF_DB_USUARIO`, `MIDFF_DB_CLAVE`,
-> `MIDFF_DB_HOST`, `MIDFF_DB_PUERTO`, `MIDFF_DB_SERVICIO`).
+> **Credenciales:** ninguna vive en el código ni en este README. Copie
+> `.env.example` a `.env` y llene los valores (usuario/clave de Oracle, llave de
+> ingesta, secretos de consola y Firebase); `servidor.ps1` lo carga al arrancar y,
+> si falta una variable, la API responde 500 y se niega a atender (RNF-03).
 
 ### Paso 2 — Compilar el motor C
 
@@ -215,32 +216,48 @@ C:\todoMIDFF
 
    ```
    sqlplus sys/ClaveSys@localhost:1521/XEPDB1 AS SYSDBA
-   CREATE USER MIDFFuser IDENTIFIED BY midffadmin QUOTA UNLIMITED ON USERS;
+   CREATE USER MIDFFuser IDENTIFIED BY "<clave que definirá en su .env>" QUOTA UNLIMITED ON USERS;
    GRANT CREATE SESSION, CREATE TABLE, CREATE SEQUENCE, CREATE TRIGGER,
          CREATE PROCEDURE, CREATE TYPE TO MIDFFuser;
    ```
 
-3. Instale los tres scripts DDL (todos **re-ejecutables**), desde la raíz del repo:
+3. Instale los tres scripts DDL (todos **re-ejecutables**), desde la raíz del repo
+   (SQL*Plus pide la clave de `MIDFFuser` al conectar; guárdela en su `.env`):
 
    ```
-   sqlplus MIDFFuser/midffadmin@localhost:1521/XEPDB1 @database\schema.sql
-   sqlplus MIDFFuser/midffadmin@localhost:1521/XEPDB1 @database\dispositivo_movil.sql
-   sqlplus MIDFFuser/midffadmin@localhost:1521/XEPDB1 @database\sp_bloquear_alerta.sql
+   sqlplus MIDFFuser@localhost:1521/XEPDB1 @database\schema.sql
+   sqlplus MIDFFuser@localhost:1521/XEPDB1 @database\dispositivo_movil.sql
+   sqlplus MIDFFuser@localhost:1521/XEPDB1 @database\sp_bloquear_alerta.sql
    ```
 
    Debe ver los PROMPT de éxito: *13 objetos del esquema*, *Tabla DISPOSITIVO_MOVIL instalada* y *SP_BLOQUEAR_ALERTA creado*.
 
-### 5.2 API REST en PHP (credenciales de Oracle)
+### 5.2 API REST en PHP (credenciales por entorno)
 
-Las credenciales viven en **variables de entorno** (RNF-03: nunca en el código ni en Git); si no se definen, `config/db.php` usa los placeholders de desarrollo:
+Las credenciales viven **solo en variables de entorno** (RNF-03: nunca en el código ni en Git). No hay valores por defecto: copie **`.env.example`** a `.env`, llene cada valor y `servidor.ps1`/`smoke-test.ps1` lo inyectan al proceso. Si falta una variable obligatoria, `config/http.php` (`midff_env_obligatoria()`) responde **500** y la API se niega a atender.
 
-| Variable de entorno | Default (desarrollo) | Uso |
+| Variable de entorno | Obligatoria | Uso |
 | :--- | :--- | :--- |
-| `MIDFF_DB_USUARIO` | `MIDFFuser` | Usuario de Oracle. |
-| `MIDFF_DB_CLAVE` | `midffadmin` | Contraseña de Oracle. |
-| `MIDFF_DB_HOST` / `MIDFF_DB_PUERTO` / `MIDFF_DB_SERVICIO` | `localhost` / `1521` / `XEPDB1` | Conexión EZConnect. |
-| `MIDFF_API_KEY` | `MIDFF-API-KEY-2026-SPRINT2` | `X-API-Key` de los 3 endpoints. |
-| `MIDFF_FCM_CUENTA_SERVICIO` | `config\firebase.credentials.json` | Ruta del JSON de cuenta de servicio. |
+| `MIDFF_DB_USUARIO` / `MIDFF_DB_CLAVE` | ✅ | Acceso a Oracle (esquema `MIDFFuser`). |
+| `MIDFF_DB_HOST` / `MIDFF_DB_PUERTO` / `MIDFF_DB_SERVICIO` | No (localhost / 1521 / XEPDB1) | Conexión EZConnect. |
+| `MIDFF_API_KEY` | ✅ | `X-API-Key` de **ingesta del banco** (`POST /api/v1/transacciones`). Los endpoints de la app ya no la aceptan: usan el ID token de Firebase (BIT-037). |
+| `MIDFF_ADMIN_SECRETO` | ✅ | Firma HMAC de las sesiones de la consola `MIDFF.html` (también exigida por `bloquear`/`desbloquear`/`GET /dispositivos`). |
+| `MIDFF_FIREBASE_WEB_KEY` | ✅ | Web API key del proyecto Firebase (valida los ID token del cliente). |
+| `MIDFF_FCM_CUENTA_SERVICIO` | No (`config\firebase.credentials.json`) | Ruta del JSON de cuenta de servicio (FCM HTTP v1). |
+
+Los valores reales están en el `.env` local (no versionado). La contraseña de Oracle se solicita al conectarse con `sqlplus MIDFFuser@localhost:1521/XEPDB1` (nunca va en la línea de comandos).
+
+#### 5.2.1 Modelo de autenticación por actor (BIT-036/037)
+
+Cada interfaz entra con una credencial distinta; **ninguna llave viaja en el APK**:
+
+| Actor | Cómo se autentica | Qué puede hacer |
+| :--- | :--- | :--- |
+| **App Android** (cliente) | `Authorization: Bearer <ID token de Firebase>` | Registrar su token FCM (rol fijo `CLIENTE`), ver/reportar **sus** alertas, darse de baja. Pedir datos ajenos → **403**. |
+| **Sistemas del banco** (ingesta) | `X-API-Key: <MIDFF_API_KEY>` | **Solo** `POST /api/v1/transacciones`. Esta llave ya no abre ningún endpoint de la app ni de la consola. |
+| **Consola `MIDFF.html`** (admin) | Login → sesión Bearer HMAC-SHA256 de 8 h (`MIDFF_ADMIN_SECRETO`) | KPIs, bandeja, **Bloquear/Desbloquear**, Clientes (incluye los ID dados de alta en la app) y sincronización de bajas. El responsable sale del token, no del cuerpo. |
+
+Códigos de la nueva autorización: **401** = falta/invalida token o llave (p. ej. X-API-Key sola en `/estado`, `/bloquear` o `GET /dispositivos`) · **403** = identidad válida pero recurso ajeno (id_cliente de otro, rol elevado) · **500** = falta una variable de entorno y la API se niega a atender (`midff_env_obligatoria`). Casos de prueba ejecutables: `smoke-test.ps1` §6b y `docs/Reporte_QA.md` §5.1 (incluye el 403 cruzado con curl).
 
 PHP necesita las DLLs del cliente Oracle en el `PATH` (`smoke-test.ps1` lo hace solo) y las extensiones `pdo_oci` (o `oci8`), `openssl`, `curl` y `mbstring` habilitadas en `php.ini`.
 
@@ -310,11 +327,10 @@ Panel web del administrador (abrir `http://127.0.0.1:8091/MIDFF.html` con el
 servidor PHP arriba). Requisito una sola vez:
 
 ```powershell
-sqlplus MIDFFuser/midffadmin@localhost:1521/XEPDB1 @database/admin_usuario.sql
+sqlplus MIDFFuser@localhost:1521/XEPDB1 @database/admin_usuario.sql
 ```
 
-- **Acceso semilla**: `admin` / `MIDFFadmin2026` (temporal: la propia consola
-  exige cambiarla al primer inicio y queda guardada como bcrypt en Oracle).
+- **Acceso semilla**: usuario `admin`; la **clave temporal la define quien ejecuta el script** (SQL*Plus la solicita al llegar al `INSERT`) y la propia consola exige cambiarla al primer inicio, quedando guardada como bcrypt en Oracle. No hay contraseña escrita en el repositorio.
 - **Funciones**: KPIs del día + gráfica por hora (24 h) + top clientes por
   riesgo, bandeja global de alertas con filtros (cliente/banda/estado) y
   **Bloquear** (reusa `POST /api/v1/bloquear` + `SP_BLOQUEAR_ALERTA` +
@@ -338,7 +354,7 @@ Guion de ~5 minutos (cumple el criterio 10 del DoD). Requiere: Oracle XE activo 
 2. **Transacción BAJO (sin alerta):**
 
    ```
-   curl -X POST http://127.0.0.1:8091/api/v1/transacciones -H "X-API-Key: MIDFF-API-KEY-2026-SPRINT2" -H "Content-Type: application/json" -d "{\"id_cliente\":\"CLI-001\",\"monto\":850.00,\"contexto\":{\"monto_promedio_historial\":1200.00,\"transacciones_ultima_hora\":1,\"ubicacion_habitual\":\"GDL\",\"ip_habitual\":\"189.203.4.7\"}}"
+   curl -X POST http://127.0.0.1:8091/api/v1/transacciones -H "X-API-Key: <valor de MIDFF_API_KEY en su .env>" -H "Content-Type: application/json" -d "{\"id_cliente\":\"CLI-001\",\"monto\":850.00,\"contexto\":{\"monto_promedio_historial\":1200.00,\"transacciones_ultima_hora\":1,\"ubicacion_habitual\":\"GDL\",\"ip_habitual\":\"189.203.4.7\"}}"
    ```
 
    → `score 0.0 · BAJO · APROBADA`, **sin** `alerta_id` y **sin** push.
@@ -375,7 +391,7 @@ Guion de ~5 minutos (cumple el criterio 10 del DoD). Requiere: Oracle XE activo 
 
 ## 8. Verificación en Oracle (consultas de control)
 
-Conéctese con `sqlplus MIDFFuser/midffadmin@localhost:1521/XEPDB1`:
+Conéctese con `sqlplus MIDFFuser@localhost:1521/XEPDB1` (la clave se pide al conectar; está en su `.env`):
 
 ```sql
 -- a) Bloqueos preventivos trazables (metrica 6 del MVP: 100 % con usuario y timestamp)

@@ -180,7 +180,8 @@ tr:last-child td{border-bottom:0}
 /* =================== MIDFF.html · Consola del Banco (BIT-019) ==============
  * Autenticación: POST /api/v1/admin/sesion → token Bearer HMAC (8 h).
  * Consultas:    GET /api/v1/admin/{resumen,alertas,clientes}.
- * Bloqueo:      POST /api/v1/bloquear (X-API-Key) → SP_BLOQUEAR_ALERTA.
+ * Bloqueo:      POST /api/v1/{bloquear,desbloquear} con la MISMA sesion
+ *               Bearer del administrador (BIT-037: la X-API-Key ya no alcanza).
  * Abrir via http://127.0.0.1:8091/MIDFF.html (mismo servidor PHP). */
 const $ = id => document.getElementById(id);
 let token = sessionStorage.getItem('midff.token') || '';
@@ -379,8 +380,8 @@ async function desbloquearAlerta(alertaId) {
   try {
     const r = await llamar('/api/v1/desbloquear', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json', 'X-API-Key': 'MIDFF-API-KEY-2026-SPRINT2'},
-      body: JSON.stringify({alerta_id: alertaId, usuario: adminNombre || 'admin', respuesta: respuesta.trim()})
+      headers: encabezados(true),
+      body: JSON.stringify({alerta_id: alertaId, respuesta: respuesta.trim()})
     });
     alert('✅ ' + (r.mensaje || 'Alerta desbloqueada') + '\nAuditoría id: ' + (r.id_auditoria ?? '—'));
     cargarAlertas();
@@ -393,8 +394,8 @@ async function bloquearAlerta(alertaId, cliente) {
   try {
     const r = await llamar('/api/v1/bloquear', {
       method: 'POST',
-      headers: {'Content-Type': 'application/json', 'X-API-Key': 'MIDFF-API-KEY-2026-SPRINT2'},
-      body: JSON.stringify({alerta_id: alertaId, usuario: adminNombre || 'admin', respuesta: respuesta.trim()})
+      headers: encabezados(true),
+      body: JSON.stringify({alerta_id: alertaId, respuesta: respuesta.trim()})
     });
     alert('✅ ' + (r.mensaje || 'Alerta bloqueada') + '\nAuditoría id: ' + (r.id_auditoria ?? '—'));
     cargarAlertas();
@@ -407,6 +408,21 @@ async function cargarClientes() {
   try {
     const r = await llamar('/api/v1/admin/clientes', {headers: encabezados()});
     clientesCache = r.clientes || [];
+    /* BIT-037: se agregan los dispositivos dados de alta en la APP (GET
+     * /dispositivos, misma sesion de admin) aunque el cliente aun no tenga
+     * transacciones: es donde el banco copia el ID para el simulador. */
+    try {
+      const d = await llamar('/api/v1/dispositivos', {headers: encabezados()});
+      const conocidos = new Set(clientesCache.map(c => c.ID_CLIENTE));
+      for (const disp of (d.dispositivos || [])) {
+        const id = disp.ID_CLIENTE || '';
+        if (!id || conocidos.has(id)) { continue; }
+        clientesCache.push({ID_CLIENTE: id, TRANSACCIONES: 0, MONTO_TOTAL: 0,
+          SCORE_PROMEDIO: 0, ALERTAS: 0, DISPOSITIVOS: 1,
+          ULTIMA_ACTIVIDAD: '(alta en app)'});
+        conocidos.add(id);
+      }
+    } catch (e2) { /* sin dispositivos registrados: se pinta lo que hay */ }
     pintarClientes();
   } catch (e) { tb.innerHTML = '<tr><td colspan="8" class="error">' + e.message + '</td></tr>'; }
 }

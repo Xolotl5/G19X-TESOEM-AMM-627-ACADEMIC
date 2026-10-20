@@ -4,7 +4,8 @@ declare(strict_types=1);
 /*
   --------------------------------------------------------------------------------
   -- MIDFF - Desbloqueo de alerta tras confirmacion del cliente (BIT-024)
-  -- Endpoint : POST /api/v1/desbloquear   (header obligatorio: X-API-Key)
+  -- Endpoint : POST /api/v1/desbloquear   (header obligatorio: Authorization:
+  --            Bearer <token de la sesion de administrador de MIDFF.html>)
   -- Archivo  : api/v1/desbloquear.php
   --
   -- Flujo ALTO (prompt.txt): la transaccion llega BLOQUEADA; si el cliente
@@ -12,13 +13,21 @@ declare(strict_types=1);
   --   DESBLOQUEO para el administrador: EVALUACION.decision pasa a APROBADA,
   --   ALERTA queda ATENDIDA por el admin y todo queda en AUDITORIA.
   --
+  -- SEGURIDAD (BIT-037, Corte 2): accion del banco -> exige la sesion de
+  --   administrador (midff_admin_token_validar, config/http.php). El usuario
+  --   sale del token, NUNCA del cuerpo; la X-API-Key compartida ya no
+  --   alcanza (viaja escrita dentro del APK de la app).
+  --
   -- CONTRATO DE ENTRADA (JSON):
-  --   Obligatorios : alerta_id (string ALR-<anio>-<numero>), usuario (admin)
+  --   Obligatorios : alerta_id (string ALR-<anio>-<numero>)
   --   Opcionales   : respuesta (string <= 180, comentario del admin)
+  --                  usuario   (DESPRECADO: se ignora; el responsable sale
+  --                             del token de sesion)
   --
   -- CONTRATO DE SALIDA (200): { ok, mensaje, id_auditoria }
-  -- ERRORES: 405 · 401 · 400 · 404 alerta inexistente · 409 sin confirmacion
-  --          del cliente (SI_FUI_YO) o ya desbloqueada · 500 Oracle.
+  -- ERRORES: 405 · 401 sin sesion de admin · 400 · 404 alerta inexistente ·
+  --          409 sin confirmacion del cliente (SI_FUI_YO) o ya desbloqueada ·
+  --          500 Oracle.
   --------------------------------------------------------------------------------
  */
 
@@ -34,20 +43,17 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     responder(405, ['error' => 'metodo no permitido: use POST /api/v1/desbloquear']);
 }
 
-midff_exigir_api_key();
-
-
+/* BIT-037 (Corte 2): accion del banco -> sesion de administrador obligatoria.
+ * El usuario sale del token (nunca del cuerpo) y la X-API-Key compartida ya
+ * no autoriza este endpoint. */
+$usuario = midff_admin_token_validar();
 
 $cuerpo    = json_decode((string) file_get_contents('php://input'), true);
 $alertaId  = trim((string) (is_array($cuerpo) ? ($cuerpo['alerta_id'] ?? '') : ''));
-$usuario   = trim((string) (is_array($cuerpo) ? ($cuerpo['usuario'] ?? '') : ''));
 $respuesta = trim((string) (is_array($cuerpo) ? ($cuerpo['respuesta'] ?? '') : ''));
 
 if ($alertaId === '' || !preg_match('/^ALR-\d{4}-\d{1,18}$/', $alertaId)) {
     rechazar('alerta_id invalido: se espera el formato ALR-<anio>-<numero>');
-}
-if ($usuario === '' || mb_strlen($usuario) > 60) {
-    rechazar('usuario obligatorio (administrador que desbloquea, hasta 60 caracteres)');
 }
 if (mb_strlen($respuesta) > 180) {
     rechazar('respuesta excede 180 caracteres');

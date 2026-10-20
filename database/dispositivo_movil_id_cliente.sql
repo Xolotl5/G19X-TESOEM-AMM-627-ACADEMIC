@@ -13,7 +13,7 @@
 --
 -- EJECUCION (SQL*Plus, como MIDFFuser en Oracle XE; NO borra datos y es
 -- RE-EJECUTABLE, se puede lanzar todas las veces que se necesite):
---     sqlplus MIDFFuser/midffadmin@localhost:1521/XEPDB1 @database/dispositivo_movil_id_cliente.sql
+--     sqlplus MIDFFuser@localhost:1521/XEPDB1 @database/dispositivo_movil_id_cliente.sql
 --
 -- DISENO Y SUPUESTOS
 --   a) NO recrea la tabla: los tokens ya registrados se conservan y quedan

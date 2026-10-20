@@ -4,7 +4,8 @@ declare(strict_types=1);
 /*
   --------------------------------------------------------------------------------
   -- MIDFF - Baja de cuenta de cliente (BIT-030)
-  -- Endpoint : POST /api/v1/baja      (header obligatorio: X-API-Key)
+  -- Endpoint : POST /api/v1/baja
+  --            (header: Authorization: Bearer <ID token de Firebase>)
   -- Archivo  : api/v1/baja.php
   --
   -- Proposito: cuando una cuenta se elimina desde Firebase Auth (consola o
@@ -32,13 +33,14 @@ declare(strict_types=1);
   -- CONTRATO DE SALIDA (200): { ok, mensaje, id_cliente, dispositivos,
   --                             transacciones, evaluaciones, alertas,
   --                             id_auditoria }
-  -- ERRORES: 405 metodo · 401 API Key · 400 campos · 500 Oracle.
+  -- ERRORES: 405 metodo · 401 token ausente/invalido · 400 campos ·
+  --          403 id_cliente ajeno · 500 Oracle.
   -- Es IDEMPOTENTE: repetirlo sobre un cliente ya purgado devuelve ceros (200),
   --   para que la app pueda reintentar la baja sin condiciones de carrera.
   --
-  -- NOTA DE SEGURIDAD (produccion): la identidad del llamador debe validarse
-  --   con el token de Firebase del propio usuario o de un administrador; la
-  --   X-API-Key compartida es aceptable solo en el alcance demo de residencias.
+  -- NOTA DE SEGURIDAD (BIT-037, Corte 2): la identidad del llamador se valida
+  --   con el ID token de Firebase del propio usuario (midff_exigir_cliente_
+  --   firebase); la X-API-Key de ingesta del banco ya NO autoriza aqui.
   --------------------------------------------------------------------------------
  */
 
@@ -54,9 +56,8 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
     responder(405, ['error' => 'metodo no permitido: use POST /api/v1/baja']);
 }
 
-midff_exigir_api_key();
-
-
+/* BIT-037 (Corte 2): endpoint de la app; la X-API-Key de ingesta del banco ya
+ * NO autoriza aqui (viaja dentro del APK). Solo el ID token de Firebase. */
 
 $cuerpo    = json_decode((string) file_get_contents('php://input'), true);
 $idCliente = trim((string) (is_array($cuerpo) ? ($cuerpo['id_cliente'] ?? '') : ''));

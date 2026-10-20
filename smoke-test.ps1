@@ -15,9 +15,12 @@
       4. Mide la latencia total de cada peticion y de las 3 juntas (objetivo
          <= 1000 ms por transaccion, RNF-01 / HU-MVP-01.2).
       5. Pruebas negativas: X-API-Key ausente -> 401 y JSON invalido -> 400
-         (criterio de aceptacion del Sprint 2).
-      6. Verifica en Oracle XE la cobertura de auditoria: ninguna evaluacion
-         queda sin registro en AUDITORIA (HU-MVP-04 / RNF-05).
+          (criterio de aceptacion del Sprint 2).
+     6. Pruebas de autorizacion (BIT-037, Corte 2): la X-API-Key de ingesta
+          ya no autoriza /estado, /bloquear ni GET /dispositivos (401), y sin
+          variables de entorno la API responde 500 (midff_env_obligatoria).
+     7. Verifica en Oracle XE la cobertura de auditoria: ninguna evaluacion
+          queda sin registro en AUDITORIA (HU-MVP-04 / RNF-05).
 
     Requisitos cubiertos: RF-01, RF-02, RF-03, RF-06, RF-07, RF-08, RNF-01,
     RNF-05 y el criterio 8 del MVP (automatizacion minima).
@@ -27,7 +30,7 @@
 
 .PARAMETER ApiKey
     Valor del encabezado X-API-Key (por omision la variable de entorno
-    MIDFF_API_KEY o el placeholder de desarrollo MIDFF-API-KEY-2026-SPRINT2).
+    MIDFF_API_KEY del .env; ya NO existe valor por defecto en el script).
 
 .PARAMETER RutaPhp
     Ruta de php.exe; se autodetecta (PATH o Laragon) si se omite.
@@ -81,10 +84,35 @@ $script:RutaDataset     = Join-Path $script:RaizRepositorio 'datos\datasets\tran
 $script:RutaMotorExe    = Join-Path $script:RaizRepositorio 'src\motor\bin\midff-scoring.exe'
 $script:RutaRouter      = Join-Path $script:RaizRepositorio 'router.php'
 
+# Carga del .env local (no versionado) cuando la variable aun no esta definida
+# en el entorno (mismo criterio que servidor.ps1; BIT-036/037: los secretos
+# viven en .env, jamas en el codigo ni con valores por defecto).
+$envLocal = Join-Path $script:RaizRepositorio '.env'
+if (Test-Path $envLocal) {
+    Get-Content $envLocal | ForEach-Object {
+        $linea = $_.Trim()
+        if ($linea -and -not $linea.StartsWith('#')) {
+            $pos = $linea.IndexOf('=')
+            if ($pos -gt 0) {
+                $k = $linea.Substring(0, $pos).Trim()
+                $v = $linea.Substring($pos + 1).Trim()
+                if ($k -and $v -and -not (Get-Item "Env:$k" -ErrorAction SilentlyContinue)) {
+                    Set-Item "Env:$k" $v
+                }
+            }
+        }
+    }
+    Write-Verbose '.env cargado (secretos locales inyectados al proceso).'
+}
+
 if ([string]::IsNullOrEmpty($ApiKey))  { $ApiKey  = $env:MIDFF_API_KEY }
 if ([string]::IsNullOrEmpty($ApiKey))  { throw 'Falta MIDFF_API_KEY: copie .env.example a .env, exporte la variable o use -ApiKey (el valor ya NO vive en el codigo)' }
 if ([string]::IsNullOrEmpty($DbUsuario)) { $DbUsuario = if ($env:MIDFF_DB_USUARIO) { $env:MIDFF_DB_USUARIO } else { 'MIDFFuser' } }
-if ([string]::IsNullOrEmpty($DbClave))   { $DbClave   = if ($env:MIDFF_DB_CLAVE) { $env:MIDFF_DB_CLAVE } else { 'midffadmin' } }
+if ([string]::IsNullOrEmpty($DbClave))   { $DbClave   = $env:MIDFF_DB_CLAVE }
+if ([string]::IsNullOrEmpty($DbClave))   {
+    Write-Warning 'Falta MIDFF_DB_CLAVE (definida en .env; BIT-037: sin contrasena por defecto en el script): se omite la verificacion de auditoria en Oracle.'
+    $SinOracle = $true
+}
 
 $script:Fallos         = New-Object System.Collections.Generic.List[string]
 $script:Resultados     = New-Object System.Collections.Generic.List[object]
@@ -333,6 +361,84 @@ else { Escribir-Fallo ("sin X-API-Key -> HTTP {0} (se esperaba 401). Cuerpo: {1}
 $r400 = Invoke-PostJson -Uri $UrlEndpoint -Encabezados @{ 'X-API-Key' = $ApiKey } -Cuerpo '{'
 if ($r400.Codigo -eq 400) { Escribir-Ok 'JSON mal formado -> HTTP 400 (error descriptivo en el cuerpo)' }
 else { Escribir-Fallo ("JSON mal formado -> HTTP {0} (se esperaba 400). Cuerpo: {1}" -f $r400.Codigo, $r400.Cuerpo) }
+
+# -----------------------------------------------------------------------------
+# 6b. PRUEBAS DE AUTORIZACION (BIT-037, Corte 2)
+#     - La X-API-Key (llave de INGESTA del banco) ya no autoriza los endpoints
+#       de la app (estado) ni las acciones del banco (bloquear, GET dispositivos).
+#     - Si falta una variable de entorno obligatoria, la API se niega a
+#       atender con 500 (midff_env_obligatoria de config/http.php).
+#     El caso 403 de "otro usuario pide alertas ajenas" requiere dos ID token
+#     reales de Firebase y esta documentado paso a paso en docs/Reporte_QA.md
+#     (seccion 5.1).
+# -----------------------------------------------------------------------------
+Escribir-Encabezado 'Pruebas de autorizacion (BIT-037, Corte 2)'
+
+function Invoke-GetJson {
+    param([string] $Uri, [hashtable] $Encabezados)
+    try {
+        $r = Invoke-WebRequest -UseBasicParsing -Uri $Uri -Method Get -Headers $Encabezados -TimeoutSec 15
+        return @{ Codigo = [int] $r.StatusCode; Cuerpo = [string] $r.Content }
+    } catch {
+        $codigo = 0; $cuerpo = ''
+        if ($_.Exception.Response) {
+            $codigo = [int] $_.Exception.Response.StatusCode
+            try {
+                $lector = New-Object System.IO.StreamReader($_.Exception.Response.GetResponseStream())
+                $cuerpo = $lector.ReadToEnd()
+            } catch { $cuerpo = '' }
+        }
+        return @{ Codigo = $codigo; Cuerpo = $cuerpo }
+    }
+}
+
+# a) GET /estado con solo la X-API-Key de ingesta -> 401 (exige ID token de
+#    Firebase del dueno; con el APK ya no se pueden leer alertas ajenas).
+$rEstado = Invoke-GetJson -Uri ($UrlApi.TrimEnd('/') + '/api/v1/estado?id_cliente=CLI-001') -Encabezados @{ 'X-API-Key' = $ApiKey }
+if ($rEstado.Codigo -eq 401) { Escribir-Ok 'GET /estado con solo X-API-Key -> HTTP 401 (la llave de ingesta ya no autoriza a la app)' }
+else { Escribir-Fallo ("GET /estado con solo X-API-Key -> HTTP {0} (se esperaba 401). Cuerpo: {1}" -f $rEstado.Codigo, $rEstado.Cuerpo) }
+
+# b) POST /bloquear con solo la X-API-Key -> 401 (exige sesion de administrador
+#    de MIDFF.html; el usuario sale del token, no del cuerpo).
+$rBloq = Invoke-PostJson -Uri ($UrlApi.TrimEnd('/') + '/api/v1/bloquear') -Encabezados @{ 'X-API-Key' = $ApiKey } -Cuerpo '{"alerta_id":"ALR-2026-000001"}'
+if ($rBloq.Codigo -eq 401) { Escribir-Ok 'POST /bloquear con solo X-API-Key -> HTTP 401 (exige sesion de administrador)' }
+else { Escribir-Fallo ("POST /bloquear con solo X-API-Key -> HTTP {0} (se esperaba 401). Cuerpo: {1}" -f $rBloq.Codigo, $rBloq.Cuerpo) }
+
+# c) GET /dispositivos con solo la X-API-Key -> 401 (vista del banco, sesion
+#    de administrador).
+$rDisp = Invoke-GetJson -Uri ($UrlApi.TrimEnd('/') + '/api/v1/dispositivos') -Encabezados @{ 'X-API-Key' = $ApiKey }
+if ($rDisp.Codigo -eq 401) { Escribir-Ok 'GET /dispositivos con solo X-API-Key -> HTTP 401 (exige sesion de administrador)' }
+else { Escribir-Fallo ("GET /dispositivos con solo X-API-Key -> HTTP {0} (se esperaba 401). Cuerpo: {1}" -f $rDisp.Codigo, $rDisp.Cuerpo) }
+
+# d) Sin variables de entorno -> 500 explicativo: segunda instancia del
+#    servidor con las variables MIDFF_* retiradas del entorno heredado (la
+#    primera instancia conserva las que recibio al arrancar).
+$puerto500  = ([uri] $UrlApi).Port + 10
+$url500     = "http://127.0.0.1:$puerto500"
+$srv500     = $null
+$varsGuardadas = @{}
+foreach ($nombreVar in @('MIDFF_API_KEY','MIDFF_DB_USUARIO','MIDFF_DB_CLAVE','MIDFF_ADMIN_SECRETO','MIDFF_FIREBASE_WEB_KEY')) {
+    $itemVar = Get-Item "Env:$nombreVar" -ErrorAction SilentlyContinue
+    if ($itemVar) {
+        $varsGuardadas[$nombreVar] = $itemVar.Value
+        Remove-Item "Env:$nombreVar" -ErrorAction SilentlyContinue
+    }
+}
+try {
+    $srv500 = Start-Process -FilePath $RutaPhp -ArgumentList @('-S', "127.0.0.1:$puerto500", 'router.php') `
+        -WorkingDirectory $script:RaizRepositorio -PassThru -WindowStyle Hidden
+    Start-Sleep -Milliseconds 1500
+    $r500 = Invoke-PostJson -Uri ($url500 + '/api/v1/transacciones') -Encabezados @{ 'X-API-Key' = 'valor-cualquiera' } -Cuerpo '{"id_cliente":"CLI-ENV","monto":100.00}'
+    if ($r500.Codigo -eq 500 -and $r500.Cuerpo -match 'falta la variable') {
+        Escribir-Ok ('sin variables de entorno -> HTTP 500 y la API se niega a atender ("configuracion incompleta... falta la variable ...") :: ' +
+                     $r500.Cuerpo)
+    } else {
+        Escribir-Fallo ("sin variables de entorno -> HTTP {0} (se esperaba 500). Cuerpo: {1}" -f $r500.Codigo, $r500.Cuerpo)
+    }
+} finally {
+    if ($srv500 -and -not $srv500.HasExited) { Stop-Process -Id $srv500.Id -Force -ErrorAction SilentlyContinue }
+    foreach ($nombreVar in $varsGuardadas.Keys) { Set-Item "Env:$nombreVar" $varsGuardadas[$nombreVar] }
+}
 # -----------------------------------------------------------------------------
 # 7. VERIFICACION DE AUDITORIA EN ORACLE XE (HU-MVP-04 / RNF-05)
 # -----------------------------------------------------------------------------
@@ -403,5 +509,5 @@ if ($script:Fallos.Count -gt 0) {
     Write-Host ' RESULTADO: SMOKE TEST CON FALLOS' -ForegroundColor Red
     exit 1
 }
-Write-Host ' RESULTADO: SMOKE TEST OK (bandas, contrato, latencia y auditoria verificados)' -ForegroundColor Green
+Write-Host ' RESULTADO: SMOKE TEST OK (bandas, contrato, latencia, autorizacion BIT-037 y auditoria verificados)' -ForegroundColor Green
 exit 0

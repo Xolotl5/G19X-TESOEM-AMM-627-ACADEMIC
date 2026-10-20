@@ -15,7 +15,7 @@
 --   6. Consulta de control (dispositivos que recibiran el push)
 --
 -- EJECUCION (SQL*Plus, como MIDFFuser en Oracle XE; COMPLEMENTA schema.sql):
---     sqlplus MIDFFuser/midffadmin@localhost:1521/XEPDB1 @database/dispositivo_movil.sql
+--     sqlplus MIDFFuser@localhost:1521/XEPDB1 @database/dispositivo_movil.sql
 --
 -- DISENO Y SUPUESTOS DEL SPRINT 3
 --   a) El script es RE-EJECUTABLE: borra la tabla y la secuencia y las vuelve

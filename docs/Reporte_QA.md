@@ -60,13 +60,63 @@
 
 | Prueba | Resultado |
 |---|---|
-| `X-API-Key` ausente/incorrecta | HTTP 401 (smoke) |
+| `X-API-Key` ausente/incorrecta en `/transacciones` | HTTP 401 (smoke) |
 | JSON inválido / campos fuera de dominio | HTTP 400 con diagnóstico |
 | Método distinto de POST | HTTP 405 |
 | Payload > 8192 bytes | Rechazado por el motor (código 2 → 400) |
 | Auditoría mutable (UPDATE/DELETE) | Bloqueada por trigger (ORA) |
 | Tokens FCM inválidos | Baja lógica automática (activo=0) |
 | Credenciales en Git | Ninguna versionada (.gitignore auditado) |
+
+### 5.1 Autorización por identidad (BIT-037, Corte 2)
+
+Casos exigidos por el diagnóstico del Corte 2. Los automatizados corren en
+`smoke-test.ps1` (sección «Pruebas de autorización»); el 403 cruzado requiere
+dos cuentas reales de Firebase y se ejecuta manualmente con la app o `curl`.
+
+**CP-A1 — Otro usuario pide alertas ajenas → 403 (manual, 2 cuentas).**
+
+1. En la app (o con `curl`), inicie sesión como el cliente **B** y obtenga su
+   ID token (la app lo envía sola; con Firebase REST sería
+   `identitytoolkit.googleapis.com/v1/accounts:signInWithPassword`).
+2. Pida las alertas del cliente **A** con el token de B:
+
+   ```powershell
+   curl.exe "http://127.0.0.1:8091/api/v1/estado?id_cliente=<ID_DE_A>" `
+        -H "Authorization: Bearer <ID_TOKEN_DE_B>"
+   ```
+
+3. **Esperado:** `HTTP 403` — `{"error":"el id_cliente solicitado no corresponde al usuario autenticado"}`.
+   El `id_cliente` se deriva del token (BIT-036); el parámetro solo se tolera si coincide.
+
+**CP-A2 — Primer registro con `id_cliente` ajeno → 403 (manual).** Una cuenta
+nueva de Firebase que intente `POST /api/v1/dispositivos` con el `id_cliente`
+de otro cliente recibe `403 el id_cliente ya esta vinculado a otra cuenta de
+Firebase` (la validación consulta `DISPOSITIVO_MOVIL` por uid distinto).
+
+**CP-A3 — Registro con rol elevado → 403 (manual).** `POST /api/v1/dispositivos`
+con `"rol":"ADMIN"` responde `403 la app solo puede registrar dispositivos con
+rol CLIENTE` (el rol del cuerpo ya no se acepta).
+
+**CP-A4 — Acciones del banco sin sesión de administrador → 401 (automatizado).**
+`POST /bloquear`, `POST /desbloquear` y `GET /dispositivos` con solo la
+`X-API-Key` responden **401**: exigen el Bearer HMAC de `/api/v1/admin/sesion`
+y el responsable sale del token, no del cuerpo.
+
+**CP-A5 — Falta una variable de entorno → 500 (automatizado).** El smoke test
+levanta una segunda instancia de la API con `MIDFF_*` retiradas del entorno:
+cualquier petición a `/transacciones` responde **500** con
+`"configuracion incompleta del servidor: falta la variable ..."` y la API se
+niega a atender (antes `GET /estado` con solo la llave de ingesta también
+responde **401**, CP del punto a del smoke).
+
+| Caso | Entrada | Esperado | Dónde |
+|---|---|---|---|
+| CP-A1 | token de B + `id_cliente` de A | 403 | manual (arriba) |
+| CP-A2 | registro 1ª vez con id ajeno | 403 | manual (arriba) |
+| CP-A3 | `"rol":"ADMIN"` en el registro | 403 | manual (arriba) |
+| CP-A4 | `X-API-Key` sola en bloquear/desbloquear/GET dispositivos | 401 | `smoke-test.ps1` §6b |
+| CP-A5 | servidor sin `MIDFF_*` en el entorno | 500 «falta la variable» | `smoke-test.ps1` §6b |
 
 ## 6. Defectos encontrados y resueltos (extracto)
 

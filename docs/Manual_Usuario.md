@@ -62,6 +62,11 @@ Montos inusuales / Posible fraude) o datos personalizados, y pulsa **Enviar**. E
 resultado (score, clasificación y decisión) aparece en pantalla y el push llega al
 teléfono en segundos con su motivo.
 
+> Desde el BIT-037 el **ID de cliente** se copia desde la consola `MIDFF.html`
+> (pestaña **Clientes**, que incluye los ID dados de alta en la app); el panel
+> «Clientes registrados» del simulador abre la consola. La X-API-Key del
+> simulador solo sirve para **ingestar transacciones**.
+
 ---
 
 ## D. Preguntas frecuentes

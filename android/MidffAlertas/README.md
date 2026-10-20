@@ -23,7 +23,7 @@ FCM y las presenta en una bandeja de entrada (`MVP_MIDFF.md` §6 · RF-10).
 | `AdaptadorAlertas` | Adaptador de la lista con color por banda de riesgo. |
 | `ModeloAlerta` | Espejo del bloque `data` del push (serialización JSON). |
 | `AlertasRepositorio` | Bandeja persistente en `SharedPreferences` + token/usuario del dispositivo (D-27). |
-| `ApiClient` | Cliente HTTP mínimo (`HttpURLConnection`) contra la API REST con `X-API-Key`. |
+| `ApiClient` | Cliente HTTP mínimo (`HttpURLConnection`) contra la API REST con el ID token de Firebase (`Authorization: Bearer`, BIT-036/037). |
 
 ## Solución de problemas
 
@@ -83,7 +83,7 @@ FCM y las presenta en una bandeja de entrada (`MVP_MIDFF.md` §6 · RF-10).
 
 1. Levantar la API y la tabla de dispositivos:
    ```powershell
-   sqlplus MIDFFuser/midffadmin@localhost:1521/XEPDB1 @database/dispositivo_movil.sql
+   sqlplus MIDFFuser@localhost:1521/XEPDB1 @database/dispositivo_movil.sql
    php -S 127.0.0.1:8091 router.php
    ```
 2. En la app (emulador con Google Play services o dispositivo físico):
@@ -102,7 +102,7 @@ FCM y las presenta en una bandeja de entrada (`MVP_MIDFF.md` §6 · RF-10).
    dispositivo cuyo `id_cliente` coincide con el de la transacción**
    (BIT-017); si la BD existente no tiene la columna, ejecutar primero:
    ```powershell
-   sqlplus MIDFFuser/midffadmin@localhost:1521/XEPDB1 @database/dispositivo_movil_id_cliente.sql
+   sqlplus MIDFFuser@localhost:1521/XEPDB1 @database/dispositivo_movil_id_cliente.sql
    ```
 
 ## Notas del entorno
@@ -213,9 +213,9 @@ El push ya no es broadcast: cada usuario recibe **solo SUS transacciones**.
 | Filtro | `config/firebase.php`: `midff_fcm_enviar_a_dispositivos()` consulta solo los dispositivos activos con el `id_cliente` de la transacción. Sin `id_cliente` se conserva el **broadcast legado** (modo oficial/demo). |
 | App | Pestaña Registro: campo **"ID de cliente"** — se **genera solo al crear la cuenta** (determinista desde el uid de Firebase, BIT-018) y queda precargado; `onNewToken` auto-registra con correo + id_cliente. |
 
-**Vista del banco (BIT-018):** `GET /api/v1/dispositivos` (misma X-API-Key)
-lista los clientes dados de alta con su `id_cliente`; `banco.html` lo muestra
-en "Clientes registrados" y el botón **Usar** copia el ID al formulario.
+**Vista del banco (BIT-018/037):** `GET /api/v1/dispositivos` (con la sesión
+de administrador de `MIDFF.html`) lista los clientes dados de alta con su
+`id_cliente`.
 
 Para probar el aislamiento: registrar `CLI-003` en la app y enviar
 transacciones de `CLI-003` (llega push) y de `CLI-004` (no llega).

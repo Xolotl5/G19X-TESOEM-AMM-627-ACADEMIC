@@ -137,15 +137,16 @@ if ($ruta === '/' || $ruta === '/api/v1') {
     http_response_code(200);
     echo json_encode([
         'servicio' => 'MIDFF API',
-        'version'  => '1.2',
+        'version'  => '1.3',
         'endpoints' => [
-            'POST /api/v1/transacciones' => 'evalua una transaccion (score, clasificacion, decision, alerta y push FCM si score >= 0.4)',
-            'POST /api/v1/dispositivos'  => 'registra/actualiza el token FCM de la app Android (Sprint 3)',
-            'POST /api/v1/bloquear'      => 'bloqueo preventivo de una alerta: ALERTA.estado = BLOQUEADA + registro en AUDITORIA (Sprint 4, HU-MVP-06)',
-            'POST /api/v1/reportar'      => 'respuesta del cliente a una alerta: NO_FUI_YO / SI_FUI_YO (Post-MVP, BIT-020/024)',
-            'POST /api/v1/desbloquear'   => 'desbloqueo por el banco tras SI_FUI_YO del cliente en riesgo ALTO (BIT-024)',
-            'GET  /api/v1/estado'        => 'estado en Oracle de las alertas de un cliente (sincronizacion de la app, BIT-027)',
-            'POST /api/v1/baja'          => 'baja de cuenta: purga dispositivos e historial completo y anonimiza auditoria (BIT-030)',
+            'POST /api/v1/transacciones' => 'evalua una transaccion (score, clasificacion, decision, alerta y push FCM si score >= 0.4); X-API-Key de ingesta del banco',
+            'POST /api/v1/dispositivos'  => 'registra/actualiza el token FCM de la app Android (Bearer: ID token de Firebase; rol fijo CLIENTE, BIT-037)',
+            'GET  /api/v1/dispositivos'  => 'lista los dispositivos dados de alta (Bearer: sesion de administrador, BIT-037)',
+            'POST /api/v1/bloquear'      => 'bloqueo preventivo de una alerta: ALERTA.estado = BLOQUEADA + AUDITORIA (Bearer: sesion de administrador, BIT-037)',
+            'POST /api/v1/reportar'      => 'respuesta del cliente a una alerta: NO_FUI_YO / SI_FUI_YO (Bearer: ID token de Firebase)',
+            'POST /api/v1/desbloquear'   => 'desbloqueo por el banco tras SI_FUI_YO del cliente en riesgo ALTO (Bearer: sesion de administrador)',
+            'GET  /api/v1/estado'        => 'estado en Oracle de las alertas del cliente autenticado (Bearer: ID token de Firebase)',
+            'POST /api/v1/baja'          => 'baja de cuenta: purga dispositivos e historial completo y anonimiza auditoria (Bearer: ID token de Firebase)',
         ],
         'documentacion' => 'docs/contratos/contrato_scoring.md',
     ], JSON_UNESCAPED_UNICODE | JSON_UNESCAPED_SLASHES);

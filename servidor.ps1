@@ -93,9 +93,13 @@ if (-not (Get-NetFirewallRule -Name $nombreRegla -ErrorAction SilentlyContinue))
 #    una limpieza de pruebas que conserva AUDITORIA -registro inmutable- deja
 #    SEQ_* por debajo del MAX(id) y la proxima insercion falla con ORA-00001).
 #    El script es idempotente: solo reajusta las secuencias desalineadas.
-if ($oracleBin -and (Test-Path (Join-Path $oracleBin 'sqlplus.exe'))) {
+#    BIT-037: la clave de Oracle ya NO tiene valor por defecto aqui; sin
+#    MIDFF_DB_CLAVE (en .env) se omite la verificacion con aviso.
+if (-not $env:MIDFF_DB_CLAVE) {
+    Write-Warning '[4/5] Falta MIDFF_DB_CLAVE (definida en .env; ya no hay valor por defecto en el script): se omite la verificacion de secuencias.'
+} elseif ($oracleBin -and (Test-Path (Join-Path $oracleBin 'sqlplus.exe'))) {
     $dbUsuario  = if ($env:MIDFF_DB_USUARIO)  { $env:MIDFF_DB_USUARIO }  else { 'MIDFFuser' }
-    $dbClave    = if ($env:MIDFF_DB_CLAVE)    { $env:MIDFF_DB_CLAVE }    else { 'midffadmin' }
+    $dbClave    = $env:MIDFF_DB_CLAVE
     $dbHost     = if ($env:MIDFF_DB_HOST)     { $env:MIDFF_DB_HOST }     else { 'localhost' }
     $dbPuerto   = if ($env:MIDFF_DB_PUERTO)   { $env:MIDFF_DB_PUERTO }   else { '1521' }
     $dbServicio = if ($env:MIDFF_DB_SERVICIO) { $env:MIDFF_DB_SERVICIO } else { 'XEPDB1' }

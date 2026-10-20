@@ -12,7 +12,9 @@
 --   5. Comentarios y usuario semilla de desarrollo
 --
 -- EJECUCION (SQL*Plus, como MIDFFuser en Oracle XE; COMPLEMENTA schema.sql):
---   sqlplus MIDFFuser/midffadmin@localhost:1521/XEPDB1 @database/admin_usuario.sql
+--   sqlplus MIDFFuser@localhost:1521/XEPDB1 @database/admin_usuario.sql
+--   (la contrasena de MIDFFuser la pide SQL*Plus al conectar; BIT-037: ninguna
+--    credencial viaja escrita en este repositorio)
 --
 -- DISENO Y SUPUESTOS
 --   a) Re-ejecutable: borra y recrea tabla/secuencia (mismo criterio que
@@ -94,17 +96,22 @@ END;
 PROMPT [4/5] Triggers TRG_ADMIN_USUARIO_ID y TRG_ADMIN_USUARIO_UPD creados.
 
 --------------------------------------------------------------------------------
--- 5. COMENTARIOS + USUARIO SEMILLA DE DESARROLLO
---    admin / MIDFFadmin2026 (clave temporal: la consola pedira cambiarla)
+-- 5. COMENTARIOS + USUARIO SEMILLA DE DESARROLLO (BIT-037: la clave temporal
+--    LA DEFINE QUIEN EJECUTA ESTE SCRIPT; no hay contrasena en el repositorio
+--    y la consola exigira cambiarla al primer inicio de sesion)
 --------------------------------------------------------------------------------
 COMMENT ON TABLE  ADMIN_USUARIO                IS 'Usuarios del banco con acceso a la consola MIDFF.html (BIT-019)';
 COMMENT ON COLUMN ADMIN_USUARIO.password_hash  IS 'bcrypt (password_hash de PHP); NULL mientras la clave temporal este vigente';
 COMMENT ON COLUMN ADMIN_USUARIO.clave_temporal IS 'Clave de arranque en claro SOLO para desarrollo; se limpia al cambiarla';
 
-INSERT INTO ADMIN_USUARIO (usuario, nombre, clave_temporal, rol, activo)
-VALUES ('admin', 'Administrador MIDFF', 'MIDFFadmin2026', 'ADMIN', 1);
+SET DEFINE ON
+SET VERIFY OFF
+ACCEPT CLAVE_SEMILLA CHAR PROMPT 'Clave temporal para el usuario admin de la consola (minimo 8 caracteres; se pedira cambiarla al primer inicio): '
 
-PROMPT [5/5] Usuario semilla creado: admin / MIDFFadmin2026 (temporal).
+INSERT INTO ADMIN_USUARIO (usuario, nombre, clave_temporal, rol, activo)
+VALUES ('admin', 'Administrador MIDFF', '&CLAVE_SEMILLA', 'ADMIN', 1);
+
+PROMPT [5/5] Usuario semilla 'admin' creado con la clave temporal indicada (la consola pedira cambiarla).
 
 SELECT id_admin, usuario, nombre, rol, activo,
        CASE WHEN password_hash IS NULL THEN 'TEMPORAL' ELSE 'HASH' END AS tipo_clave

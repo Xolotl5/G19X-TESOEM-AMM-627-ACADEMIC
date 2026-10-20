@@ -11,10 +11,20 @@ declare(strict_types=1);
   --   midff_env_obligatoria()                -> variable de entorno SIN valor
   --                                             por defecto: si falta, la API
   --                                             se niega a servir (500 claro)
-  --   midff_exigir_api_key()                 -> valida X-API-Key (hash_equals)
+  --   midff_exigir_api_key()                 -> valida X-API-Key (hash_equals);
+  --                                             SOLO ingesta del banco
+  --                                             (transacciones.php, BIT-037)
   --   midff_exigir_cliente_firebase()        -> valida el ID token de Firebase
   --                                             del header Authorization y
   --                                             resuelve SU id_cliente real
+  --   midff_admin_token_firmar()/validar()   -> sesion HMAC-SHA256 de la
+  --                                             consola (movida de admin.php,
+  --                                             BIT-037: bloquear.php,
+  --                                             desbloquear.php y el GET de
+  --                                             dispositivos.php tambien la
+  --                                             exigen; la X-API-Key compartida
+  --                                             ya no alcanza porque viaja en
+  --                                             el APK)
   --
   -- SEGURIDAD (diagnostico Corte 1): ningun secreto vive en el codigo. Todos
   --   los valores se inyectan por entorno (ver .env.example y servidor.ps1,
@@ -63,7 +73,8 @@ function midff_env_obligatoria(string $nombre): string
 
 /**
  * Valida el encabezado X-API-Key contra MIDFF_API_KEY (comparacion constante).
- * Cualquier endpoint protegido debe llamarla primero.
+ * BIT-037: la usan SOLO los endpoints de ingesta del banco (transacciones.php);
+ * los endpoints de la app se autorizan con el ID token de Firebase.
  */
 function midff_exigir_api_key(): void
 {
@@ -164,5 +175,54 @@ function midff_exigir_cliente_firebase(): string
     return trim((string) $fila['ID_CLIENTE']);
 }
 
-/* Fin del archivo config/http.php - MIDFF BIT-036 (15/10/2026) */
+/* ======================= SESION DE ADMINISTRADOR (BIT-037) ==================
+ * Token sin estado {usuario, exp} firmado con HMAC-SHA256 y MIDFF_ADMIN_SECRETO
+ * (variable de entorno obligatoria). Vivia en api/v1/admin.php; se movio aqui
+ * para que las acciones del banco (bloquear.php, desbloquear.php y el GET de
+ * dispositivos.php) tambien la exijan: antes les bastaba la X-API-Key
+ * compartida, que viaja escrita dentro del APK de la app.
+ * -------------------------------------------------------------------------- */
+
+define('MIDFF_ADMIN_SESION_SEG', 8 * 3600);
+
+/** Firma el token de sesion del administrador: payloadB64Url.HMAC-SHA256. */
+function midff_admin_token_firmar(string $usuario): string
+{
+    $secreto = midff_env_obligatoria('MIDFF_ADMIN_SECRETO');
+    $payload = rtrim(strtr(base64_encode(json_encode(
+        ['u' => $usuario, 'exp' => time() + MIDFF_ADMIN_SESION_SEG]
+    )), '+/', '-_'), '=');
+    return $payload . '.' . hash_hmac('sha256', $payload, $secreto);
+}
+
+/**
+ * Exige "Authorization: Bearer <token>" con firma HMAC valida y vigente
+ * (8 h). La usan admin.php y, desde el BIT-037, bloquear.php,
+ * desbloquear.php y el GET de dispositivos.php.
+ *
+ * @return string usuario administrador autenticado (sale del token, nunca
+ *                del cuerpo de la peticion)
+ */
+function midff_admin_token_validar(): string
+{
+    $encabezado = trim((string) ($_SERVER['HTTP_AUTHORIZATION'] ?? ''));
+    if (strpos($encabezado, 'Bearer ') !== 0) {
+        responder(401, ['error' => 'se requiere sesion de administrador '
+                                 . '(Authorization: Bearer <token de '
+                                 . '/api/v1/admin/sesion>)']);
+    }
+    $secreto = midff_env_obligatoria('MIDFF_ADMIN_SECRETO');
+    $partes  = explode('.', substr($encabezado, 7));
+    if (count($partes) !== 2
+            || !hash_equals(hash_hmac('sha256', $partes[0], $secreto), $partes[1])) {
+        responder(401, ['error' => 'token de sesion invalido']);
+    }
+    $datos = json_decode((string) base64_decode(strtr($partes[0], '-_', '+/')), true);
+    if (!is_array($datos) || (int) ($datos['exp'] ?? 0) < time()) {
+        responder(401, ['error' => 'sesion expirada: vuelva a iniciar sesion']);
+    }
+    return (string) ($datos['u'] ?? '');
+}
+
+/* Fin del archivo config/http.php - MIDFF BIT-036 + BIT-037 (20/10/2026) */
 

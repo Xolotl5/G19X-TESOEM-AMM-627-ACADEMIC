@@ -5,33 +5,41 @@ declare(strict_types=1);
   --------------------------------------------------------------------------------
   -- MIDFF - Motor Inteligente de Deteccion de Fraude Financiero
   -- Componente: API REST (Sprint 4)
-  -- Endpoint : POST /api/v1/bloquear      (header obligatorio: X-API-Key)
+  -- Endpoint : POST /api/v1/bloquear   (header obligatorio: Authorization:
+  --            Bearer <token de la sesion de administrador de MIDFF.html>)
   -- Archivo  : api/v1/bloquear.php
   --
-  -- Proposito: ejecutar la accion "Bloquear" de una alerta desde la app
-  --   Android (HU-MVP-06): pasa ALERTA.estado a BLOQUEADA con el usuario del
-  --   oficial y su timestamp, e inserta el registro BLOQUEO en AUDITORIA
-  --   (RF-08) dentro de la misma unidad atomica (RNF-05). El procedimiento
-  --   SP_BLOQUEAR_ALERTA (database/sp_bloquear_alerta.sql, decision D-35)
-  --   hace el trabajo en Oracle; este endpoint valida y traduce a HTTP.
+  -- Proposito: ejecutar la accion "Bloquear" de una alerta desde la consola
+  --   del banco MIDFF.html (HU-MVP-06): pasa ALERTA.estado a BLOQUEADA con el
+  --   usuario del administrador y su timestamp, e inserta el registro BLOQUEO
+  --   en AUDITORIA (RF-08) dentro de la misma unidad atomica (RNF-05). El
+  --   procedimiento SP_BLOQUEAR_ALERTA (database/sp_bloquear_alerta.sql,
+  --   decision D-35) hace el trabajo en Oracle; este endpoint valida y
+  --   traduce a HTTP.
   --
-  -- Requisitos: HU-MVP-06 (bloqueo preventivo), RF-02 (validacion de entrada
-  --             y API Key, misma que transacciones.php por D-25) y RF-08.
+  -- Requisitos: HU-MVP-06 (bloqueo preventivo), RF-02 (validacion de entrada)
+  --             y RF-08.
+  --
+  -- SEGURIDAD (BIT-037, Corte 2): accion del banco -> exige la sesion de
+  --   administrador (midff_admin_token_validar, config/http.php). El usuario
+  --   sale del token, NUNCA del cuerpo. La X-API-Key compartida ya no
+  --   alcanza: esa llave viaja escrita dentro del APK de la app.
   --
   -- CONTRATO DE ENTRADA (JSON):
   --   Obligatorios : alerta_id (string ALR-<anio>-<numero>, el mismo formato
   --                              que devuelve POST /api/v1/transacciones)
-  --                  usuario   (string <= 60, oficial de DISPOSITIVO_MOVIL)
-  --   Opcionales   : respuesta (string <= 200, comentario del oficial)
+  --   Opcionales   : respuesta (string <= 200, comentario del administrador)
+  --                  usuario   (DESPRECADO: se ignora; el responsable sale
+  --                             del token de sesion)
   --
   -- CONTRATO DE SALIDA (200):
   --   { "ok": true, "alerta_id": "ALR-...", "estado": "BLOQUEADA",
   --     "atendida_por": "...", "fecha_atencion": "2026-09-28T...",
   --     "id_auditoria": n, "mensaje": "..." }
   --
-  -- ERRORES: 405 metodo distinto de POST · 401 API Key invalida ·
-  --          400 cuerpo/campos invalidos · 404 alerta inexistente (ORA-20003) ·
-  --          409 alerta ya bloqueada (ORA-20004) · 500 fallo de Oracle.
+  -- ERRORES: 405 metodo distinto de POST · 401 sin sesion de admin o token
+  --          expirado · 400 cuerpo/campos invalidos · 404 alerta inexistente
+  --          (ORA-20003) · 409 alerta ya bloqueada (ORA-20004) · 500 Oracle.
   --------------------------------------------------------------------------------
 */
 
@@ -40,8 +48,6 @@ require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SE
 require_once dirname(__DIR__, 2) . DIRECTORY_SEPARATOR . 'config' . DIRECTORY_SEPARATOR . 'http.php';
 
 date_default_timezone_set('America/Mexico_City');
-
-/* Misma clave del endpoint de transacciones (D-25): una sola API Key para el MVP. */
 
 /* -----------------------------------------------------------------------------
  * Utilidades de respuesta HTTP (siempre JSON)
@@ -65,11 +71,12 @@ if (($_SERVER['REQUEST_METHOD'] ?? '') !== 'POST') {
 }
 
 /* -----------------------------------------------------------------------------
- * 2. API KEY (RF-02 / RNF-03): la misma de POST /api/v1/transacciones (D-25)
+ * 2. AUTORIZACION (BIT-037, Corte 2): accion del banco. Exige la sesion de
+ *    administrador de la consola (token Bearer HMAC); el usuario sale del
+ *    token, nunca del cuerpo. La X-API-Key compartida ya no autoriza aqui
+ *    (viaja dentro del APK, asi que cualquiera con la app la tenia).
  * -------------------------------------------------------------------------- */
-midff_exigir_api_key();
-
-
+$usuario = midff_admin_token_validar();
 
 /* -----------------------------------------------------------------------------
  * 3. CUERPO JSON Y VALIDACION DE CAMPOS (RF-02)
@@ -93,15 +100,9 @@ if (!is_string($alertaId) || !preg_match('/^ALR-(\d{4})-(\d{1,18})$/', trim($ale
 $alertaId = trim($alertaId);
 $idAlerta = (int) $partes[2];
 
-// usuario: obligatorio, string no vacio, <= 60 (VARCHAR2(60) de ALERTA.atendida_por).
-$usuario = $cuerpo['usuario'] ?? null;
-if (!is_string($usuario) || trim($usuario) === '') {
-    rechazar('campo obligatorio ausente o invalido: usuario (cadena no vacia)');
-}
-$usuario = trim($usuario);
-if (mb_strlen($usuario) > 60) {
-    rechazar('usuario excede 60 caracteres');
-}
+// usuario (BIT-037): DEPRECADO en el cuerpo; el responsable sale del token
+// de sesion de administrador. Se ignora silenciosamente por compatibilidad
+// con la consola anterior; ALERTA.atendida_por recibe $usuario del token.
 
 // respuesta: opcional, <= 200 (VARCHAR2(200) de ALERTA.respuesta).
 $respuesta = array_key_exists('respuesta', $cuerpo) ? (string) $cuerpo['respuesta'] : '';

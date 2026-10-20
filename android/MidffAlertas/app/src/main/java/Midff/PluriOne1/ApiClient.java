@@ -27,11 +27,14 @@ import java.util.Map;
  * Cliente minimo de la API REST MIDFF (sin dependencias externas).
  *
  * <p>Sprint 3: registro del token FCM contra {@code POST /api/v1/dispositivos}
- * (DISPOSITIVO_MOVIL en Oracle XE). Sprint 4: accion "Bloquear" contra
- * {@code POST /api/v1/bloquear} (SP_BLOQUEAR_ALERTA en Oracle XE).</p>
+ * (DISPOSITIVO_MOVIL en Oracle XE). La accion "Bloquear" (Sprint 4) paso a la
+ * consola del banco MIDFF.html: el endpoint exige la sesion de administrador
+ * y la app ya no lo llama (BIT-037).</p>
  *
- * <p>La misma X-API-Key del endpoint de transacciones (decision D-25 de
- * BITACORA.md: una sola clave para el MVP).</p>
+ * <p>Autenticacion (BIT-036/037): SOLO el ID token de Firebase del cliente
+ * ({@code Authorization: Bearer}). La app ya no lleva ninguna X-API-Key: la
+ * llave de ingesta del banco (decision D-25, derogada) vive en el servidor y
+ * con el APK no se puede meter transacciones ni leer datos ajenos.</p>
  */
 public final class ApiClient {
 
@@ -49,9 +52,6 @@ public final class ApiClient {
      * host visto desde el emulador).</p>
      */
     public static String baseUrl = "http://127.0.0.1:8091";
-
-    /** Clave de desarrollo; en produccion se inyecta la real (RNF-03). */
-    public static String apiKey = "MIDFF-API-KEY-2026-SPRINT2";
 
     /** Callback de las llamadas asincronas (se invoca en el hilo de red). */
     public interface Callback {
@@ -87,9 +87,12 @@ public final class ApiClient {
         }
     }
 
-    /** Encabezados de autenticacion comunes: X-API-Key + Bearer del cliente. */
+    /**
+     * Encabezado de autenticacion (BIT-036/037): SOLO el Bearer del cliente
+     * (ID token de Firebase). Ninguna X-API-Key viaja en la app: la llave de
+     * ingesta del banco no abre los endpoints del cliente.
+     */
     private static void autenticar(HttpURLConnection conexion) {
-        conexion.setRequestProperty("X-API-Key", apiKey);
         String token = idTokenFirebase();
         if (token != null && !token.trim().isEmpty()) {
             conexion.setRequestProperty("Authorization", "Bearer " + token);
@@ -150,24 +153,11 @@ public final class ApiClient {
         }
     }
 
-    /** POST /api/v1/bloquear: bloqueo preventivo de la alerta (HU-MVP-06, Sprint 4). */
-    public static void bloquearAlerta(final String alertaId, final String usuario,
-                                      final String respuesta, final Callback callback) {
-        try {
-            JSONObject cuerpo = new JSONObject();
-            cuerpo.put("alerta_id", alertaId);
-            cuerpo.put("usuario", usuario);
-            if (respuesta != null && !respuesta.trim().isEmpty()) {
-                cuerpo.put("respuesta", respuesta.trim());
-            }
-            post("/api/v1/bloquear", cuerpo.toString().getBytes(StandardCharsets.UTF_8), callback);
-        } catch (Exception e) {
-            Log.e(ETIQUETA, "no fue posible armar el cuerpo del bloqueo", e);
-            if (callback != null) {
-                callback.terminado(false, mensajeDeExcepcion(e));
-            }
-        }
-    }
+    /**
+     * POST /api/v1/bloquear: ELIMINADO (BIT-037). El bloqueo preventivo es
+     * una accion del banco: el endpoint exige la sesion de administrador de
+     * MIDFF.html y la app (cliente) ya no lo invoca desde el BIT-020.
+     */
 
     private static void post(final String ruta, final byte[] cuerpo, final Callback callback) {
         new Thread(() -> {
