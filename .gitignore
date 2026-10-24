@@ -452,3 +452,6 @@ firebase/cuenta_admin.txt
 # =============================================================================
 # Fin del archivo .gitignore — MIDFF (última actualización: 15/10/2026)
 # =============================================================================
+
+# BIT-038: archivos de proceso de builds en segundo plano
+*.pid
