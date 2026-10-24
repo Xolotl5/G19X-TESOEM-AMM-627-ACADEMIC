@@ -48,11 +48,17 @@ if (Test-Path $envFile) {
     Write-Warning 'No existe .env ni variables de entorno: la API rechazara peticiones protegidas. Copie .env.example a .env y llene los valores.'
 }
 
-# 1) DLLs del cliente Oracle XE al PATH (mismo criterio que smoke-test.ps1)
-$oracleBin = 'C:\app\100157216\product\21c\dbhomeXE\bin'
-if (-not (Test-Path $oracleBin)) {
+# 1) DLLs del cliente Oracle XE al PATH (BIT-038, Corte 3: sin rutas fijas de
+#    maquina). Orden: 1) MIDFF_ORACLE_BIN del .env/entorno, 2) sqlplus del PATH,
+#    3) busqueda en C:\app (mismo criterio que smoke-test.ps1).
+$oracleBin = $env:MIDFF_ORACLE_BIN
+if (-not $oracleBin -or -not (Test-Path $oracleBin)) {
     $sqlplus = (Get-Command sqlplus.exe -ErrorAction SilentlyContinue).Source
     if ($sqlplus) { $oracleBin = Split-Path -Parent $sqlplus }
+}
+if (-not $oracleBin -or -not (Test-Path $oracleBin)) {
+    $candidato = Get-ChildItem 'C:\app' -Recurse -Depth 6 -Filter sqlplus.exe -ErrorAction SilentlyContinue | Select-Object -First 1
+    if ($candidato) { $oracleBin = Split-Path -Parent $candidato.FullName }
 }
 if ($oracleBin -and (Test-Path $oracleBin)) {
     $env:PATH = "$oracleBin;$env:PATH"
