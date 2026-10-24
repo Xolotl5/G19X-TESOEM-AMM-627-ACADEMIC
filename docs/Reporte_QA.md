@@ -110,6 +110,22 @@ cualquier petición a `/transacciones` responde **500** con
 niega a atender (antes `GET /estado` con solo la llave de ingesta también
 responde **401**, CP del punto a del smoke).
 
+**CP-A6 — Primer registro de un id sin dueño sin aprobación del banco → 403
+(Corte 3, BIT-038; caso «CP-A4» del diagnóstico).** Un `id_cliente` que nadie
+ha vinculado ya no se lo queda la primera cuenta que lo pida: el vínculo lo
+confirma el banco.
+
+1. En la app, una cuenta nueva intenta registrarse (pestaña Registro) con un
+   `id_cliente` que NO sea el suyo auto-generado (`CLI-` + 6 primeros
+   caracteres de su uid) → **403** `el id_cliente requiere aprobacion del
+   banco: pida al administrador «Aprobar ID» en MIDFF.html`.
+2. El administrador aprueba el vínculo: `MIDFF.html` → Clientes →
+   **«Aprobar ID de cliente»** (`POST /api/v1/admin/clientes/aprobar`, tabla
+   `CLIENTE_ALTA`) → responde 200.
+3. La app reintenta el registro con ese mismo `id_cliente` → **200** (INSERT)
+   y los push de sus transacciones llegan a ese dispositivo.
+   Caso borde: aprobar un id ya vinculado a una cuenta activa → **409**.
+
 | Caso | Entrada | Esperado | Dónde |
 |---|---|---|---|
 | CP-A1 | token de B + `id_cliente` de A | 403 | manual (arriba) |
@@ -117,6 +133,7 @@ responde **401**, CP del punto a del smoke).
 | CP-A3 | `"rol":"ADMIN"` en el registro | 403 | manual (arriba) |
 | CP-A4 | `X-API-Key` sola en bloquear/desbloquear/GET dispositivos | 401 | `smoke-test.ps1` §6b |
 | CP-A5 | servidor sin `MIDFF_*` en el entorno | 500 «falta la variable» | `smoke-test.ps1` §6b |
+| CP-A6 | 1er registro con id sin dueño, sin aprobación / con aprobación | 403 / 200 | manual (arriba) |
 
 ## 6. Defectos encontrados y resueltos (extracto)
 

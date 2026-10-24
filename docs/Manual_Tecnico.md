@@ -45,6 +45,7 @@
 | `POST /api/v1/reportar` | Bearer: ID token de Firebase (cliente) | "No/Sí fui yo" del cliente (409 si ya fue reportada) |
 | `GET /api/v1/estado?id=` | Bearer: ID token de Firebase (cliente) | Estado de SUS alertas (403 si pide las ajenas) |
 | `GET /api/v1/admin/*` | Bearer: sesión de admin (consola) | KPIs, bandeja global, clientes y sincronización de bajas para `MIDFF.html` |
+| `POST /api/v1/admin/clientes/aprobar` | Bearer: sesión de admin (consola) | Aprueba el vínculo de un `id_cliente` en el primer registro de la app (BIT-038, `CLIENTE_ALTA`) |
 | `POST /api/v1/baja` | Bearer: ID token de Firebase (cliente) | Baja de cuenta + purga verificada contra Firebase |
 | `GET /api/v1/ping` | pública | Faro de descubrimiento (`{"servicio":"midff"}`) |
 

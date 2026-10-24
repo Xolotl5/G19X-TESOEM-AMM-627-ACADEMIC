@@ -23,6 +23,14 @@ Transaccion (HTTP/JSON) -> API PHP -> motor C (score) -> Oracle (atomico + audit
 
 ## ⚡ 0. Guía rápida de levantamiento (máquina nueva — paso a paso)
 
+> **Qué necesita el revisor (Corte 3):**
+> 1. Windows con **Oracle XE 21c** (PDB `XEPDB1`) y su cliente (`sqlplus`).
+> 2. **PHP 8+** con `pdo_oci` (u `oci8`), `curl`, `openssl` y `mbstring`.
+> 3. El proyecto **Firebase `midff-57e6b`** (`google-services.json` en la app + cuenta de servicio en `config\` + Web API key; hay plantillas `.example`).
+> 4. **Dos cuentas de prueba** para CP-A1 (403 cruzado): créelas en la propia app («Crear cuenta» con dos correos) o en Firebase Console → Authentication → Users; cada una verá su ID `CLI-…` en la pestaña Registro.
+> 5. **APK**: descargar del Release de GitHub (o compilar con `gradlew assembleDebug`).
+> Con eso: `.\servidor.ps1` levanta todo y `.\smoke-test.ps1` (§6b incluida) verifica la API.
+
 > Escrita para levantar **todo el sistema** en una máquina Windows limpia,
 > siguiendo los pasos **en orden** (pensada también para operarse con ayuda
 > de agentes de IA). **Puerto oficial de la API: `8091`.**
@@ -48,6 +56,7 @@ Con SQL*Plus (o SQL Developer) conectado como **SYSTEM**, ejecutar en este orden
 @ database/dispositivo_movil_id_cliente.sql  -- filtro de push por cliente (BIT-017)
 @ database/dispositivo_movil_uid.sql      -- uid de Firebase para purga (BIT-031)
 @ database/admin_usuario.sql              -- usuario de la consola MIDFF.html
+@ database/cliente_alta.sql               -- aprobaciones de id_cliente (BIT-038)
 @ database/sp_bloquear_alerta.sql         -- SP de bloqueo preventivo (Sprint 4)
 ```
 
@@ -228,6 +237,8 @@ C:\todoMIDFF
    sqlplus MIDFFuser@localhost:1521/XEPDB1 @database\schema.sql
    sqlplus MIDFFuser@localhost:1521/XEPDB1 @database\dispositivo_movil.sql
    sqlplus MIDFFuser@localhost:1521/XEPDB1 @database\sp_bloquear_alerta.sql
+   sqlplus MIDFFuser@localhost:1521/XEPDB1 @database\admin_usuario.sql
+   sqlplus MIDFFuser@localhost:1521/XEPDB1 @database\cliente_alta.sql
    ```
 
    Debe ver los PROMPT de éxito: *13 objetos del esquema*, *Tabla DISPOSITIVO_MOVIL instalada* y *SP_BLOQUEAR_ALERTA creado*.
@@ -240,6 +251,7 @@ Las credenciales viven **solo en variables de entorno** (RNF-03: nunca en el có
 | :--- | :--- | :--- |
 | `MIDFF_DB_USUARIO` / `MIDFF_DB_CLAVE` | ✅ | Acceso a Oracle (esquema `MIDFFuser`). |
 | `MIDFF_DB_HOST` / `MIDFF_DB_PUERTO` / `MIDFF_DB_SERVICIO` | No (localhost / 1521 / XEPDB1) | Conexión EZConnect. |
+| `MIDFF_ORACLE_BIN` | No | Carpeta BIN del cliente Oracle para `servidor.ps1` (BIT-038); si falta, el script la busca solo (PATH o `C:\app`). |
 | `MIDFF_API_KEY` | ✅ | `X-API-Key` de **ingesta del banco** (`POST /api/v1/transacciones`). Los endpoints de la app ya no la aceptan: usan el ID token de Firebase (BIT-037). |
 | `MIDFF_ADMIN_SECRETO` | ✅ | Firma HMAC de las sesiones de la consola `MIDFF.html` (también exigida por `bloquear`/`desbloquear`/`GET /dispositivos`). |
 | `MIDFF_FIREBASE_WEB_KEY` | ✅ | Web API key del proyecto Firebase (valida los ID token del cliente). |
@@ -330,7 +342,7 @@ servidor PHP arriba). Requisito una sola vez:
 sqlplus MIDFFuser@localhost:1521/XEPDB1 @database/admin_usuario.sql
 ```
 
-- **Acceso semilla**: usuario `admin`; la **clave temporal la define quien ejecuta el script** (SQL*Plus la solicita al llegar al `INSERT`) y la propia consola exige cambiarla al primer inicio, quedando guardada como bcrypt en Oracle. No hay contraseña escrita en el repositorio.
+- **Acceso semilla**: usuario `admin`; la **clave temporal la define quien ejecuta el script** (SQL*Plus la solicita al llegar al `INSERT`) y la propia consola exige cambiarla al primer inicio, quedando guardada como bcrypt en Oracle. No hay contraseña escrita en el repositorio. Nota de seguridad: `clave_temporal` queda en claro en `ADMIN_USUARIO` **solo hasta ese primer cambio** (aceptable en desarrollo; en producción, entregar la clave semilla por canal seguro).
 - **Funciones**: KPIs del día + gráfica por hora (24 h) + top clientes por
   riesgo, bandeja global de alertas con filtros (cliente/banda/estado) y
   **Bloquear** (reusa `POST /api/v1/bloquear` + `SP_BLOQUEAR_ALERTA` +
