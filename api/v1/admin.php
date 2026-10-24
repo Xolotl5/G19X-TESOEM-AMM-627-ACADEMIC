@@ -10,6 +10,9 @@ declare(strict_types=1);
   --             /api/v1/admin/resumen   GET   KPIs + top clientes + serie 24 h
   --             /api/v1/admin/alertas   GET   bandeja global con filtros
   --             /api/v1/admin/clientes  GET   clientes + dispositivos
+  --             /api/v1/admin/clientes/aprobar POST aprueba el vinculo de un
+  --                                       id_cliente en el primer registro de
+  --                                       la app (BIT-038, tabla CLIENTE_ALTA)
   -- Archivo  : api/v1/admin.php (el router deriva la accion por la ruta)
   --
   -- AUTENTICACION: sesion HMAC-SHA256 sin estado (Bearer token, 8 h):
@@ -217,11 +220,14 @@ if ($accion === 'sincronizar-bajas') {
 }
 
 /* ---- A partir de aqui toda accion es GET y exige token valido ------------- */
-if ($metodo !== 'GET') {
+/* (excepcion BIT-038: 'aprobar' es POST y valida su propia sesion abajo) */
+if ($accion !== 'aprobar' && $metodo !== 'GET') {
     header('Allow: GET');
     responder(405, ['error' => 'metodo no permitido: esta accion usa GET']);
 }
-$admin = midff_admin_token_validar();
+if ($accion !== 'aprobar') {
+    $admin = midff_admin_token_validar();
+}
 /* ===== GET /api/v1/admin/resumen (KPIs, bandas, top clientes, serie 24 h) == */
 if ($accion === 'resumen') {
     try {
@@ -365,6 +371,55 @@ if ($accion === 'clientes') {
 
     error_log('[MIDFF-ADMIN] clientes consultados por ' . $admin . ' (' . count($clientes) . ')');
     responder(200, ['ok' => true, 'total' => count($clientes), 'clientes' => $clientes]);
+}
+
+/* ===== POST /api/v1/admin/clientes/aprobar { id_cliente } (BIT-038) ========
+ * Aprueba que un id_cliente (distinto del auto-generado por la propia cuenta)
+ * pueda vincularse en el PRIMER registro de la app. Sin esta aprobacion,
+ * dispositivos.php responde 403: el vinculo lo confirma el banco. */
+if ($accion === 'aprobar') {
+    if ($metodo !== 'POST') {
+        header('Allow: POST');
+        responder(405, ['error' => 'metodo no permitido: use POST /api/v1/admin/clientes/aprobar']);
+    }
+    $admin   = midff_admin_token_validar();
+    $cuerpo  = json_decode((string) file_get_contents('php://input'), true);
+    $idCliente = strtoupper(trim((string) (is_array($cuerpo) ? ($cuerpo['id_cliente'] ?? '') : '')));
+    if ($idCliente === '' || mb_strlen($idCliente) > 40) {
+        rechazar('id_cliente obligatorio (cadena de hasta 40 caracteres)');
+    }
+
+    try {
+        $cnx = midff_admin_conectar();
+        // Ya vinculado a una cuenta activa: no tiene sentido aprobarlo.
+        $sent = $cnx->prepare('SELECT uid_firebase FROM DISPOSITIVO_MOVIL'
+                            . ' WHERE id_cliente = :cliente AND activo = 1'
+                            . ' AND uid_firebase IS NOT NULL'
+                            . ' FETCH FIRST 1 ROWS ONLY');
+        $sent->execute([':cliente' => $idCliente]);
+        if ($sent->fetch(PDO::FETCH_ASSOC) !== false) {
+            responder(409, ['error' => 'el id_cliente ya esta vinculado a una cuenta activa']);
+        }
+        // Idempotente: MERGE actualiza quien aprobo si se repite.
+        $cnx->prepare('MERGE INTO CLIENTE_ALTA c'
+                    . ' USING (SELECT :cliente AS idc FROM DUAL) s'
+                    . ' ON (c.id_cliente = s.idc)'
+                    . ' WHEN MATCHED THEN UPDATE SET c.aprobado_por = :admin,'
+                    . '  c.fecha_aprobacion = SYSTIMESTAMP'
+                    . ' WHEN NOT MATCHED THEN INSERT (id_cliente, aprobado_por)'
+                    . '  VALUES (s.idc, :admin)')
+            ->execute([':cliente' => $idCliente, ':admin' => $admin]);
+    } catch (PDOException $e) {
+        responder(500, ['error' => 'fallo Oracle al aprobar el cliente (ejecute database/cliente_alta.sql): '
+                                 . trim($e->getMessage())]);
+    }
+
+    error_log('[MIDFF-ADMIN] id_cliente aprobado para primer registro: ' . $idCliente . ' (por ' . $admin . ')');
+    responder(200, [
+        'ok'         => true,
+        'id_cliente' => $idCliente,
+        'mensaje'    => 'id_cliente aprobado: la app ya puede vincularlo en su primer registro (BIT-038)',
+    ]);
 }
 
 responder(404, ['error' => 'accion de administrador desconocida: ' . $accion]);

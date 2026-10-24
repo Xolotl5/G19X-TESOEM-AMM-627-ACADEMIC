@@ -279,10 +279,15 @@ if ($tokenUsuario !== null) {
         }
         $idCliente = $idClientePrevio;
     } elseif ($idCliente !== '') {
-        // BIT-037 (Corte 2), PRIMER REGISTRO: se cierra el hueco por el que
-        // una cuenta nueva de Firebase podia registrarse con el id_cliente de
-        // OTRO cliente y leer sus alertas en estado.php: el id solo se admite
-        // si no esta vinculado ya a un uid distinto del autenticado.
+        // BIT-037 (Corte 2): si el id ya pertenece a OTRO uid -> 403.
+        // BIT-038 (Corte 3): si NADIE lo tiene, el vinculo lo confirma el
+        // banco. Se acepta solo si:
+        //   (a) es el ID auto-generado de la PROPIA cuenta (D-50: 'CLI-' +
+        //       6 primeros alfanumericos del uid, igual que SesionCliente),
+        //   (b) o un administrador lo aprobo antes en MIDFF.html
+        //       (tabla CLIENTE_ALTA, POST /api/v1/admin/clientes/aprobar).
+        // Asi una cuenta nueva ya no puede quedarse un id_cliente ajeno.
+        $aprobado = false;
         try {
             $cnxD  = midff_db_conectar();
             $sentD = $cnxD->prepare('SELECT uid_firebase FROM DISPOSITIVO_MOVIL'
@@ -290,13 +295,35 @@ if ($tokenUsuario !== null) {
                                   . ' AND uid_firebase IS NOT NULL AND uid_firebase <> :uidfb'
                                   . ' FETCH FIRST 1 ROWS ONLY');
             $sentD->execute([':cliente' => $idCliente, ':uidfb' => $uidFirebase]);
-            if ($sentD->fetch(PDO::FETCH_ASSOC) !== false) {
-                responder(403, ['error' => 'el id_cliente ya esta vinculado a otra '
-                                         . 'cuenta de Firebase']);
+            $duenoAjeno = $sentD->fetch(PDO::FETCH_ASSOC) !== false;
+
+            if (!$duenoAjeno) {
+                // (a) ID auto-generado de la propia cuenta (D-50).
+                $alfaNum   = preg_replace('/[^A-Za-z0-9]/', '', $uidFirebase);
+                $idAutogen = 'CLI-' . strtoupper(substr($alfaNum, 0, 6));
+                if ($idCliente === $idAutogen) {
+                    $aprobado = true;
+                } else {
+                    // (b) Aprobacion previa del banco en CLIENTE_ALTA (BIT-038).
+                    $sentA = $cnxD->prepare('SELECT aprobado_por FROM CLIENTE_ALTA'
+                                          . ' WHERE id_cliente = :cliente');
+                    $sentA->execute([':cliente' => $idCliente]);
+                    $aprobado = $sentA->fetch(PDO::FETCH_ASSOC) !== false;
+                }
             }
         } catch (PDOException $e) {
             responder(500, ['error' => 'fallo Oracle al verificar el id_cliente: '
                                      . trim($e->getMessage())]);
+        }
+        if ($duenoAjeno) {
+            responder(403, ['error' => 'el id_cliente ya esta vinculado a otra '
+                                     . 'cuenta de Firebase']);
+        }
+        if (!$aprobado) {
+            responder(403, ['error' => 'el id_cliente requiere aprobacion del '
+                                     . 'banco: pida al administrador «Aprobar ID» '
+                                     . 'en MIDFF.html (pestana Clientes) o use el '
+                                     . 'ID que la app genero para su cuenta']);
         }
     }
 }

@@ -149,6 +149,7 @@ tr:last-child td{border-bottom:0}
         <div><label>Buscar cliente</label><input id="fBuscarCliente" placeholder="CLI-…"></div>
         <button onclick="pintarClientes()">Buscar</button>
         <button class="secundario" onclick="sincronizarBajas()">Sincronizar bajas con Firebase</button>
+        <button class="secundario" onclick="aprobarCliente()">Aprobar ID de cliente</button>
       </div>
     </div>
     <div class="tarjeta">
@@ -156,7 +157,7 @@ tr:last-child td{border-bottom:0}
         <thead><tr><th>Cliente</th><th>Transacciones</th><th>Monto total</th><th>Score prom.</th><th>Alertas</th><th>Dispositivos</th><th>Última actividad</th><th></th></tr></thead>
         <tbody id="tablaClientes"><tr><td colspan="8">Sin datos.</td></tr></tbody>
       </table>
-      <div class="nota">Los dispositivos activos son teléfonos con la app registrada (DISPOSITIVO_MOVIL). «Ver alertas» abre la bandeja filtrada por ese cliente. «Sincronizar bajas con Firebase» verifica contra Firebase Auth qué cuentas siguen vivas y purga las eliminadas (dispositivos + historial; BIT-031).</div>
+      <div class="nota">Los dispositivos activos son teléfonos con la app registrada (DISPOSITIVO_MOVIL). «Ver alertas» abre la bandeja filtrada por ese cliente. «Sincronizar bajas con Firebase» verifica contra Firebase Auth qué cuentas siguen vivas y purga las eliminadas (dispositivos + historial; BIT-031). «Aprobar ID de cliente» (BIT-038) autoriza a una cuenta de la app a vincular en su primer registro un id_cliente que no sea el suyo auto-generado (el vínculo lo confirma el banco).</div>
     </div>
   </section>
 </div>
@@ -443,6 +444,22 @@ function pintarClientes() {
 function verAlertasDe(cliente) {
   $('fCliente').value = cliente;
   elegirTab('alertas');
+}
+
+/* BIT-038 (Corte 3): aprueba que una cuenta de la app vincule en su primer
+ * registro un id_cliente que no sea el auto-generado de su propia cuenta.
+ * Sin esto, POST /dispositivos responde 403 (el vínculo lo confirma el banco). */
+async function aprobarCliente() {
+  const id = prompt('Aprobar ID de cliente para el primer registro de la app\n(escriba el id_cliente que el banco le entregó al cliente):');
+  if (!id || !id.trim()) return;
+  try {
+    const r = await llamar('/api/v1/admin/clientes/aprobar', {
+      method: 'POST', headers: encabezados(true),
+      body: JSON.stringify({id_cliente: id.trim()})
+    });
+    alert('✅ ' + r.mensaje + '\nid_cliente: ' + r.id_cliente);
+    cargarClientes();
+  } catch (e) { alert('❌ ' + e.message); }
 }
 
 /* BIT-031: purga desde el banco las cuentas eliminadas de Firebase Auth,
