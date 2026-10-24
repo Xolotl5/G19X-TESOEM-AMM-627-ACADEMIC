@@ -28,7 +28,7 @@ Transaccion (HTTP/JSON) -> API PHP -> motor C (score) -> Oracle (atomico + audit
 > 2. **PHP 8+** con `pdo_oci` (u `oci8`), `curl`, `openssl` y `mbstring`.
 > 3. El proyecto **Firebase `midff-57e6b`** (`google-services.json` en la app + cuenta de servicio en `config\` + Web API key; hay plantillas `.example`).
 > 4. **Dos cuentas de prueba** para CP-A1 (403 cruzado): créelas en la propia app («Crear cuenta» con dos correos) o en Firebase Console → Authentication → Users; cada una verá su ID `CLI-…` en la pestaña Registro.
-> 5. **APK**: descargar del Release de GitHub (o compilar con `gradlew assembleDebug`).
+> 5. **APK**: descargar del **Release [v1.3](https://github.com/Xolotl5/G19X-TESOEM-AMM-627-ACADEMIC/releases/tag/v1.3)** (archivo `MIDFF-Alertas-v1.3.apk`; o compilar con `gradlew assembleDebug`).
 > Con eso: `.\servidor.ps1` levanta todo y `.\smoke-test.ps1` (§6b incluida) verifica la API.
 
 > Escrita para levantar **todo el sistema** en una máquina Windows limpia,
@@ -111,7 +111,7 @@ la API con `php -S 0.0.0.0:8091 router.php` (accesible por WiFi, USB y emulador)
 
 ### Paso 6 — App Android
 
-1. Instalar `android/MidffAlertas/app/build/outputs/apk/debug/app-debug.apk`.
+1. Instalar el APK del **Release [v1.3](https://github.com/Xolotl5/G19X-TESOEM-AMM-627-ACADEMIC/releases/tag/v1.3)** (`MIDFF-Alertas-v1.3.apk`), o compilarlo con Android Studio (`app/build/outputs/apk/debug/app-debug.apk`).
 2. Iniciar sesión (Firebase Auth, correo/contraseña) y pasar la biometría.
 3. La app **se enlaza sola** a la API por WiFi (misma red que la PC: escaneo automático
    del gateway y la subred). Alternativa por USB: `adb reverse tcp:8091 tcp:8091`.
@@ -465,7 +465,7 @@ La memoria completa y auditable del proyecto (decisiones D-01 a D-58, métricas,
 * **Documentos base:** `PRD_MIDFF.md` (requisitos) y `MVP_MIDFF.md` (alcance, DoD y métricas).
 * **Metodología:** Scrum — 4 sprints de 2 semanas + fase post-MVP; bitácora con entradas `BIT-001` a `BIT-036`.
 * **Uso declarado de IA:** partes del código, las pruebas y la documentación fueron desarrolladas con asistencia de un agente de programación basado en IA, bajo dirección, decisión técnica y revisión del residente; el diseño, el alcance y cada decisión (D-01…D-58) quedan documentados en `BITACORA.md`.
-* **APK:** la carpeta `build/` no se versiona; para instalar sin compilar, publicar `app-debug.apk` como **GitHub Release** del repositorio.
+* **APK:** la carpeta `build/` no se versiona; el ejecutable instalable está publicado como **GitHub Release** [v1.3](https://github.com/Xolotl5/G19X-TESOEM-AMM-627-ACADEMIC/releases/tag/v1.3) (`MIDFF-Alertas-v1.3.apk`).
 
 
 
