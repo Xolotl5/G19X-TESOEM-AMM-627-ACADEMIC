@@ -131,7 +131,7 @@ try {
 
     $idAud = (int) $cnx->query('SELECT SEQ_AUDITORIA.CURRVAL FROM DUAL')->fetchColumn();
 } catch (PDOException $e) {
-    responder(500, ['error' => 'fallo Oracle al registrar el reporte: ' . trim($e->getMessage())]);
+    midff_error_bd('fallo Oracle al registrar el reporte', $e);
 }
 
 error_log(sprintf('[MIDFF-REPORTE] %s reporto %s sobre %s (auditoria %d)',

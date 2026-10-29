@@ -121,7 +121,7 @@ try {
     $cnx->commit();
     $idAud = (int) $cnx->query('SELECT SEQ_AUDITORIA.CURRVAL FROM DUAL')->fetchColumn();
 } catch (PDOException $e) {
-    responder(500, ['error' => 'fallo Oracle al desbloquear: ' . trim($e->getMessage())]);
+    midff_error_bd('fallo Oracle al desbloquear', $e);
 }
 
 error_log(sprintf('[MIDFF-DESBLOQUEO] %s desbloqueo %s (auditoria %d)', $usuario, $alertaId, $idAud));

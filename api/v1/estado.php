@@ -83,7 +83,7 @@ try {
         ];
     }
 } catch (PDOException $e) {
-    responder(500, ['error' => 'fallo Oracle al consultar el estado: ' . trim($e->getMessage())]);
+    midff_error_bd('fallo Oracle al consultar el estado', $e);
 }
 
 error_log(sprintf('[MIDFF-ESTADO] %s consulto %d alerta(s)', $idCliente, count($lista)));

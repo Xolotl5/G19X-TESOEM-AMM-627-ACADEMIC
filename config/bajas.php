@@ -87,7 +87,8 @@ function midff_baja_purgar_cliente(string $idCliente): array
         if ($cnx !== null && $cnx->inTransaction()) {
             $cnx->rollBack();
         }
-        $r['error'] = trim($e->getMessage());
+        error_log('[MIDFF-DB] baja: ' . trim($e->getMessage()));
+        $r['error'] = 'error interno de base de datos (detalle en el log del servidor)';
     }
     return $r;
 }

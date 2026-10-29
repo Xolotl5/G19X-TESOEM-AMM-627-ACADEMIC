@@ -200,7 +200,7 @@ function midff_db_registrar_transaccion(array $datos): array
             if ($cnx !== null && $cnx->inTransaction()) {
                 $cnx->rollBack();
             }
-            return ['ok' => false, 'mensaje' => trim($e->getMessage())] + $vacio;
+            return ['ok' => false, 'mensaje' => 'error interno de base de datos (detalle en el log del servidor)'] + $vacio;
         }
 
         return ['ok' => true, 'mensaje' => '',
@@ -304,7 +304,7 @@ function midff_db_bloquear_alerta(int $idAlerta, string $usuario, string $respue
             if ($cnx !== null && $cnx->inTransaction()) {
                 $cnx->rollBack();
             }
-            return ['ok' => false, 'mensaje' => trim($e->getMessage())] + $vacio;
+            return ['ok' => false, 'mensaje' => 'error interno de base de datos (detalle en el log del servidor)'] + $vacio;
         }
 
         return ['ok' => true, 'mensaje' => '', 'estado' => $estado,
