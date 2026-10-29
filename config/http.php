@@ -86,6 +86,18 @@ function midff_exigir_api_key(): void
 }
 
 /**
+ * Fallo de base de datos (BIT-039, Corte 4): el detalle de Oracle (ORA-xxxxx,
+ * tablas/columnas) SOLO va al log del servidor; quien llama recibe un mensaje
+ * generico. Reemplaza los responder(500, ... getMessage() ...) de los endpoints.
+ */
+function midff_error_bd(string $contexto, PDOException $e): void
+{
+    error_log('[MIDFF-DB] ' . $contexto . ': ' . trim($e->getMessage()));
+    responder(500, ['error' => 'fallo interno de base de datos (' . $contexto
+                             . '); el detalle queda en el log del servidor']);
+}
+
+/**
  * Verifica el ID token de Firebase del header "Authorization: Bearer <token>"
  * contra Identity Toolkit (accounts:lookup con la Web API key del proyecto).
  *
@@ -137,8 +149,9 @@ function midff_verificar_id_token(): array
         responder(401, ['error' => 'ID token de Firebase invalido o expirado']);
     }
     return [
-        'uid'   => (string) $respuesta['users'][0]['localId'],
-        'email' => (string) ($respuesta['users'][0]['email'] ?? ''),
+        'uid'       => (string) $respuesta['users'][0]['localId'],
+        'email'     => (string) ($respuesta['users'][0]['email'] ?? ''),
+        'verificado' => (bool) ($respuesta['users'][0]['emailVerified'] ?? false),
     ];
 }
 
@@ -165,8 +178,7 @@ function midff_exigir_cliente_firebase(): string
         $sent->execute([':uidfb' => $usuario['uid']]);
         $fila = $sent->fetch(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-        responder(500, ['error' => 'fallo Oracle al resolver el cliente autenticado: '
-                                 . trim($e->getMessage())]);
+        midff_error_bd('fallo Oracle al resolver el cliente autenticado: ', $e);
     }
     if ($fila === false || trim((string) ($fila['ID_CLIENTE'] ?? '')) === '') {
         responder(403, ['error' => 'el usuario autenticado no tiene un id_cliente '

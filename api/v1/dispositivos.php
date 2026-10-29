@@ -119,7 +119,7 @@ function midff_registrar_dispositivo(string $usuario, string $rol, string $token
             return ['ok' => true, 'mensaje' => 'dispositivo registrado',
                     'id' => $idNuevo, 'accion' => 'INSERT'];
         } catch (PDOException $e) {
-            return ['ok' => false, 'mensaje' => trim($e->getMessage()),
+            return ['ok' => false, 'mensaje' => 'error interno de base de datos (detalle en el log del servidor)',
                     'id' => null, 'accion' => 'NINGUNA'];
         }
     }
@@ -148,7 +148,7 @@ function midff_listar_dispositivos(): array
                           . ' FROM DISPOSITIVO_MOVIL ORDER BY id_dispositivo');
         return ['ok' => true, 'mensaje' => '', 'dispositivos' => $sent->fetchAll(PDO::FETCH_ASSOC) ?: []];
     } catch (PDOException $e) {
-        return ['ok' => false, 'mensaje' => trim($e->getMessage()), 'dispositivos' => []];
+        return ['ok' => false, 'mensaje' => 'error interno de base de datos (detalle en el log del servidor)', 'dispositivos' => []];
     }
 }
 
@@ -191,8 +191,7 @@ if (($metodo ?? '') === 'POST') {
         $filaV = $sentV->fetch(PDO::FETCH_ASSOC);
         $idClientePrevio = $filaV === false ? '' : trim((string) ($filaV['ID_CLIENTE'] ?? ''));
     } catch (PDOException $e) {
-        responder(500, ['error' => 'fallo Oracle al verificar el dispositivo: '
-                                 . trim($e->getMessage())]);
+        midff_error_bd('fallo Oracle al verificar el dispositivo: ', $e);
     }
 }
 
@@ -252,7 +251,7 @@ $idClienteCrudo = $cuerpo['id_cliente'] ?? null;
 if ($idClienteCrudo !== null && !is_string($idClienteCrudo)) {
     rechazar('id_cliente invalido: se espera una cadena de hasta 40 caracteres');
 }
-$idCliente = $idClienteCrudo === null ? '' : trim($idClienteCrudo);
+$idCliente = $idClienteCrudo === null ? '' : strtoupper(trim($idClienteCrudo));
 if (mb_strlen($idCliente) > 40) {
     rechazar('id_cliente excede 40 caracteres');
 }
@@ -304,16 +303,27 @@ if ($tokenUsuario !== null) {
                 if ($idCliente === $idAutogen) {
                     $aprobado = true;
                 } else {
-                    // (b) Aprobacion previa del banco en CLIENTE_ALTA (BIT-038).
-                    $sentA = $cnxD->prepare('SELECT aprobado_por FROM CLIENTE_ALTA'
-                                          . ' WHERE id_cliente = :cliente');
-                    $sentA->execute([':cliente' => $idCliente]);
-                    $aprobado = $sentA->fetch(PDO::FETCH_ASSOC) !== false;
+                    // (b) Aprobacion previa del banco en CLIENTE_ALTA (BIT-038/039):
+                    // la aprobacion se liga a UNA cuenta concreta; solo cuenta
+                    // si el correo del token coincide (sin distinguir mayusculas)
+                    // y esa cuenta tiene el correo verificado en Firebase.
+                    $sentA = $cnxD->prepare('SELECT correo FROM CLIENTE_ALTA'
+                                          . ' WHERE id_cliente = :cliente'
+                                          . ' AND LOWER(correo) = LOWER(:correo)');
+                    $sentA->execute([':cliente' => $idCliente,
+                                     ':correo'  => (string) ($tokenUsuario['email'] ?? '')]);
+                    $filaAprob = $sentA->fetch(PDO::FETCH_ASSOC);
+                    $aprobado  = $filaAprob !== false
+                              && ($tokenUsuario['verificado'] ?? false) === true;
+                    if ($aprobado) {
+                        $cnxD->prepare('UPDATE CLIENTE_ALTA SET usado_en = SYSTIMESTAMP'
+                                    . ' WHERE id_cliente = :cliente')
+                            ->execute([':cliente' => $idCliente]);
+                    }
                 }
             }
         } catch (PDOException $e) {
-            responder(500, ['error' => 'fallo Oracle al verificar el id_cliente: '
-                                     . trim($e->getMessage())]);
+            midff_error_bd('fallo Oracle al verificar el id_cliente: ', $e);
         }
         if ($duenoAjeno) {
             responder(403, ['error' => 'el id_cliente ya esta vinculado a otra '

@@ -70,7 +70,7 @@ if ($accion === 'sesion') {
         $sent->execute([':u' => $usuario]);
         $fila = $sent->fetch(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-        responder(500, ['error' => 'fallo Oracle al autenticar (ejecute database/admin_usuario.sql): ' . trim($e->getMessage())]);
+        midff_error_bd('fallo Oracle al autenticar (ejecute database/admin_usuario.sql)', $e);
     }
 
     $valida = $fila !== false && midff_admin_clave_valida($clave, $fila);
@@ -134,7 +134,7 @@ if ($accion === 'clave') {
         $sent = $cnx->prepare('UPDATE ADMIN_USUARIO SET password_hash = :h, clave_temporal = NULL WHERE usuario = :u');
         $sent->execute([':h' => password_hash($nueva, PASSWORD_DEFAULT), ':u' => $sesion]);
     } catch (PDOException $e) {
-        responder(500, ['error' => 'fallo Oracle al cambiar la clave: ' . trim($e->getMessage())]);
+        midff_error_bd('fallo Oracle al cambiar la clave', $e);
     }
 
     error_log('[MIDFF-ADMIN] clave actualizada para ' . $sesion);
@@ -167,7 +167,7 @@ if ($accion === 'sincronizar-bajas') {
         $sinUid = (int) $cnx->query('SELECT COUNT(*) FROM DISPOSITIVO_MOVIL'
                                   . ' WHERE uid_firebase IS NULL')->fetchColumn();
     } catch (PDOException $e) {
-        responder(500, ['error' => 'fallo Oracle al listar dispositivos: ' . trim($e->getMessage())]);
+        midff_error_bd('fallo Oracle al listar dispositivos', $e);
     }
 
     // uid -> [id_cliente, ...] (un uid puede tener varios dispositivos).
@@ -270,7 +270,7 @@ if ($accion === 'resumen') {
             $serie[] = ['hora' => $fila['HORA'], 'banda' => $fila['BANDA'], 'n' => (int) $fila['N']];
         }
     } catch (PDOException $e) {
-        responder(500, ['error' => 'fallo Oracle en el resumen: ' . trim($e->getMessage())]);
+        midff_error_bd('fallo Oracle en el resumen', $e);
     }
 
     error_log('[MIDFF-ADMIN] resumen consultado por ' . $admin);
@@ -328,7 +328,7 @@ if ($accion === 'alertas') {
         $sent->execute($params);
         $filas = $sent->fetchAll(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-        responder(500, ['error' => 'fallo Oracle en las alertas: ' . trim($e->getMessage())]);
+        midff_error_bd('fallo Oracle en las alertas', $e);
     }
 
     foreach ($filas as $i => $fila) {
@@ -362,7 +362,7 @@ if ($accion === 'clientes') {
             $dispositivos[$fila['ID_CLIENTE']] = (int) $fila['N'];
         }
     } catch (PDOException $e) {
-        responder(500, ['error' => 'fallo Oracle en los clientes: ' . trim($e->getMessage())]);
+        midff_error_bd('fallo Oracle en los clientes', $e);
     }
 
     foreach ($clientes as $i => $fila) {
@@ -385,8 +385,12 @@ if ($accion === 'aprobar') {
     $admin   = midff_admin_token_validar();
     $cuerpo  = json_decode((string) file_get_contents('php://input'), true);
     $idCliente = strtoupper(trim((string) (is_array($cuerpo) ? ($cuerpo['id_cliente'] ?? '') : '')));
+    $correo    = strtolower(trim((string) (is_array($cuerpo) ? ($cuerpo['correo'] ?? '') : '')));
     if ($idCliente === '' || mb_strlen($idCliente) > 40) {
         rechazar('id_cliente obligatorio (cadena de hasta 40 caracteres)');
+    }
+    if (!filter_var($correo, FILTER_VALIDATE_EMAIL) || strlen($correo) > 254) {
+        rechazar('correo obligatorio: la cuenta de Firebase autorizada a usar este id_cliente');
     }
 
     try {
@@ -400,25 +404,27 @@ if ($accion === 'aprobar') {
         if ($sent->fetch(PDO::FETCH_ASSOC) !== false) {
             responder(409, ['error' => 'el id_cliente ya esta vinculado a una cuenta activa']);
         }
-        // Idempotente: MERGE actualiza quien aprobo si se repite.
+        // Idempotente: MERGE actualiza quien aprobo si se repite (BIT-039:
+        // la aprobacion se liga a la cuenta de Firebase que la usara).
         $cnx->prepare('MERGE INTO CLIENTE_ALTA c'
-                    . ' USING (SELECT :cliente AS idc FROM DUAL) s'
+                    . ' USING (SELECT :cliente AS idc, :correo AS corr FROM DUAL) s'
                     . ' ON (c.id_cliente = s.idc)'
                     . ' WHEN MATCHED THEN UPDATE SET c.aprobado_por = :admin,'
-                    . '  c.fecha_aprobacion = SYSTIMESTAMP'
-                    . ' WHEN NOT MATCHED THEN INSERT (id_cliente, aprobado_por)'
-                    . '  VALUES (s.idc, :admin)')
-            ->execute([':cliente' => $idCliente, ':admin' => $admin]);
+                    . '  c.correo = s.corr, c.fecha_aprobacion = SYSTIMESTAMP, c.usado_en = NULL'
+                    . ' WHEN NOT MATCHED THEN INSERT (id_cliente, correo, aprobado_por)'
+                    . '  VALUES (s.idc, s.corr, :admin)')
+            ->execute([':cliente' => $idCliente, ':correo' => $correo, ':admin' => $admin]);
     } catch (PDOException $e) {
-        responder(500, ['error' => 'fallo Oracle al aprobar el cliente (ejecute database/cliente_alta.sql): '
-                                 . trim($e->getMessage())]);
+        midff_error_bd('fallo Oracle al aprobar el cliente (ejecute database/cliente_alta.sql): ', $e);
     }
 
-    error_log('[MIDFF-ADMIN] id_cliente aprobado para primer registro: ' . $idCliente . ' (por ' . $admin . ')');
+    error_log('[MIDFF-ADMIN] id_cliente aprobado para primer registro: ' . $idCliente
+            . ' cuenta=' . $correo . ' (por ' . $admin . ')');
     responder(200, [
         'ok'         => true,
         'id_cliente' => $idCliente,
-        'mensaje'    => 'id_cliente aprobado: la app ya puede vincularlo en su primer registro (BIT-038)',
+        'correo'     => $correo,
+        'mensaje'    => 'aprobado: SOLO esa cuenta puede vincular ese id_cliente en su primer registro (BIT-039)',
     ]);
 }
 

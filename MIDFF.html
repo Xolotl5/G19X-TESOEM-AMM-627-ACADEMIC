@@ -452,12 +452,14 @@ function verAlertasDe(cliente) {
 async function aprobarCliente() {
   const id = prompt('Aprobar ID de cliente para el primer registro de la app\n(escriba el id_cliente que el banco le entregó al cliente):');
   if (!id || !id.trim()) return;
+  const correo = prompt('Correo de la cuenta de Firebase autorizada a usar ' + id.trim() + '\n(SOLO esa cuenta podrá vincular el ID; BIT-039):');
+  if (!correo || !correo.trim()) return;
   try {
     const r = await llamar('/api/v1/admin/clientes/aprobar', {
       method: 'POST', headers: encabezados(true),
-      body: JSON.stringify({id_cliente: id.trim()})
+      body: JSON.stringify({id_cliente: id.trim(), correo: correo.trim()})
     });
-    alert('✅ ' + r.mensaje + '\nid_cliente: ' + r.id_cliente);
+    alert('✅ ' + r.mensaje + '\nid_cliente: ' + r.id_cliente + '\ncuenta: ' + r.correo);
     cargarClientes();
   } catch (e) { alert('❌ ' + e.message); }
 }

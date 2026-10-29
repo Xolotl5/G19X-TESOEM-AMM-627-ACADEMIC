@@ -42,13 +42,18 @@ END;
 --------------------------------------------------------------------------------
 CREATE TABLE CLIENTE_ALTA (
     id_cliente         VARCHAR2(40)             NOT NULL,
+    correo             VARCHAR2(254)            NOT NULL,
     aprobado_por       VARCHAR2(60)             NOT NULL,
     fecha_aprobacion   TIMESTAMP WITH TIME ZONE DEFAULT SYSTIMESTAMP NOT NULL,
-    CONSTRAINT pk_cliente_alta PRIMARY KEY (id_cliente)
+    usado_en           TIMESTAMP WITH TIME ZONE,
+    CONSTRAINT pk_cliente_alta PRIMARY KEY (id_cliente),
+    CONSTRAINT ck_cliente_alta_correo CHECK (correo LIKE '%_@_%._%')
 );
 
-COMMENT ON TABLE  CLIENTE_ALTA IS 'id_cliente que el banco autorizo a vincular en el primer registro de la app (BIT-038)';
+COMMENT ON TABLE  CLIENTE_ALTA IS 'id_cliente que el banco autorizo a vincular en el primer registro de la app; CORREO fija PARA QUE cuenta es la aprobacion (BIT-039)';
+COMMENT ON COLUMN CLIENTE_ALTA.correo IS 'cuenta de Firebase (correo) autorizada a usar este id_cliente en su primer registro';
 COMMENT ON COLUMN CLIENTE_ALTA.aprobado_por IS 'usuario administrador de la consola que aprobo el vinculo';
+COMMENT ON COLUMN CLIENTE_ALTA.usado_en IS 'cuando la cuenta autorizada uso la aprobacion (informativo)';
 
 PROMPT [2/2] Tabla CLIENTE_ALTA creada (aprobaciones del banco, BIT-038).
 

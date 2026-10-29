@@ -134,6 +134,14 @@ confirma el banco.
 | CP-A4 | `X-API-Key` sola en bloquear/desbloquear/GET dispositivos | 401 | `smoke-test.ps1` §6b |
 | CP-A5 | servidor sin `MIDFF_*` en el entorno | 500 «falta la variable» | `smoke-test.ps1` §6b |
 | CP-A6 | 1er registro con id sin dueño, sin aprobación / con aprobación | 403 / 200 | manual (arriba) |
+| CP-A7 | ID aprobado para el correo A; lo pide la cuenta B / lo pide la A | 403 / 200 | manual (abajo) |
+
+**CP-A7 — La aprobación se liga a UNA cuenta concreta (Corte 4, BIT-039).** Tras
+«Aprobar ID de cliente» (que ahora pide **ID + correo** de la cuenta autorizada):
+cualquier **otra** cuenta que intente vincular ese `id_cliente` en su primer registro
+recibe **403** aunque el ID esté aprobado; solo la cuenta cuyo correo coincide (y tiene
+el correo verificado en Firebase) recibe **200**. Además `id_cliente` se normaliza en
+mayúsculas (escribir `cli-0042` ya no causa un falso 403).
 
 ## 6. Defectos encontrados y resueltos (extracto)
 
