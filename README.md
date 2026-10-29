@@ -7,7 +7,7 @@
 * **Siglas:** MIDFF
 * **Tipo de Proyecto:** Residencias Profesionales – Ingeniería en Sistemas Computacionales
 * **Formato:** Markdown (`README.md`)
-* **Estado:** MVP terminado (Sprint 4 · 28/09/2026) **+ post-MVP completo** (BIT-034 · 15/10/2026: IA explicable en la notificación, app del cliente con Firebase Auth/biometría/flujo por nivel de riesgo, consola web en vivo y paleta "Noche Violeta")
+* **Estado:** MVP + post-MVP completos y **endurecimiento de seguridad por actor** (BIT-039 · 26/10/2026): app con ID token de Firebase, llave de ingesta solo para `/transacciones`, consola con sesión de administrador, aprobación del banco ligada a una cuenta para vincular un `id_cliente` (CP-A6/A7), errores de Oracle solo en el log, motor calibrado con dataset etiquetado (80 casos, §7 del Informe Final) y checklist «Qué necesita el revisor» (§0)
 * **Licencia:** Privada / Académica
 
 El **MIDFF** evalúa transacciones financieras en tiempo real, calcula un score de riesgo (0.0–1.0), clasifica la operación (BAJO/MEDIO/ALTO), persiste toda la evidencia en Oracle XE, notifica al oficial mediante push (Firebase FCM) y permite **bloquear preventivamente** la alerta desde una app Android, con auditoría completa de cada decisión.
@@ -463,9 +463,15 @@ La memoria completa y auditable del proyecto (decisiones D-01 a D-58, métricas,
 
 * **Desarrollador / Responsable:** Alejandro Miranda Martínez — Residente del proyecto (Residencias Profesionales, Ingeniería en Sistemas Computacionales, PluriOne).
 * **Documentos base:** `PRD_MIDFF.md` (requisitos) y `MVP_MIDFF.md` (alcance, DoD y métricas).
-* **Metodología:** Scrum — 4 sprints de 2 semanas + fase post-MVP; bitácora con entradas `BIT-001` a `BIT-036`.
+* **Metodología:** Scrum — 4 sprints de 2 semanas + fase post-MVP; bitácora con entradas `BIT-001` a `BIT-039`.
 * **Uso declarado de IA:** partes del código, las pruebas y la documentación fueron desarrolladas con asistencia de un agente de programación basado en IA, bajo dirección, decisión técnica y revisión del residente; el diseño, el alcance y cada decisión (D-01…D-58) quedan documentados en `BITACORA.md`.
 * **APK:** la carpeta `build/` no se versiona; el ejecutable instalable está publicado como **GitHub Release** [v1.3](https://github.com/Xolotl5/G19X-TESOEM-AMM-627-ACADEMIC/releases/tag/v1.3) (`MIDFF-Alertas-v1.3.apk`).
+
+## 12. Uso de IA
+
+* **Herramienta:** Claude (Anthropic), como agente de programación, bajo dirección, decisión técnica y revisión del residente. Declarado además en cada commit con `Co-authored-by: Claude`.
+* **En qué se usó:** código PHP de la API y `config/` (refactor y autorización por actor), clase `ApiClient.java` y pantallas de la app Android, scripts de PowerShell (`build.ps1`, `smoke-test.ps1`, `servidor.ps1`, `calibrar.ps1`), documentación (README, `docs/`, `BITACORA.md`) y generación del dataset sintético de calibración (revisado a mano antes de usarse).
+* **Qué hizo el residente:** arquitectura y todas las decisiones técnicas (D-01…D-58 en `BITACORA.md`), requisitos y contratos congelados del motor, revisión línea a línea de lo generado, ejecución de las pruebas (`php -l`, smoke test, E2E con Firebase/Oracle reales, calibración) y corrección de los errores encontrados (p. ej. ORA-01745, ORA-00001). El diseño, el alcance y cada decisión son responsabilidad del residente.
 
 
 
