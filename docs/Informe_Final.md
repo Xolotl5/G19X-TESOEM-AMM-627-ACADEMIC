@@ -1,7 +1,7 @@
 # MIDFF — Informe Final de Residencia Profesional
 
 **Proyecto:** Motor Inteligente de Detección de Fraude Financiero (MIDFF)
-**Empresa:** PluriOne · **Residente:** Alejandro Miranda Martínez · **Fecha:** 15/10/2026
+**Empresa:** PluriOne · **Residente:** Alejandro Miranda Martínez · **Fecha:** 26/10/2026 (actualizado a BIT-039)
 
 ---
 
@@ -13,7 +13,7 @@ financiero** end-to-end: ingesta HTTP/JSON → motor de scoring en C (explicable
 Oracle XE → notificación push en tiempo real (Firebase FCM HTTP v1) → **respuesta del
 cliente** en app Android ("Sí/No fui yo" con biometría) → **decisión del banco** en
 consola web en vivo (Bloquear/Desbloquear) → auditoría completa. El MVP se cerró en 4
-sprints (DoD 10/10) y el post-MVP (BIT-011…BIT-034) añadió la experiencia completa del
+sprints (DoD 10/10) y el post-MVP (BIT-011…BIT-039) añadió la experiencia completa del
 cliente, la consola del banco y la **IA explicable** (el cliente ve *por qué* saltó la
 alerta: "Monto 12.9× tu habitual · Desde una ubicación distinta").
 
@@ -49,7 +49,14 @@ alerta: "Monto 12.9× tu habitual · Desde una ubicación distinta").
 | Verificaciones automatizadas | — | 167 (0 fallos) |
 | Casos por banda de riesgo | 100 % | 100 % |
 | Cobertura de auditoría | 100 % | 100 % |
-| Entradas de bitácora | — | 34 (BIT-001…BIT-034), 58 decisiones |
+| Entradas de bitácora | — | 39 (BIT-001…BIT-039), 58 decisiones |
+| Calibración del motor (BIT-039) | medir con datos | dataset etiquetado de 80 casos: **P/R/F1 100 %** (§7) |
+
+**Seguridad (BIT-036…BIT-039):** autorización por actor — app con ID token de Firebase
+(verificado contra Identity Toolkit), ingesta del banco con `X-API-Key` exclusiva de
+`/transacciones` (sin llaves dentro del APK) y consola con sesión HMAC de administrador;
+el vínculo de un `id_cliente` ajeno lo confirma el banco (aprobación ligada a una cuenta
+concreta de Firebase) y los errores de Oracle solo se registran en el log del servidor.
 
 ## 5. Desviaciones declaradas
 
@@ -74,6 +81,23 @@ alerta: "Monto 12.9× tu habitual · Desde una ubicación distinta").
    secuencias) eliminó el riesgo operativo de levantar el sistema ante terceros.
 
 ## 7. Trabajo futuro
+
+**Calibración del motor con datos etiquetados (realizada, BIT-039).** Se construyó
+`datos/datasets/calibracion_etiquetada.json` (80 transacciones sintéticas, 16 fraudes ≈ 1/5,
+criterio de etiquetado definido **antes** de correr el motor y documentado en el archivo) y
+`calibrar.ps1` que pasa cada caso por `midff-scoring.exe` y mide la matriz de confusión:
+
+| Umbral de alerta | TP | FP | FN | VN | Precisión | Recall | F1 |
+|---|---|---|---|---|---|---|---|
+| **0.40 (actual)** | 16 | 0 | 0 | 64 | **100 %** | **100 %** | **100** |
+| 0.35 (alternativo) | 16 | 0 | 0 | 64 | 100 % | 100 % | 100 |
+
+**Decisión con datos:** se mantienen los pesos 0.45/0.30/0.25 y el umbral 0.40 — bajar a
+0.35 no aporta detección y en producción aumentaría falsos positivos. *Límite honesto:*
+el conjunto es sintético y construido sobre las mismas variables del motor, por lo que la
+separación perfecta valida la **coherencia del motor con la política de riesgo definida**,
+no es una precisión de producción; calibrar con historia real (`EVALUACION` + casos
+etiquetados del banco) sigue siendo la continuación natural.
 
 Calibración de pesos con `EVALUACION` histórica (regresión logística que genere los
 coeficientes), perfil de gasto real por cliente desde Oracle, segunda opinión con
