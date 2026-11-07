@@ -1,0 +1,367 @@
+﻿{
+    "criterio_etiquetado":  "Casos DIFICILES (Corte 5): la etiqueta NO sale de las variables del motor, sino de criterios externos declarados en razon_etiqueta de cada caso (horario, rubro del comercio, canal ATM, estacionalidad, reporte del cliente, historial de 12 meses). Proposito: encontrar donde FALLA el motor, no confirmar donde acierta.",
+    "total":  20,
+    "fraudes":  10,
+    "transacciones":  [
+                          {
+                              "id_transaccion":  "TRX-DIF-01",
+                              "id_cliente":  "CLI-01",
+                              "monto":  1100,
+                              "moneda":  "MXN",
+                              "origen":  "ERP",
+                              "ubicacion":  "CDMX",
+                              "ip_origen":  "203.0.113.50",
+                              "canal":  "WEB",
+                              "contexto":  {
+                                               "monto_promedio_historial":  1000,
+                                               "transacciones_ultima_hora":  1,
+                                               "ubicacion_habitual":  "CDMX",
+                                               "ip_habitual":  "189.203.4.7"
+                                           },
+                              "is_fraude":  true,
+                              "razon_etiqueta":  "FRAUDE por phishing: compra unica con monto casi igual al promedio del cliente; solo la IP es nueva. El cliente reporto no reconocer el cargo."
+                          },
+                          {
+                              "id_transaccion":  "TRX-DIF-02",
+                              "id_cliente":  "CLI-02",
+                              "monto":  1800,
+                              "moneda":  "MXN",
+                              "origen":  "ERP",
+                              "ubicacion":  "MTY",
+                              "ip_origen":  "189.203.4.7",
+                              "canal":  "WEB",
+                              "contexto":  {
+                                               "monto_promedio_historial":  1000,
+                                               "transacciones_ultima_hora":  1,
+                                               "ubicacion_habitual":  "CDMX",
+                                               "ip_habitual":  "189.203.4.7"
+                                           },
+                              "is_fraude":  true,
+                              "razon_etiqueta":  "FRAUDE: compra a las 03:41 en comercio de electronica; el cliente estaba dormido y el horario (variable que el motor no ve) lo confirma."
+                          },
+                          {
+                              "id_transaccion":  "TRX-DIF-03",
+                              "id_cliente":  "CLI-03",
+                              "monto":  1000,
+                              "moneda":  "MXN",
+                              "origen":  "ERP",
+                              "ubicacion":  "CDMX",
+                              "ip_origen":  "189.203.4.7",
+                              "canal":  "WEB",
+                              "contexto":  {
+                                               "monto_promedio_historial":  1000,
+                                               "transacciones_ultima_hora":  4,
+                                               "ubicacion_habitual":  "CDMX",
+                                               "ip_habitual":  "189.203.4.7"
+                                           },
+                              "is_fraude":  true,
+                              "razon_etiqueta":  "FRAUDE: rafaga de suscripciones falsas cobradas con el monto EXACTO del promedio del cliente (imita su patron de gasto)."
+                          },
+                          {
+                              "id_transaccion":  "TRX-DIF-04",
+                              "id_cliente":  "CLI-04",
+                              "monto":  3000,
+                              "moneda":  "MXN",
+                              "origen":  "ERP",
+                              "ubicacion":  "CDMX",
+                              "ip_origen":  "189.203.4.7",
+                              "canal":  "WEB",
+                              "contexto":  {
+                                               "monto_promedio_historial":  1000,
+                                               "transacciones_ultima_hora":  1,
+                                               "ubicacion_habitual":  "CDMX",
+                                               "ip_habitual":  "189.203.4.7"
+                                           },
+                              "is_fraude":  true,
+                              "razon_etiqueta":  "FRAUDE por malware en el propio telefono: sale desde la ubicacion e IP de siempre; solo el comercio es nuevo (no aparece en 12 meses de historial)."
+                          },
+                          {
+                              "id_transaccion":  "TRX-DIF-05",
+                              "id_cliente":  "CLI-05",
+                              "monto":  1500,
+                              "moneda":  "MXN",
+                              "origen":  "ERP",
+                              "ubicacion":  "CDMX",
+                              "ip_origen":  "203.0.113.50",
+                              "canal":  "ATM",
+                              "contexto":  {
+                                               "monto_promedio_historial":  1000,
+                                               "transacciones_ultima_hora":  2,
+                                               "ubicacion_habitual":  "CDMX",
+                                               "ip_habitual":  "189.203.4.7"
+                                           },
+                              "is_fraude":  true,
+                              "razon_etiqueta":  "FRAUDE: extraccion en cajero de otra plaza con tarjeta clonada; el canal ATM no refleja la IP habitual del cliente."
+                          },
+                          {
+                              "id_transaccion":  "TRX-DIF-06",
+                              "id_cliente":  "CLI-06",
+                              "monto":  950,
+                              "moneda":  "MXN",
+                              "origen":  "ERP",
+                              "ubicacion":  "MTY",
+                              "ip_origen":  "203.0.113.50",
+                              "canal":  "WEB",
+                              "contexto":  {
+                                               "monto_promedio_historial":  1000,
+                                               "transacciones_ultima_hora":  1,
+                                               "ubicacion_habitual":  "CDMX",
+                                               "ip_habitual":  "189.203.4.7"
+                                           },
+                              "is_fraude":  true,
+                              "razon_etiqueta":  "FRAUDE: cuenta tomada mientras el cliente viajaba; el estafador imita un viaje plausible (ubicacion e IP nuevas, monto bajo)."
+                          },
+                          {
+                              "id_transaccion":  "TRX-DIF-07",
+                              "id_cliente":  "CLI-07",
+                              "monto":  4500,
+                              "moneda":  "MXN",
+                              "origen":  "ERP",
+                              "ubicacion":  "CDMX",
+                              "ip_origen":  "203.0.113.50",
+                              "canal":  "WEB",
+                              "contexto":  {
+                                               "monto_promedio_historial":  1000,
+                                               "transacciones_ultima_hora":  1,
+                                               "ubicacion_habitual":  "CDMX",
+                                               "ip_habitual":  "189.203.4.7"
+                                           },
+                              "is_fraude":  true,
+                              "razon_etiqueta":  "FRAUDE: transferencia grande desde IP nueva 10 minutos despues del robo del telefono; detectable por monto + IP (caso de control)."
+                          },
+                          {
+                              "id_transaccion":  "TRX-DIF-08",
+                              "id_cliente":  "CLI-08",
+                              "monto":  2600,
+                              "moneda":  "MXN",
+                              "origen":  "ERP",
+                              "ubicacion":  "CDMX",
+                              "ip_origen":  "189.203.4.7",
+                              "canal":  "WEB",
+                              "contexto":  {
+                                               "monto_promedio_historial":  1000,
+                                               "transacciones_ultima_hora":  3,
+                                               "ubicacion_habitual":  "CDMX",
+                                               "ip_habitual":  "189.203.4.7"
+                                           },
+                              "is_fraude":  true,
+                              "razon_etiqueta":  "FRAUDE (blanqueo): compras seguidas en comercios de reventa de gift cards con montos moderados; el rubro del comercio (que el motor no ve) delata el fencing."
+                          },
+                          {
+                              "id_transaccion":  "TRX-DIF-09",
+                              "id_cliente":  "CLI-09",
+                              "monto":  1250,
+                              "moneda":  "MXN",
+                              "origen":  "ERP",
+                              "ubicacion":  "CDMX",
+                              "ip_origen":  "189.203.4.7",
+                              "canal":  "WEB",
+                              "contexto":  {
+                                               "monto_promedio_historial":  1000,
+                                               "transacciones_ultima_hora":  6,
+                                               "ubicacion_habitual":  "CDMX",
+                                               "ip_habitual":  "189.203.4.7"
+                                           },
+                              "is_fraude":  true,
+                              "razon_etiqueta":  "FRAUDE (card testing): rafaga de cargos pequenos para validar tarjetas robadas antes del golpe grande."
+                          },
+                          {
+                              "id_transaccion":  "TRX-DIF-10",
+                              "id_cliente":  "CLI-10",
+                              "monto":  5200,
+                              "moneda":  "MXN",
+                              "origen":  "ERP",
+                              "ubicacion":  "CDMX",
+                              "ip_origen":  "189.203.4.7",
+                              "canal":  "WEB",
+                              "contexto":  {
+                                               "monto_promedio_historial":  1000,
+                                               "transacciones_ultima_hora":  2,
+                                               "ubicacion_habitual":  "CDMX",
+                                               "ip_habitual":  "189.203.4.7"
+                                           },
+                              "is_fraude":  true,
+                              "razon_etiqueta":  "FRAUDE: vaciamiento clasico de cuenta con monto muy por encima del habito; caso de control que el monto solo apenas alcanza a detener (score 0.45)."
+                          },
+                          {
+                              "id_transaccion":  "TRX-DIF-11",
+                              "id_cliente":  "CLI-11",
+                              "monto":  5000,
+                              "moneda":  "MXN",
+                              "origen":  "ERP",
+                              "ubicacion":  "CDMX",
+                              "ip_origen":  "189.203.4.7",
+                              "canal":  "WEB",
+                              "contexto":  {
+                                               "monto_promedio_historial":  1000,
+                                               "transacciones_ultima_hora":  1,
+                                               "ubicacion_habitual":  "CDMX",
+                                               "ip_habitual":  "189.203.4.7"
+                                           },
+                              "is_fraude":  false,
+                              "razon_etiqueta":  "SANO: compra anual de vuelos de vacaciones; el cliente repite este gasto grande cada diciembre (estacionalidad que el motor no ve)."
+                          },
+                          {
+                              "id_transaccion":  "TRX-DIF-12",
+                              "id_cliente":  "CLI-12",
+                              "monto":  4000,
+                              "moneda":  "MXN",
+                              "origen":  "ERP",
+                              "ubicacion":  "CDMX",
+                              "ip_origen":  "189.203.4.7",
+                              "canal":  "WEB",
+                              "contexto":  {
+                                               "monto_promedio_historial":  1000,
+                                               "transacciones_ultima_hora":  4,
+                                               "ubicacion_habitual":  "CDMX",
+                                               "ip_habitual":  "189.203.4.7"
+                                           },
+                              "is_fraude":  false,
+                              "razon_etiqueta":  "SANO: fin de mes; despensa y electrodomestico el mismo dia (el gasto concentrado es habitual en este cliente)."
+                          },
+                          {
+                              "id_transaccion":  "TRX-DIF-13",
+                              "id_cliente":  "CLI-13",
+                              "monto":  3000,
+                              "moneda":  "MXN",
+                              "origen":  "ERP",
+                              "ubicacion":  "CDMX",
+                              "ip_origen":  "189.203.4.7",
+                              "canal":  "WEB",
+                              "contexto":  {
+                                               "monto_promedio_historial":  1000,
+                                               "transacciones_ultima_hora":  6,
+                                               "ubicacion_habitual":  "CDMX",
+                                               "ip_habitual":  "189.203.4.7"
+                                           },
+                              "is_fraude":  false,
+                              "razon_etiqueta":  "SANO: compras navidenas en rafaga vespertina en 6 tiendas distintas; el cliente confirmo todas."
+                          },
+                          {
+                              "id_transaccion":  "TRX-DIF-14",
+                              "id_cliente":  "CLI-14",
+                              "monto":  4200,
+                              "moneda":  "MXN",
+                              "origen":  "ERP",
+                              "ubicacion":  "CDMX",
+                              "ip_origen":  "189.203.4.7",
+                              "canal":  "WEB",
+                              "contexto":  {
+                                               "monto_promedio_historial":  1000,
+                                               "transacciones_ultima_hora":  8,
+                                               "ubicacion_habitual":  "CDMX",
+                                               "ip_habitual":  "189.203.4.7"
+                                           },
+                              "is_fraude":  false,
+                              "razon_etiqueta":  "SANO: Buen Fin; el cliente concentra su ahorro anual en ofertas (monto alto + rafaga legitima)."
+                          },
+                          {
+                              "id_transaccion":  "TRX-DIF-15",
+                              "id_cliente":  "CLI-15",
+                              "monto":  1600,
+                              "moneda":  "MXN",
+                              "origen":  "ERP",
+                              "ubicacion":  "MTY",
+                              "ip_origen":  "203.0.113.50",
+                              "canal":  "WEB",
+                              "contexto":  {
+                                               "monto_promedio_historial":  1000,
+                                               "transacciones_ultima_hora":  1,
+                                               "ubicacion_habitual":  "CDMX",
+                                               "ip_habitual":  "189.203.4.7"
+                                           },
+                              "is_fraude":  false,
+                              "razon_etiqueta":  "SANO: cliente de viaje personal; gasto pequeno desde roaming, la novedad de ubicacion e IP es esperada."
+                          },
+                          {
+                              "id_transaccion":  "TRX-DIF-16",
+                              "id_cliente":  "CLI-16",
+                              "monto":  1200,
+                              "moneda":  "MXN",
+                              "origen":  "ERP",
+                              "ubicacion":  "CDMX",
+                              "ip_origen":  "189.203.4.7",
+                              "canal":  "WEB",
+                              "contexto":  {
+                                               "monto_promedio_historial":  1000,
+                                               "transacciones_ultima_hora":  1,
+                                               "ubicacion_habitual":  "CDMX",
+                                               "ip_habitual":  "189.203.4.7"
+                                           },
+                              "is_fraude":  false,
+                              "razon_etiqueta":  "SANO: carga semanal de telefono; gasto tipico sin ninguna senal."
+                          },
+                          {
+                              "id_transaccion":  "TRX-DIF-17",
+                              "id_cliente":  "CLI-17",
+                              "monto":  2400,
+                              "moneda":  "MXN",
+                              "origen":  "ERP",
+                              "ubicacion":  "CDMX",
+                              "ip_origen":  "203.0.113.50",
+                              "canal":  "WEB",
+                              "contexto":  {
+                                               "monto_promedio_historial":  1000,
+                                               "transacciones_ultima_hora":  1,
+                                               "ubicacion_habitual":  "CDMX",
+                                               "ip_habitual":  "189.203.4.7"
+                                           },
+                              "is_fraude":  false,
+                              "razon_etiqueta":  "SANO: el cliente renovo su laptop y pago desde la red de su nuevo trabajo (cambio de IP puntual, confirmado)."
+                          },
+                          {
+                              "id_transaccion":  "TRX-DIF-18",
+                              "id_cliente":  "CLI-18",
+                              "monto":  1000,
+                              "moneda":  "MXN",
+                              "origen":  "ERP",
+                              "ubicacion":  "CDMX",
+                              "ip_origen":  "189.203.4.7",
+                              "canal":  "WEB",
+                              "contexto":  {
+                                               "monto_promedio_historial":  1000,
+                                               "transacciones_ultima_hora":  3,
+                                               "ubicacion_habitual":  "CDMX",
+                                               "ip_habitual":  "189.203.4.7"
+                                           },
+                              "is_fraude":  false,
+                              "razon_etiqueta":  "SANO: tres compras pequenas legitimas en una hora (farmacia, cafe, transporte)."
+                          },
+                          {
+                              "id_transaccion":  "TRX-DIF-19",
+                              "id_cliente":  "CLI-19",
+                              "monto":  3600,
+                              "moneda":  "MXN",
+                              "origen":  "ERP",
+                              "ubicacion":  "MTY",
+                              "ip_origen":  "189.203.4.7",
+                              "canal":  "WEB",
+                              "contexto":  {
+                                               "monto_promedio_historial":  1000,
+                                               "transacciones_ultima_hora":  1,
+                                               "ubicacion_habitual":  "CDMX",
+                                               "ip_habitual":  "189.203.4.7"
+                                           },
+                              "is_fraude":  false,
+                              "razon_etiqueta":  "SANO: mueble comprado en tienda fisica de otra colonia; gasto planeado y confirmado por el cliente."
+                          },
+                          {
+                              "id_transaccion":  "TRX-DIF-20",
+                              "id_cliente":  "CLI-20",
+                              "monto":  1300,
+                              "moneda":  "MXN",
+                              "origen":  "ERP",
+                              "ubicacion":  "CDMX",
+                              "ip_origen":  "189.203.4.7",
+                              "canal":  "WEB",
+                              "contexto":  {
+                                               "monto_promedio_historial":  1000,
+                                               "transacciones_ultima_hora":  5,
+                                               "ubicacion_habitual":  "CDMX",
+                                               "ip_habitual":  "189.203.4.7"
+                                           },
+                              "is_fraude":  false,
+                              "razon_etiqueta":  "SANO: gasolina, tienda y peaje en el regreso de un viaje de fin de semana."
+                          }
+                      ]
+}
