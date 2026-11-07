@@ -191,7 +191,7 @@ if (($metodo ?? '') === 'POST') {
         $filaV = $sentV->fetch(PDO::FETCH_ASSOC);
         $idClientePrevio = $filaV === false ? '' : trim((string) ($filaV['ID_CLIENTE'] ?? ''));
     } catch (PDOException $e) {
-        midff_error_bd('fallo Oracle al verificar el dispositivo: ', $e);
+        midff_error_bd('fallo Oracle al verificar el dispositivo', $e);
     }
 }
 
@@ -323,7 +323,7 @@ if ($tokenUsuario !== null) {
                 }
             }
         } catch (PDOException $e) {
-            midff_error_bd('fallo Oracle al verificar el id_cliente: ', $e);
+            midff_error_bd('fallo Oracle al verificar el id_cliente', $e);
         }
         if ($duenoAjeno) {
             responder(403, ['error' => 'el id_cliente ya esta vinculado a otra '

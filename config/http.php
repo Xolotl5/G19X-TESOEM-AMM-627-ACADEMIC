@@ -178,7 +178,7 @@ function midff_exigir_cliente_firebase(): string
         $sent->execute([':uidfb' => $usuario['uid']]);
         $fila = $sent->fetch(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-        midff_error_bd('fallo Oracle al resolver el cliente autenticado: ', $e);
+        midff_error_bd('fallo Oracle al resolver el cliente autenticado', $e);
     }
     if ($fila === false || trim((string) ($fila['ID_CLIENTE'] ?? '')) === '') {
         responder(403, ['error' => 'el usuario autenticado no tiene un id_cliente '

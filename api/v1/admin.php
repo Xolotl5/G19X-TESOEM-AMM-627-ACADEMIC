@@ -70,7 +70,9 @@ if ($accion === 'sesion') {
         $sent->execute([':u' => $usuario]);
         $fila = $sent->fetch(PDO::FETCH_ASSOC);
     } catch (PDOException $e) {
-        midff_error_bd('fallo Oracle al autenticar (ejecute database/admin_usuario.sql)', $e);
+        // La pista del script de BD es solo para el log del servidor (no para el cliente).
+        error_log('[MIDFF-ADMIN] si falta la tabla, ejecute database/admin_usuario.sql');
+        midff_error_bd('fallo Oracle al autenticar al administrador', $e);
     }
 
     $valida = $fila !== false && midff_admin_clave_valida($clave, $fila);
@@ -415,7 +417,9 @@ if ($accion === 'aprobar') {
                     . '  VALUES (s.idc, s.corr, :admin)')
             ->execute([':cliente' => $idCliente, ':correo' => $correo, ':admin' => $admin]);
     } catch (PDOException $e) {
-        midff_error_bd('fallo Oracle al aprobar el cliente (ejecute database/cliente_alta.sql): ', $e);
+        // La pista del script de BD es solo para el log del servidor (no para el cliente).
+        error_log('[MIDFF-ADMIN] si falta la tabla, ejecute database/cliente_alta.sql');
+        midff_error_bd('fallo Oracle al aprobar el cliente', $e);
     }
 
     error_log('[MIDFF-ADMIN] id_cliente aprobado para primer registro: ' . $idCliente

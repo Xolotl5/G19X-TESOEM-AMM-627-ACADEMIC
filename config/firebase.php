@@ -669,7 +669,7 @@ function midff_fcm_enviar_a_dispositivos(callable $constructor, string $idClient
                             ? 'FCM omitido: sin dispositivos activos para el cliente ' . $idCliente
                               . ' en DISPOSITIVO_MOVIL (registre la app con ese id_cliente)'
                             : 'FCM omitido: sin dispositivos activos en DISPOSITIVO_MOVIL'
-                              . ' (ejecute database/dispositivo_movil.sql y registre la app Android)'];
+                              . ' (registre la app Android)'];
     }
 
     $exitosos = 0;
