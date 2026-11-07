@@ -1,7 +1,7 @@
 # MIDFF — Informe Final de Residencia Profesional
 
 **Proyecto:** Motor Inteligente de Detección de Fraude Financiero (MIDFF)
-**Empresa:** PluriOne · **Residente:** Alejandro Miranda Martínez · **Fecha:** 26/10/2026 (actualizado a BIT-039)
+**Empresa:** PluriOne · **Residente:** Alejandro Miranda Martínez · **Fecha:** 07/11/2026 (actualizado a BIT-040)
 
 ---
 
@@ -13,7 +13,7 @@ financiero** end-to-end: ingesta HTTP/JSON → motor de scoring en C (explicable
 Oracle XE → notificación push en tiempo real (Firebase FCM HTTP v1) → **respuesta del
 cliente** en app Android ("Sí/No fui yo" con biometría) → **decisión del banco** en
 consola web en vivo (Bloquear/Desbloquear) → auditoría completa. El MVP se cerró en 4
-sprints (DoD 10/10) y el post-MVP (BIT-011…BIT-039) añadió la experiencia completa del
+sprints (DoD 10/10) y el post-MVP (BIT-011…BIT-040) añadió la experiencia completa del
 cliente, la consola del banco y la **IA explicable** (el cliente ve *por qué* saltó la
 alerta: "Monto 12.9× tu habitual · Desde una ubicación distinta").
 
@@ -24,8 +24,8 @@ alerta: "Monto 12.9× tu habitual · Desde una ubicación distinta").
 | Analizar transacciones financieras | ✅ 3 variables normalizadas (monto/frecuencia/ubicación-IP) con fail-safe |
 | Diseñar la arquitectura | ✅ 8 componentes, 58 decisiones documentadas (`docs/Arquitectura.md`) |
 | Implementar modelos predictivos | ✅ scoring ponderado explicable 45/30/25 + XAI al cliente; ML declarado como evolución |
-| Validar precisión, desempeño y seguridad | ✅ 167 verificaciones / 0 fallos; mediana 7.0 µs, E2E 308 ms; Reporte QA aprobado |
-| Documentación técnica y plan de soporte | ✅ README + 6 documentos en `docs/` + bitácora de 34 entradas |
+| Validar precisión, desempeño y seguridad | ✅ 167 verificaciones / 0 fallos; mediana 7.0 µs, E2E 308 ms; Reporte QA aprobado; calibración §7 — 100 % en la base sintética y casos difíciles donde falla declarados (no es precisión de producción) |
+| Documentación técnica y plan de soporte | ✅ README + 6 documentos en `docs/` + bitácora de 40 entradas |
 
 ## 3. Producto entregado
 
@@ -49,8 +49,8 @@ alerta: "Monto 12.9× tu habitual · Desde una ubicación distinta").
 | Verificaciones automatizadas | — | 167 (0 fallos) |
 | Casos por banda de riesgo | 100 % | 100 % |
 | Cobertura de auditoría | 100 % | 100 % |
-| Entradas de bitácora | — | 39 (BIT-001…BIT-039), 58 decisiones |
-| Calibración del motor (BIT-039) | medir con datos | dataset etiquetado de 80 casos: **P/R/F1 100 %** (§7) |
+| Entradas de bitácora | — | 40 (BIT-001…BIT-040), 58 decisiones |
+| Calibración del motor (BIT-039) | medir con datos | base 80 casos: **P/R/F1 100 %** + 20 casos difíciles con FP/FN declarados (§7) |
 
 **Seguridad (BIT-036…BIT-039):** autorización por actor — app con ID token de Firebase
 (verificado contra Identity Toolkit), ingesta del banco con `X-API-Key` exclusiva de
@@ -80,31 +80,74 @@ concreta de Firebase) y los errores de Oracle solo se registran en el log del se
 5. **Un comando para la demo**: `servidor.ps1` (PATH de DLLs, firewall, puerto 8091 y
    secuencias) eliminó el riesgo operativo de levantar el sistema ante terceros.
 
-## 7. Trabajo futuro
+## 7. Calibración del motor (BIT-039)
 
-**Calibración del motor con datos etiquetados (realizada, BIT-039).** Se construyó
-`datos/datasets/calibracion_etiquetada.json` (80 transacciones sintéticas, 16 fraudes ≈ 1/5,
-criterio de etiquetado definido **antes** de correr el motor y documentado en el archivo) y
-`calibrar.ps1` que pasa cada caso por `midff-scoring.exe` y mide la matriz de confusión:
+**Conjunto base (80 casos sintéticos, 16 fraudes ≈ 1/5).** Se construyó
+`datos/datasets/calibracion_etiquetada.json` (criterio de etiquetado definido
+**antes** de correr el motor y documentado en el archivo) y `calibrar.ps1`, que
+pasa cada caso por `midff-scoring.exe` y mide la matriz de confusión:
 
 | Umbral de alerta | TP | FP | FN | VN | Precisión | Recall | F1 |
 |---|---|---|---|---|---|---|---|
 | **0.40 (actual)** | 16 | 0 | 0 | 64 | **100 %** | **100 %** | **100** |
 | 0.35 (alternativo) | 16 | 0 | 0 | 64 | 100 % | 100 % | 100 |
 
-**Decisión con datos:** se mantienen los pesos 0.45/0.30/0.25 y el umbral 0.40 — bajar a
-0.35 no aporta detección y en producción aumentaría falsos positivos. *Límite honesto:*
-el conjunto es sintético y construido sobre las mismas variables del motor, por lo que la
-separación perfecta valida la **coherencia del motor con la política de riesgo definida**,
-no es una precisión de producción; calibrar con historia real (`EVALUACION` + casos
-etiquetados del banco) sigue siendo la continuación natural.
+**Casos difíciles (Corte 5: 20 casos cuya etiqueta NO sale del motor).**
+`datos/datasets/casos_dificiles.json` etiqueta cada caso con criterios externos
+—horario (03:41), rubro del comercio (gift cards), canal ATM, estacionalidad
+(diciembre/Buen Fin), reporte del cliente, comercio nuevo en 12 meses—
+declarados en `razon_etiqueta`. Es un conjunto diseñado para encontrar dónde
+FALLA el motor, no para confirmar aciertos. `calibrar.ps1` guarda los tres
+puntajes por variable (`variables.{monto,frecuencia,ubicacion_ip}.puntaje`) y
+recalcula el score con otra combinación de pesos **sin recompilar**:
 
-Calibración de pesos con `EVALUACION` histórica (regresión logística que genere los
-coeficientes), perfil de gasto real por cliente desde Oracle, segunda opinión con
-detección de anomalías, particionamiento mensual de auditoría para escala bancaria y
-pipeline CI/CD con contenedores.
+| Pesos (monto/frecuencia/ubicación) | Umbral | TP | FP | FN | VN | Precisión | Recall |
+|---|---|---|---|---|---|---|---|
+| **0.45/0.30/0.25 (motor)** | 0.40 | 2 | 5 | 8 | 5 | 28.6 % | 20.0 % |
+| 0.35/0.30/0.35 (alternativo) | 0.40 | 1 | 3 | 9 | 7 | 25.0 % | 10.0 % |
 
-## 8. Conclusión
+* **Fraudes que se escapan (FN = 8, todos con score ≤ 0.25):** phishing con
+  monto habitual (TRX-DIF-01, 0.14), compra a las 03:41 (02), ráfaga con el
+  monto exacto al promedio (03), malware desde el propio teléfono (04), cajero
+  clonado en otra plaza (05), cuenta tomada imitando un viaje plausible (06),
+  fencing de gift cards (08) y card testing (09). Imitan el patrón legítimo del
+  cliente o explotan variables que el motor no modela (horario, rubro,
+  comercio nuevo).
+* **Sanos que molestan (FP = 5, scores 0.42–0.66):** gasto estacional grande
+  (vuelos anuales 0.45, Buen Fin 0.66, navidad 0.43, fin de mes 0.44) y un
+  mueble comprado en otra colonia (0.42) — concentraciones legítimas que
+  superan el umbral por monto y frecuencia.
+* **Comparación de pesos:** con 0.35/0.30/0.35 los FP bajan de 5 a 3, pero se
+  pierde el único vaciamiento detectable (TRX-DIF-10 cae de 0.45 a 0.35, justo
+  bajo el umbral). Como el costo de un FN (fraude que pasa) es mucho mayor que
+  el de un FP (una alerta molesta que el cliente confirma en la app), **se
+  mantienen los pesos 0.45/0.30/0.25 y el umbral 0.40** — igual que decidió la
+  base: bajar a 0.35 no aporta detección.
+* **Qué haríamos con los fallos:** (1) incorporar como señales nuevas el
+  horario, el rubro del comercio y el comercio/canal nuevo, con pesos propios;
+  (2) regla de ráfaga independiente para card testing (cargos pequeños
+  repetidos); (3) perfil de gasto estacional por cliente para perdonar los FP
+  de diciembre/Buen Fin; (4) mientras tanto, el hueco lo cubre la decisión
+  humana del ciclo cliente↔banco (las MEDIO van a EN_REVISION y el cliente
+  responde «Sí/No fui yo»).
+
+*Límite honesto:* la base es sintética y construida sobre las mismas variables
+del motor (la separación perfecta valida la coherencia del motor con la
+política de riesgo, no una precisión de producción); el conjunto difícil es
+pequeño y diseñado a propósito para romper la regla. Calibrar con historia real
+(`EVALUACION` + casos etiquetados del banco) sigue siendo la continuación
+natural.
+
+## 8. Trabajo futuro
+
+Nuevas variables de contexto (horario, rubro del comercio, comercio nuevo y
+canal) detectadas en los casos difíciles, calibración de pesos con
+`EVALUACION` histórica (regresión logística que genere los coeficientes),
+perfil de gasto estacional real por cliente desde Oracle, segunda opinión con
+detección de anomalías, particionamiento mensual de auditoría para escala
+bancaria y pipeline CI/CD con contenedores.
+
+## 9. Conclusión
 
 El proyecto cumple el objetivo general —detección temprana de fraude con evidencia
 auditable— y lo excede con un ciclo de decisión **colaborativo cliente↔banco** en
