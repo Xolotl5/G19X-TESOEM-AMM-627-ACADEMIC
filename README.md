@@ -26,7 +26,19 @@ Transaccion (HTTP/JSON) -> API PHP -> motor C (score) -> Oracle (atomico + audit
 > **Qué necesita el revisor (Corte 3):**
 > 1. Windows con **Oracle XE 21c** (PDB `XEPDB1`) y su cliente (`sqlplus`).
 > 2. **PHP 8+** con `pdo_oci` (u `oci8`), `curl`, `openssl` y `mbstring`.
-> 3. El proyecto **Firebase `midff-57e6b`** (`google-services.json` en la app + cuenta de servicio en `config\` + Web API key; hay plantillas `.example`).
+> 3. El proyecto **Firebase `midff-57e6b`**. Las dos credenciales **NO están en el repo**:
+>    - `config/firebase.credentials.json` (cuenta de servicio, para los push) y
+>    - `MIDFF_FIREBASE_WEB_KEY` (Web API key, para validar el inicio de sesión de la app).
+>    **Pídeselas a Alejandro Miranda Martínez**; se entregan por **canal privado** (correo o
+>    mensaje directo), nunca en el repositorio ni en issues. Si prefiere usar su **propio**
+>    proyecto Firebase: crear proyecto → activar Authentication con correo/contraseña →
+>    descargar `google-services.json` y la cuenta de servicio → colocarlas en
+>    `config\` y `android/MidffAlertas/app/` → recompilar el APK con `gradlew assembleDebug`
+>    (el APK del Release trae el de `midff-57e6b`).
+>    **Sin Firebase también se puede probar:** `.\build.ps1` (167 verificaciones del motor),
+>    `.\servidor.ps1`, `.\smoke-test.ps1` (API + Oracle + auditoría), `MIDFF.html` (consola,
+>    con sesión de administrador) y `banco.html` (simulador). Los push y el login de la app
+>    son lo único que las requiere.
 > 4. **Dos cuentas de prueba** para CP-A1 (403 cruzado): créelas en la propia app («Crear cuenta» con dos correos) o en Firebase Console → Authentication → Users; cada una verá su ID `CLI-…` en la pestaña Registro.
 > 5. **APK**: descargar del **Release [v1.3](https://github.com/Xolotl5/G19X-TESOEM-AMM-627-ACADEMIC/releases/tag/v1.3)** (archivo `MIDFF-Alertas-v1.3.apk`; o compilar con `gradlew assembleDebug`).
 > Con eso: `.\servidor.ps1` levanta todo y `.\smoke-test.ps1` (§6b incluida) verifica la API.
@@ -78,15 +90,21 @@ Compila `src/motor/bin/midff-scoring.exe` y ejecuta las **167 verificaciones**
 
 ### Paso 3 — Firebase (2 credenciales)
 
+> **Cómo las obtiene el revisor:** solicitándolas a **Alejandro Miranda Martínez**
+> por canal privado (correo o mensaje directo); nunca se suben al repositorio ni
+> a issues (no busque `private_key` ni `AIza…` en el repo: no están).
+
 1. **Cuenta de servicio FCM (la usa el servidor):** colocar el JSON de la cuenta de
    servicio del proyecto en **`config/firebase.credentials.json`** (no se versiona).
    Alternativa: variable de entorno `MIDFF_FCM_CUENTA_SERVICIO` con la ruta del JSON.
-2. **Para entrar a la consola de Firebase:** iniciar sesión en
-   `console.firebase.google.com` (proyecto **MIDFF Alertas**) con las credenciales
-   administrativas guardadas en un **gestor de contraseñas**, fuera del repositorio.
-   Ninguna credencial se versiona ni se almacena en archivos del proyecto.
+2. **Web API key del proyecto** (`MIDFF_FIREBASE_WEB_KEY` en `.env`; está en
+   `google-services.json → api_key[0]`): la usa la API para validar el ID token
+   con el que la app se autentica. Para entrar a la **consola** de Firebase
+   (`console.firebase.google.com`, proyecto **MIDFF Alertas**) se usan las
+   credenciales administrativas, guardadas en un gestor de contraseñas.
 3. (Solo para recompilar la app) `android/MidffAlertas/app/google-services.json`
-   (existe plantilla `google-services.json.example` versionada).
+   (existe plantilla `google-services.json.example` versionada); recompilar con
+   `gradlew assembleDebug` si el revisor usa su propio proyecto Firebase.
 
 ### Paso 4 — Levantar la API (puerto 8091)
 
@@ -331,6 +349,14 @@ Desde `C:\todoMIDFF` en PowerShell:
                    #   - evalua las 3 bandas del dataset (BAJO/MEDIO/ALTO)
                    #   - pruebas negativas 401/400, latencia <= 1 s y
                    #     cobertura de auditoria 100 %
+
+.\calibrar.ps1     # Calibracion del motor (BIT-039, Corte 4/5):
+                   #   - 80 casos base -> matriz de confusion (0.40 vs 0.35)
+                   #   - 20 casos dificiles (datos/datasets/casos_dificiles.json,
+                   #     etiqueta externa al motor con razon_etiqueta)
+                   #   - compara pesos 0.45/0.30/0.25 vs 0.35/0.30/0.35 con
+                   #     umbral 0.40, recalculando sin recompilar el motor
+                   #   - resultado y analisis: docs/Informe_Final.md §7
 ```
 
 ### 3.1 Consola del banco (MIDFF.html, BIT-019)
